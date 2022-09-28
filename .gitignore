@@ -1,2 +1,4 @@
-msghub-server/.env
+.idea/
 msghub-server/.idea/
+msghub-server/vendor/
+msghub-server/.env

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"log"
 	"msghub-server/database"
@@ -21,8 +22,8 @@ func init() {
 	var err, err1 error
 
 	utils.InitJwtKey()
-	template.Tpl, err = template.Tpl.ParseGlob("../msghub-client/views/*.gohtml")
-	template.Tpl.New("partials").ParseGlob("../msghub-client/views/partials/*.gohtml")
+	template.Tpl, err = template.Tpl.ParseGlob("../msghub-client/views/user/*.gohtml")
+	template.Tpl.New("partials").ParseGlob("../msghub-client/views/base_partials/*.gohtml")
 	template.Tpl.New("admin").ParseGlob("../msghub-client/views/admin/*.gohtml")
 
 	if err != nil {
@@ -33,10 +34,11 @@ func init() {
 	}
 }
 
-var hub *socket.Hub
-
 // Chat application server side.
 func main() {
+
+	flag.Parse()
+
 	database.ConnectDb()
 	defer database.SqlDb.Close()
 
@@ -85,12 +87,13 @@ func run() error {
 }
 
 func handleFuncs(theMux *mux.Router) {
-	hub = socket.NewHub()
-	go hub.Run()
 
-	// SOCKET FUNCTIONS
+	// creates a new WsServer
+	wsServer := socket.NewWebSocketServer()
+	go wsServer.Run()
+
 	theMux.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
-		socket.ServeWs(hub, w, r)
+		socket.ServeWs(wsServer, w, r)
 	})
 
 	// OTHER HANDLERS.
@@ -109,6 +112,8 @@ func handleFuncs(theMux *mux.Router) {
 	theMux.HandleFunc("/login/otp/getotp", handlers.UserOtpPageHandler)
 	theMux.HandleFunc("/login/otp/verify", handlers.UserVerifyLoginOtpHandler)
 	theMux.HandleFunc("/user/dashboard", handlers.UserDashboardHandler)
+	theMux.HandleFunc("/user/dashboard/people", handlers.UserShowPeopleHandler)
+
 	theMux.HandleFunc("/user/logout", handlers.UserLogoutHandler).Methods("GET")
 }
 

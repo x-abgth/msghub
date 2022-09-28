@@ -504,15 +504,34 @@ form#adminLoginForm input {
 	min-width: 250px !important;
 }
 
+/* SHOW PEOPLE PAGE STYLE */
 
+section.show-people-page{
+	display: flex;
+	flex-direction: column;
+}
 
-/* DROP DOWN STYLING */
+section .show-people-header{
+	height: 10vh;
+	box-shadow: rgba(0, 0, 0, 0.45) 0px 0px 15px -5px;
+}
 
+section .show-people-header a{
+	text-decoration: none;
+	color: black;
+}
 
+.show-people-search-bar{
+	display: flex;
+	width: 80%;
+}
 
-
-
-
+.show-people-search-bar input[type="text"] {
+	width: 100%;
+	border: none;
+	outline: none;
+	border-bottom: 1px solid #757575;
+}
 
 
 

@@ -1,7 +1,7 @@
 package socket
 
 import (
-	"bytes"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -10,129 +10,212 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+/*
+	HEARTBEAT MECHANISM (PING AND PONG)
+
+	In order to ensure that the TCP channel connection between the client and the server is not disconnected,
+	WebSocket uses the heartbeat mechanism to judge the connection status.
+	If no response is received within the timeout period,the connection is considered disconnected,
+	the connection is closed and resources are released.
+*/
+
+// Sender -> reciever : ping
+// Receiver	-> sender : pong
+
 const (
-	// Time allowed to write a message to the peer.
+	// Max wait time when writing message to peer
 	writeWait = 10 * time.Second
 
-	// Time allowed to read the next pong message from the peer.
+	// Max time till next pong from peer
 	pongWait = 60 * time.Second
 
-	// Send pings to peer with this period. Must be less than pongWait.
+	// Send ping interval, must be less then pong wait time
 	pingPeriod = (pongWait * 9) / 10
 
 	// Maximum message size allowed from peer.
-	maxMessageSize = 512
+	maxMessageSize = 10000
 )
 
 var (
 	newline = []byte{'\n'}
-	space   = []byte{' '}
+	// space    = []byte{' '}
+	upgrader = websocket.Upgrader{
+		ReadBufferSize:  4096,
+		WriteBufferSize: 4096,
+	}
 )
 
-var upgrader = websocket.Upgrader{
-	ReadBufferSize:  4096,
-	WriteBufferSize: 4096,
-}
-
-// Client is a middleman between the websocket connection and the hub.
+// This represents the websocket client at the server
 type Client struct {
-	hub *Hub
-
-	// The websocket connection.
 	conn *websocket.Conn
-
-	// Buffered channel of outbound messages.
-	send chan []byte
+	// We want to the keep a reference to the WsServer for each client
+	wsServer *WsServer
+	send     chan []byte
+	// To keep track of the rooms this client joins
+	rooms map[*Room]bool
+	Name  string `json:"name"`
 }
 
-// readPump pumps messages from the websocket connection to the hub.
-//
-// The application runs readPump in a per-connection goroutine. The application
-// ensures that there is at most one reader on a connection by executing all
-// reads from this goroutine.
-func (c *Client) readPump() {
-	defer func() {
-		c.hub.unregister <- c
-		c.conn.Close()
-	}()
-	c.conn.SetReadLimit(maxMessageSize)
-	c.conn.SetReadDeadline(time.Now().Add(pongWait))
-	c.conn.SetPongHandler(func(string) error { c.conn.SetReadDeadline(time.Now().Add(pongWait)); return nil })
-	for {
-		_, message, err := c.conn.ReadMessage()
-		if err != nil {
-			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				log.Printf("error: %v", err)
-			}
-			break
-		}
-		message = bytes.TrimSpace(bytes.Replace(message, newline, space, -1))
-		fmt.Println("Read -- " + string(message))
-		c.hub.broadcast <- message
+func newClient(conn *websocket.Conn, wsServer *WsServer, name string) *Client {
+	return &Client{
+		conn:     conn,
+		wsServer: wsServer,
+		Name:     name,
+		send:     make(chan []byte),
+		rooms:    make(map[*Room]bool),
 	}
 }
 
-// writePump pumps messages from the hub to the websocket connection.
-//
-// A goroutine running writePump is started for each connection. The
-// application ensures that there is at most one writer to a connection by
-// executing all writes from this goroutine.
-func (c *Client) writePump() {
-	ticker := time.NewTicker(pingPeriod)
-	defer func() {
-		ticker.Stop()
-		c.conn.Close()
-	}()
-	for {
-		select {
-		// reading from channel send in Client struct
-		case message, ok := <-c.send:
-			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
-			if !ok {
-				// The hub closed the channel.
-				c.conn.WriteMessage(websocket.CloseMessage, []byte{})
-				return
-			}
-
-			w, err := c.conn.NextWriter(websocket.TextMessage)
-			if err != nil {
-				return
-			}
-			fmt.Println("Write -- " + string(message))
-			w.Write(message)
-
-			// Add queued chat messages to the current websocket message.
-			n := len(c.send)
-			for i := 0; i < n; i++ {
-				w.Write(newline)
-				w.Write(<-c.send)
-			}
-
-			if err := w.Close(); err != nil {
-				return
-			}
-		case <-ticker.C:
-			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
-			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
-				return
-			}
-		}
-	}
+func (client *Client) GetName() string {
+	return client.Name
 }
 
-// serveWs handles websocket requests from the peer.
-func ServeWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
+// ServeWs handles websocket requests from clients requests.
+func ServeWs(wsServer *WsServer, w http.ResponseWriter, r *http.Request) {
+	name, ok := r.URL.Query()["name"]
+
+	if !ok || len(name[0]) < 1 {
+		log.Println("Url Param 'name' is missing")
+		return
+	}
+
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println(err)
 		return
 	}
-	client := &Client{hub: hub, conn: conn, send: make(chan []byte, 256)}
-	client.hub.register <- client
 
-	// Allow collection of memory referenced by the caller by doing all work in
-	// new goroutines.
+	// whenever the fuction ServeWs is called a new client is created.
+	client := newClient(conn, wsServer, name[0])
+
 	go client.writePump()
 	go client.readPump()
-	fmt.Println("ServeWs in client.go")
+
+	// value of client is updated to the channel register.
+	wsServer.register <- client
+
+	fmt.Println("New Client joined the hub!")
+	fmt.Println(client)
+}
+
+func (client *Client) readPump() {
+	defer func() {
+		client.wsServer.unregister <- client
+		client.conn.Close()
+	}()
+
+	client.conn.SetReadLimit(maxMessageSize)
+	client.conn.SetReadDeadline(time.Now().Add(pongWait))
+	client.conn.SetPongHandler(func(string) error { client.conn.SetReadDeadline(time.Now().Add(pongWait)); return nil })
+
+	// start endless read loop, waiting for messages from client.
+	for {
+		_, jsonMessage, err := client.conn.ReadMessage()
+		if err != nil {
+			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+				log.Printf("unexpected close error: %v", err.Error())
+			}
+			break
+		}
+		client.handleNewMessage(jsonMessage)
+		fmt.Println("Reading -- ", string(jsonMessage))
+	}
+}
+
+/*
+	The writePump is also responsible for keeping the connection alive
+	by sending ping messages to the client with the interval given in pingPeriod.
+	If the client does not respond with a pong, the connection is closed.
+*/
+
+func (client *Client) writePump() {
+	ticker := time.NewTicker(pingPeriod)
+	defer func() {
+		ticker.Stop()
+		client.conn.Close()
+	}()
+
+	for {
+		select {
+		case message, ok := <-client.send:
+			client.conn.SetWriteDeadline(time.Now().Add(writeWait))
+			if !ok {
+				client.conn.WriteMessage(websocket.CloseMessage, []byte{})
+				return
+			}
+
+			w, err := client.conn.NextWriter(websocket.TextMessage)
+			if err != nil {
+				return
+			}
+			w.Write(message)
+
+			n := len(client.send)
+			for i := 0; i < n; i++ {
+				w.Write(newline)
+				w.Write(<-client.send)
+			}
+
+			if err := w.Close(); err != nil {
+				return
+			}
+
+		case <-ticker.C:
+			client.conn.SetWriteDeadline(time.Now().Add(writeWait))
+			if err := client.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+				return
+			}
+		}
+	}
+}
+
+func (client *Client) handleNewMessage(jsonMessage []byte) {
+
+	var message Message
+	if err := json.Unmarshal(jsonMessage, &message); err != nil {
+		log.Printf("Error on unmarshal JSON message %s", err)
+	}
+
+	message.Sender = client
+
+	switch message.Action {
+	case SendMessageAction:
+		// This will send messages to a specific room
+		roomName := message.Target.GetName()
+		if room := client.wsServer.findRoomByName(roomName); room != nil {
+			room.broadcast <- &message
+		}
+	case JoinRoomAction:
+		client.handleJoinRoomMessage(message)
+	case LeaveRoomAction:
+		client.handleLeaveRoomMessage(message)
+	}
+}
+
+func (client *Client) handleJoinRoomMessage(message Message) {
+	roomName := message.Message
+
+	room := client.wsServer.findRoomByName(roomName)
+	if room == nil {
+		room = client.wsServer.createRoom(roomName)
+	}
+
+	client.rooms[room] = true
+	room.register <- client
+}
+
+func (client *Client) handleLeaveRoomMessage(message Message) {
+	room := client.wsServer.findRoomByName(message.Message)
+	if _, ok := client.rooms[room]; ok {
+		delete(client.rooms, room)
+	}
+
+	room.unregister <- client
+}
+
+func (client *Client) disconnect() {
+	client.wsServer.unregister <- client
+	for room := range client.rooms {
+		room.unregister <- client
+	}
 }

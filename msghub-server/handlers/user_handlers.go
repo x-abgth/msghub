@@ -89,8 +89,8 @@ func UserLoginCredentialsHandler(w http.ResponseWriter, r *http.Request) {
 		token := jwtVar.SignJwtToken(claims)
 		//
 		expire := time.Now().AddDate(0, 0, 1)
-		abgth := &http.Cookie{Name: "userToken", Value: token, Expires: expire, HttpOnly: true, Path: "/"}
-		http.SetCookie(w, abgth)
+		cookie := &http.Cookie{Name: "userToken", Value: token, Expires: expire, HttpOnly: true, Path: "/"}
+		http.SetCookie(w, cookie)
 
 		http.Redirect(w, r, "/user/dashboard", http.StatusFound)
 	} else {
@@ -204,7 +204,6 @@ func UserRegisterHandler(w http.ResponseWriter, r *http.Request) {
 	encryptedFormPassword, err := utils.HashEncrypt(r.PostFormValue("signupPass"))
 
 	if err != nil {
-		log.Fatal("Encryption error : ", err)
 		alert = "The password is too weak. Please enter a strong password."
 		alm := models.AuthErrorModel{
 			ErrorStr: alert,
@@ -339,8 +338,16 @@ func UserLogoutHandler(w http.ResponseWriter, r *http.Request) {
 
 	token := jwtVar.SignJwtToken(claims)
 	//
-	abgth := &http.Cookie{Name: "userToken", Value: token, MaxAge: -1, HttpOnly: true, Path: "/"}
-	http.SetCookie(w, abgth)
+	cookie := &http.Cookie{Name: "userToken", Value: token, MaxAge: -1, HttpOnly: true, Path: "/"}
+	http.SetCookie(w, cookie)
 
 	http.Redirect(w, r, "/", http.StatusFound)
+}
+
+func UserShowPeopleHandler(w http.ResponseWriter, r *http.Request) {
+	err := template.Tpl.ExecuteTemplate(w, "user_show_people.gohtml", nil)
+	if err != nil {
+		fmt.Println(err.Error())
+		http.Redirect(w, r, "/user/dashboard", http.StatusSeeOther)
+	}
 }

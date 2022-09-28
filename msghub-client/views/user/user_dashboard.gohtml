@@ -44,9 +44,9 @@
 		</form>
 		<div class="col-5 col-md-4 user-dashboard-nav-right-group d-flex align-items-center justify-content-between">
 			<div class="d-none d-md-block user-dashboard-nav-profile-pic-wrapper rounded-circle">
-				<img class="profile-img-icon" src="../assets/images/user.png" alt="No profile picture">
+				<img class="profile-img-icon" src="../../assets/images/user.png" alt="No profile picture">
 			</div>
-			<a href=""><i class='fas fa-user-friends' style='font-size:24px; color: white;'></i></a>
+			<a href="/user/dashboard/people"><i class='fas fa-user-friends' style='font-size:24px; color: white;'></i></a>
 			<div class="dropdown">
 			    <button class="btn" type="button" data-bs-toggle="dropdown" aria-expanded="false">
 			        <svg width="25" height="27" fill="currentColor" class="bi bi-three-dots-vertical text-white" viewBox="0 0 16 16">
@@ -65,17 +65,17 @@
 	<div class="dashboard-content-wrapper d-flex h-100">
 		<div class="user-dashboard-left-col d-none d-md-block col-md-5 col-lg-4 h-100 d-flex flex-column">
 			<div class="user-dashboard-top-sec story-sec py-2 px-4">
-				<img src="../assets/images/user.png" alt="user profile picture">
+				<img src="../../assets/images/user.png" alt="user profile picture">
 			</div>
 			<div class="p-3 h-100 recent-chat-bg">
 				<!-- First char card -->
 
 				{{ if .RecentChatList }}
 					{{ range .RecentChatList }}
-						<a href="#">
+						<a href="javascript:pmHim('{{ .UserName }}');">
 							<div class="d-flex align-items-end mb-2 p-3 bg-white recent-chat-card">
 								<div class="recent-chat-dp-wrapper">
-									<img src="../assets/images/user.png" alt="user profile picture">
+									<img src="../../assets/images/user.png" alt="user profile picture">
 								</div>
 								<div class="w-100 d-flex flex-column px-3">
 									<label><strong>{{ .UserName }}</strong></label>
@@ -93,8 +93,8 @@
 		<div class="col-12 col-md-7 col-lg-8 chat-section-wrapper h-100">
 			<div class="user-dashboard-top-sec chat-head py-2 px-4 d-flex justify-content-between align-items-center">
 				<div class="d-flex align-items-center">
-					<img src="../assets/images/user.png" alt="user profile picture">
-					<label class="mx-3">Jack</label>
+					<img src="../../assets/images/user.png" alt="user profile picture">
+					<label id="chat-user-name" class="mx-3">Jack</label>
 				</div>			
 				<a href="#"><i class='fas fa-info-circle' style='font-size:28px'></i></a>	
 			</div>
@@ -136,6 +136,8 @@
 	</div>
 	
 </section>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.0/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.0/jquery.validate.min.js"></script>
 <script src="https://code.jquery.com/jquery-3.6.1.min.js" integrity="sha256-o88AwQnZB+VDvE9tvIXrMQaPlFFSUTR+nldQm1LuPXQ=" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/emojionearea/3.4.2/emojionearea.min.js"></script>
 <script>
@@ -233,6 +235,7 @@
 	}
 </script>
 
+<!-- ADDING EMOJI TO THE KEYBOARD -->
 <script>
 	$(document).ready(function() {
     	 $("#smileyBt").emojioneArea({
@@ -241,6 +244,13 @@
 		    emojiPlaceholder: ":smile_cat:"
 		});
   	});
+</script>
+
+<script>
+	function pmHim(uname) {
+		let name = document.getElementById("chat-user-name");
+		name.innerText = uname;
+	}
 </script>
 
 {{ template "footer_part" . }}
