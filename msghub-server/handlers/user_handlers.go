@@ -37,7 +37,7 @@ func UserLoginHandler(w http.ResponseWriter, r *http.Request) {
 		if err1 == http.ErrNoCookie {
 			panic("Cookie not found!")
 		}
-		panic("Unknown error occured!")
+		panic("Unknown error occurred!")
 	}
 
 	claim := jwtVar.GetValueFromJwt(c)
@@ -80,9 +80,10 @@ func UserLoginCredentialsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if isValid {
+		data := models.ReturnUserModel()
 		// assigning JWT tokens
 		claims := &jwtVar.UserJwtClaim{
-			UserPhone:       ph,
+			User:            *data,
 			IsAuthenticated: true,
 		}
 
@@ -119,8 +120,9 @@ func UserLoginOtpPhoneValidateHandler(w http.ResponseWriter, r *http.Request) {
 				PhoneNumber: ph,
 				IsLogin:     true,
 			}
+			userData := models.UserModel{UserPhone: ph}
 			claims := &jwtVar.UserJwtClaim{
-				UserPhone:       ph,
+				User:            userData,
 				IsAuthenticated: false,
 			}
 
@@ -162,8 +164,10 @@ func UserVerifyLoginOtpHandler(w http.ResponseWriter, r *http.Request) {
 	status := utils.CheckOtp(ph, otp)
 
 	if status {
+		// TODO: Need more data for user
+		userData := models.UserModel{UserPhone: ph}
 		claims := &jwtVar.UserJwtClaim{
-			UserPhone:       ph,
+			User:            userData,
 			IsAuthenticated: true,
 		}
 
@@ -174,8 +178,9 @@ func UserVerifyLoginOtpHandler(w http.ResponseWriter, r *http.Request) {
 		http.SetCookie(w, cookie)
 		http.Redirect(w, r, "/user/dashboard", http.StatusFound)
 	} else {
+		userData := models.UserModel{UserPhone: ph}
 		claims := &jwtVar.UserJwtClaim{
-			UserPhone:       ph,
+			User:            userData,
 			IsAuthenticated: false,
 		}
 
@@ -220,8 +225,10 @@ func UserRegisterHandler(w http.ResponseWriter, r *http.Request) {
 		} else {
 			status := utils.SendOtp(ph)
 			if status {
+				// TODO: Need to add more user data
+				userData := models.UserModel{UserPhone: ph}
 				claims := &jwtVar.UserJwtClaim{
-					UserPhone:       ph,
+					User:            userData,
 					IsAuthenticated: false,
 				}
 
@@ -264,7 +271,12 @@ func UserVerifyRegisterOtpHandler(w http.ResponseWriter, r *http.Request) {
 		user := models.ReturnUserModel()
 		done, alert := database.RegisterUser(user.UserName, user.UserPhone, user.UserPass)
 		if done {
+			userData := models.UserModel{
+				UserName:  user.UserName,
+				UserPhone: user.UserPhone,
+			}
 			claims := &jwtVar.UserJwtClaim{
+				User:            userData,
 				IsAuthenticated: true,
 			}
 
@@ -310,16 +322,16 @@ func UserDashboardHandler(w http.ResponseWriter, r *http.Request) {
 		if err1 == http.ErrNoCookie {
 			panic("Cookie not found!")
 		}
-		panic("Unknown error occured!")
+		panic("Unknown error occurred!")
 	}
 
 	claim := jwtVar.GetValueFromJwt(c)
 
-	userDetails := database.GetUserData(claim.UserPhone)
-	recentChatList := database.GetRecentChatList(claim.UserPhone)
+	userDetails := database.GetUserData(claim.User.UserPhone)
+	recentChatList := database.GetRecentChatList(claim.User.UserPhone)
 	data := models.UserDashboardModel{
 		PageTitle:      "MSG-HUB",
-		UserPhone:      claim.UserPhone,
+		UserPhone:      claim.User.UserPhone,
 		UserDetails:    userDetails,
 		RecentChatList: recentChatList,
 		StoryList:      nil,

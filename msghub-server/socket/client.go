@@ -3,11 +3,12 @@ package socket
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/google/uuid"
+	"github.com/gorilla/websocket"
 	"log"
 	"net/http"
+	"os"
 	"time"
-
-	"github.com/gorilla/websocket"
 )
 
 /*
@@ -19,7 +20,7 @@ import (
 	the connection is closed and resources are released.
 */
 
-// Sender -> reciever : ping
+// Sender -> receiver : ping
 // Receiver	-> sender : pong
 
 const (
@@ -47,6 +48,7 @@ var (
 
 // This represents the websocket client at the server
 type Client struct {
+	ID   uuid.UUID `json:"id"`
 	conn *websocket.Conn
 	// We want to the keep a reference to the WsServer for each client
 	wsServer *WsServer
@@ -56,13 +58,14 @@ type Client struct {
 	Name  string `json:"name"`
 }
 
-func newClient(conn *websocket.Conn, wsServer *WsServer, name string) *Client {
+func newClient(conn *websocket.Conn, wsServer *WsServer) *Client {
 	return &Client{
+		ID:       uuid.New(),
 		conn:     conn,
 		wsServer: wsServer,
-		Name:     name,
-		send:     make(chan []byte),
-		rooms:    make(map[*Room]bool),
+		//Name:     name,
+		send:  make(chan []byte, 256),
+		rooms: make(map[*Room]bool),
 	}
 }
 
@@ -72,12 +75,12 @@ func (client *Client) GetName() string {
 
 // ServeWs handles websocket requests from clients requests.
 func ServeWs(wsServer *WsServer, w http.ResponseWriter, r *http.Request) {
-	name, ok := r.URL.Query()["name"]
-
-	if !ok || len(name[0]) < 1 {
-		log.Println("Url Param 'name' is missing")
-		return
-	}
+	//name, ok := r.URL.Query()["name"]
+	//
+	//if !ok || len(name[0]) < 1 {
+	//	log.Println("Url Param 'name' is missing")
+	//	// return
+	//}
 
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -85,8 +88,8 @@ func ServeWs(wsServer *WsServer, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// whenever the fuction ServeWs is called a new client is created.
-	client := newClient(conn, wsServer, name[0])
+	// whenever the function ServeWs is called a new client is created.
+	client := newClient(conn, wsServer)
 
 	go client.writePump()
 	go client.readPump()
@@ -104,8 +107,18 @@ func (client *Client) readPump() {
 		client.conn.Close()
 	}()
 
+	defer func() {
+		if e := recover(); e != nil {
+			fmt.Println(e)
+			os.Exit(1)
+		}
+	}()
+
 	client.conn.SetReadLimit(maxMessageSize)
-	client.conn.SetReadDeadline(time.Now().Add(pongWait))
+	err1 := client.conn.SetReadDeadline(time.Now().Add(pongWait))
+	if err1 != nil {
+		panic("SetReadDeadLine error - " + err1.Error())
+	}
 	client.conn.SetPongHandler(func(string) error { client.conn.SetReadDeadline(time.Now().Add(pongWait)); return nil })
 
 	// start endless read loop, waiting for messages from client.
@@ -117,7 +130,8 @@ func (client *Client) readPump() {
 			}
 			break
 		}
-		client.handleNewMessage(jsonMessage)
+		//client.handleNewMessage(jsonMessage)
+		client.wsServer.broadcast <- jsonMessage
 		fmt.Println("Reading -- ", string(jsonMessage))
 	}
 }
@@ -148,6 +162,7 @@ func (client *Client) writePump() {
 			if err != nil {
 				return
 			}
+			fmt.Println("Writing -- ", string(message))
 			w.Write(message)
 
 			n := len(client.send)
@@ -174,6 +189,7 @@ func (client *Client) handleNewMessage(jsonMessage []byte) {
 	var message Message
 	if err := json.Unmarshal(jsonMessage, &message); err != nil {
 		log.Printf("Error on unmarshal JSON message %s", err)
+		return
 	}
 
 	message.Sender = client
@@ -181,36 +197,96 @@ func (client *Client) handleNewMessage(jsonMessage []byte) {
 	switch message.Action {
 	case SendMessageAction:
 		// This will send messages to a specific room
-		roomName := message.Target.GetName()
-		if room := client.wsServer.findRoomByName(roomName); room != nil {
+		roomID := message.Target.GetId()
+		if room := client.wsServer.findRoomByName(roomID); room != nil {
 			room.broadcast <- &message
 		}
 	case JoinRoomAction:
 		client.handleJoinRoomMessage(message)
 	case LeaveRoomAction:
 		client.handleLeaveRoomMessage(message)
+	case JoinRoomPrivateAction:
+		client.handleJoinRoomMessage(message)
 	}
 }
 
 func (client *Client) handleJoinRoomMessage(message Message) {
 	roomName := message.Message
 
-	room := client.wsServer.findRoomByName(roomName)
-	if room == nil {
-		room = client.wsServer.createRoom(roomName)
-	}
-
-	client.rooms[room] = true
-	room.register <- client
+	client.joinRoom(roomName, nil)
+	//roomName := message.Message
+	//
+	//// for private message or something
+	//client.joinRoom(roomName, nil)
+	//room := client.wsServer.findRoomByName(roomName)
+	//if room == nil {
+	//	room = client.wsServer.createRoom(roomName)
+	//}
+	//
+	//client.rooms[room] = true
+	//room.register <- client
 }
 
 func (client *Client) handleLeaveRoomMessage(message Message) {
-	room := client.wsServer.findRoomByName(message.Message)
+	room := client.wsServer.findRoomByID(message.Message)
+	if room == nil {
+		return
+	}
 	if _, ok := client.rooms[room]; ok {
 		delete(client.rooms, room)
 	}
 
 	room.unregister <- client
+}
+
+// When joining a private room we will combine the IDs of the users
+// Then we will both join the client and the target.
+func (client *Client) handleJoinRoomPrivateMessage(message Message) {
+	target := client.wsServer.findClientByID(message.Message)
+	if target == nil {
+		return
+	}
+
+	// create unique room name combined to the two IDs
+	roomName := message.Message + client.ID.String()
+
+	client.joinRoom(roomName, target)
+	target.joinRoom(roomName, client)
+}
+
+func (client *Client) joinRoom(roomName string, sender *Client) {
+	room := client.wsServer.findRoomByName(roomName)
+	if room == nil {
+		room = client.wsServer.createRoom(roomName, sender != nil)
+	}
+
+	if sender == nil && room.Private {
+		return
+	}
+
+	if !client.isInRoom(room) {
+		client.rooms[room] = true
+		room.register <- client
+		client.notifyRoomJoined(room, sender)
+	}
+}
+
+// check if the client is not yet in the room
+func (client *Client) isInRoom(room *Room) bool {
+	if _, ok := client.rooms[room]; ok {
+		return true
+	}
+	return false
+}
+
+// Notify the client of the new room he joined
+func (client *Client) notifyRoomJoined(room *Room, sender *Client) {
+	message := Message{
+		Action: RoomJoinedAction,
+		Target: room,
+		Sender: sender,
+	}
+	client.send <- message.encode()
 }
 
 func (client *Client) disconnect() {

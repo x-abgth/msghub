@@ -2,6 +2,7 @@ package utils
 
 import (
 	"log"
+	"msghub-server/models"
 	"net/http"
 	"os"
 
@@ -10,11 +11,9 @@ import (
 )
 
 type UserJwtClaim struct {
-	UserName        string
-	UserAvatar      string
-	UserPhone       string
+	User            models.UserModel
 	IsAuthenticated bool
-	jwt.StandardClaims
+	jwt.RegisteredClaims
 }
 
 var JwtKey []byte

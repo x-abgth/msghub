@@ -11,6 +11,7 @@ type WsServer struct {
 	rooms      map[*Room]bool
 }
 
+// NewWebSocketServer :- First we create this server.
 func NewWebSocketServer() *WsServer {
 	return &WsServer{
 		clients:    make(map[*Client]bool),
@@ -46,6 +47,7 @@ func (server *WsServer) unregisterClient(client *Client) {
 	delete(server.clients, client)
 }
 
+// If the client send a message, it broadcasts to all the other users
 func (server *WsServer) broadcastToClients(message []byte) {
 	for client := range server.clients {
 		client.send <- message
@@ -63,10 +65,31 @@ func (server *WsServer) findRoomByName(name string) *Room {
 	return foundRoom
 }
 
-func (server *WsServer) createRoom(name string) *Room {
-	room := NewRoom(name)
+func (server *WsServer) createRoom(name string, private bool) *Room {
+	room := NewRoom(name, private)
 	go room.RunRoom()
 	server.rooms[room] = true
 
 	return room
+}
+func (server *WsServer) findRoomByID(ID string) *Room {
+	var foundRoom *Room
+	for room := range server.rooms {
+		if room.GetId() == ID {
+			foundRoom = room
+			break
+		}
+	}
+	return foundRoom
+}
+
+func (server *WsServer) findClientByID(ID string) *Client {
+	var foundClient *Client
+	for client := range server.clients {
+		if client.ID.String() == ID {
+			foundClient = client
+			break
+		}
+	}
+	return foundClient
 }

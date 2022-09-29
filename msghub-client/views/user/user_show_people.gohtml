@@ -11,7 +11,17 @@
 			</div>
 		</header>
 		<div class="container">
-			
+			<a href="javascript:pmHim('{{ .UserName }}');">
+				<div class="d-flex align-items-end mb-2 p-3 bg-white recent-chat-card">
+					<div class="recent-chat-dp-wrapper">
+						<img src="../../assets/images/user.png" alt="user profile picture">
+					</div>
+					<div class="w-100 d-flex flex-column px-3">
+						<label><strong>{{ .UserName }}</strong></label>
+						<label>{{ .LastMsg }}</label>
+					</div>
+				</div>
+			</a>
 		</div>
 	</section>
 

@@ -6,27 +6,25 @@ import (
 	"os"
 
 	"github.com/joho/godotenv"
-	twilio "github.com/twilio/twilio-go"
+	"github.com/twilio/twilio-go"
 	openapi "github.com/twilio/twilio-go/rest/verify/v2"
 )
 
 var TWILIO_ACCOUNT_SID string
 var TWILIO_AUTH_TOKEN string
 var VERIFY_SERVICE_SID string
-var TWILIO_FROM_PHONE string
 var client *twilio.RestClient
 
 func getCredentials() {
 	err := godotenv.Load(".env")
 	if err != nil {
-		log.Fatal(".env file loading error -- ", err)
+		log.Println(err.Error())
 		os.Exit(0)
 	}
 
 	TWILIO_ACCOUNT_SID = os.Getenv("TWILIO_SID")
 	TWILIO_AUTH_TOKEN = os.Getenv("TWILIO_TOKEN")
 	VERIFY_SERVICE_SID = os.Getenv("TWILIO_SERVICE")
-	TWILIO_FROM_PHONE = os.Getenv("TWILIO_PHONE")
 	client = twilio.NewRestClientWithParams(twilio.ClientParams{
 		Username: TWILIO_ACCOUNT_SID,
 		Password: TWILIO_AUTH_TOKEN,

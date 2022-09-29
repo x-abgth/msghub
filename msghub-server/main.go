@@ -34,7 +34,7 @@ func init() {
 	}
 }
 
-// Chat application server side.
+// The application starts from here.
 func main() {
 
 	flag.Parse()
@@ -57,6 +57,7 @@ func run() error {
 			fmt.Println("Recovered from panic")
 		}
 	}()
+
 	newMux := mux.NewRouter()
 	// serving other files like css, and images using only http package
 	fileServe := http.FileServer(http.Dir("../msghub-client/assets/"))
@@ -70,8 +71,12 @@ func run() error {
 		server.ListenAndServe()
 	}()
 
+	// The channel is only used because the main goroutine will wait
+	// for the other goroutine until the value from channel is received.
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt)
+	// The value received from the channel is not going to use,
+	// so we need to provide a variable for that.
 	<-stop
 
 	fmt.Println("\nShutting down ... ")
@@ -87,7 +92,6 @@ func run() error {
 }
 
 func handleFuncs(theMux *mux.Router) {
-
 	// creates a new WsServer
 	wsServer := socket.NewWebSocketServer()
 	go wsServer.Run()
