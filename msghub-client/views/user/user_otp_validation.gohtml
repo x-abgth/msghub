@@ -16,9 +16,9 @@
 
 	<div class="d-flex justify-content-center align-items-center h-100">
 		{{ if .IsLogin }}
-			<form action="/login/otp/verify" method="POST" id="otpPageForm" class="form p-5">
+			<form action="/login/otp/getotp" method="POST" id="otpPageForm" class="form p-5">
 		{{ else }}  
-			<form action="/register/otp/verify" method="POST" id="otpPageForm" class="form p-5">
+			<form action="/register/otp/getotp" method="POST" id="otpPageForm" class="form p-5">
 		{{ end }}
 		  <h2>OTP VALIDATION</h2>
 
@@ -27,7 +27,7 @@
 		  </div>
 		  <div class="form-group mt-3">
 		    <label for="exampleInputOtp1">Enter the OTP</label>
-		    <input name="loginOtp" type="number" class="form-control" id="exampleInputOtp1" placeholder="eg: 1234">
+		    <input name="loginOtp" type="number" class="form-control" id="exampleInputOtp1" placeholder="eg: 1234" autofocus>
 		  </div>
 		  <input name="loginPhone" type="number" class="form-control" id="exampleInputPhone4" value="{{ .PhoneNumber }}" style="display: none;">
 		  <div class="form-group mt-3">

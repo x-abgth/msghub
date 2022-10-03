@@ -5,7 +5,7 @@
 
 <section class="outer_container">
 
-	{{ if . }}
+	{{ if .ErrorStr }}
 		<div class="auth-error-msg alert alert-danger">
 		    <div class="container d-flex justify-content-center">
 		        <div class="alert-icon">
@@ -30,7 +30,7 @@
 
 	<!-- Sign In -->
 	<div class="container__form container--signin">
-		<form action="/login/credentials" method="POST" class="col-md-6 form mx-3" id="form2">
+		<form action="/" method="POST" class="col-md-6 form mx-3" id="form2">
 			<h2 class="form__title">Sign-In</h2>
 			<input type="tel" name="signinPh" placeholder="Phone Number" class="input" />
 			<input type="password" name="signinPass" placeholder="Password" class="input" />

@@ -1,9 +1,10 @@
-package database
+package repository
 
 import (
 	"database/sql"
 	"fmt"
 	"log"
+	"msghub-server/models"
 	"os"
 
 	"github.com/joho/godotenv"
@@ -20,9 +21,6 @@ type config struct {
 	dbName  string
 	sslMode string
 }
-
-var GormDb *gorm.DB
-var SqlDb *sql.DB
 
 func ConnectDb() {
 	// loads env file
@@ -50,12 +48,12 @@ func ConnectDb() {
 		configure.sslMode)
 
 	var err1 error
-	GormDb, err = gorm.Open(postgres.Open(psql), &gorm.Config{})
-	SqlDb, err1 = sql.Open("postgres", psql)
+	models.GormDb, err = gorm.Open(postgres.Open(psql), &gorm.Config{})
+	models.SqlDb, err1 = sql.Open("postgres", psql)
 	if err != nil {
-		log.Fatal("Error connecting to database - ", err.Error())
+		log.Fatal("Error connecting to repository - ", err.Error())
 	}
 	if err1 != nil {
-		log.Fatal("Error connecting to database without gorm - ", err1.Error())
+		log.Fatal("Error connecting to repository without gorm - ", err1.Error())
 	}
 }

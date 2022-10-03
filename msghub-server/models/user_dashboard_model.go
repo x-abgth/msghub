@@ -16,7 +16,6 @@ type StoryModel struct {
 }
 
 type UserDashboardModel struct {
-	PageTitle      string
 	UserPhone      string
 	UserDetails    UserModel
 	RecentChatList []RecentChatModel

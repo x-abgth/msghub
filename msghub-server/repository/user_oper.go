@@ -1,33 +1,22 @@
-package database
+package repository
 
 import (
 	"log"
 	"msghub-server/models"
-	"msghub-server/utils"
-
-	"gorm.io/gorm"
 )
 
 type User struct {
-	UserPhNo     string `gorm:"not null;primaryKey;autoIncrement:false" json:"user_ph_no"`
-	UserName     string `gorm:"not null" json:"user_name"`
-	UserAvatar   string `json:"user_avatar"`
-	UserAbout    string `gorm:"not null" json:"user_about"`
-	UserPassword string `gorm:"not null" json:"user_password"`
-	IsBlocked    bool   `gorm:"not null" json:"is_blocked"`
+	UserPhNo     string  `gorm:"not null;primaryKey;autoIncrement:false" json:"user_ph_no"`
+	UserName     string  `gorm:"not null" json:"user_name"`
+	UserAvatar   *string `json:"user_avatar"`
+	UserAbout    string  `gorm:"not null" json:"user_about"`
+	UserPassword string  `gorm:"not null" json:"user_password"`
+	IsBlocked    bool    `gorm:"not null" json:"is_blocked"`
 }
 
-func MigrateUser(db *gorm.DB) error {
-	err := db.AutoMigrate(&User{})
-	return err
-}
+func (user User) GetUserDataUsingPhone(formPhone string) (int, User, error) {
 
-func LoginUserWithCredentials(formPhone, formPassword string) (bool, string) {
-	var name, about, phone, pass string
-	var avatar *string
-	var isBlocked bool
-
-	rows, err := SqlDb.Query(
+	rows, err := models.SqlDb.Query(
 		`SELECT 
     	user_avatar, 
     	user_about,
@@ -38,8 +27,7 @@ func LoginUserWithCredentials(formPhone, formPassword string) (bool, string) {
 	FROM users
 	WHERE user_ph_no = $1;`, formPhone)
 	if err != nil {
-		return false, err.Error()
-		log.Fatal("Error - ", err)
+		return 0, user, err
 	}
 
 	defer rows.Close()
@@ -48,55 +36,23 @@ func LoginUserWithCredentials(formPhone, formPassword string) (bool, string) {
 	for rows.Next() {
 		count++
 		if err1 := rows.Scan(
-			&avatar,
-			&about,
-			&name,
-			&phone,
-			&pass,
-			&isBlocked); err1 != nil {
-			return false, err1.Error()
+			&user.UserAvatar,
+			&user.UserAbout,
+			&user.UserName,
+			&user.UserPhNo,
+			&user.UserPassword,
+			&user.IsBlocked); err1 != nil {
+			return 0, user, err1
 		}
 	}
 
-	// Check the value is isBlocked and if string convert to bool using if
-	if isBlocked {
-		return false, "You are temporarily blocked from this application!"
-	} else if count < 1 {
-		return false, "You don't have an account, Please register."
-	} else if count > 1 {
-		return false, "Something went wrong. Try login again!"
-		// SHOULD DELETE EXTRA REGISTERED NUMBER!
-	} else {
-		if phone == formPhone {
-			if utils.CheckPasswordMatch(formPassword, pass) {
-				var user models.UserModel
-
-				var blank = ""
-				if avatar == nil {
-					avatar = &blank
-				}
-				user = models.UserModel{
-					UserAvatarUrl: *avatar,
-					UserAbout:     about,
-					UserName:      name,
-					UserPhone:     phone,
-				}
-
-				models.InitUserModel(user)
-				return true, ""
-			} else {
-				return false, "Invalid phone number or password!"
-			}
-		} else {
-			return false, "Invalid phone number or password!"
-		}
-	}
+	return count, user, nil
 }
 
 func RegisterUser(formName, formPhone, formPass string) (bool, string) {
 	defaultAbout := "Hey there! Send me a Hi."
 
-	_, err1 := SqlDb.Exec(`INSERT INTO users(user_name, user_about, user_ph_no, user_password, is_blocked) 
+	_, err1 := models.SqlDb.Exec(`INSERT INTO users(user_name, user_about, user_ph_no, user_password, is_blocked) 
 VALUES($1, $2, $3, $4, $5);`,
 		formName, defaultAbout, formPhone, formPass, false)
 	if err1 != nil {
@@ -110,7 +66,7 @@ VALUES($1, $2, $3, $4, $5);`,
 func UserDuplicationStatus(phone string) int {
 	var total = 0
 
-	rows, err := SqlDb.Query(
+	rows, err := models.SqlDb.Query(
 		`SELECT *
 	FROM users
 	WHERE user_ph_no = $1;`, phone)
@@ -129,7 +85,7 @@ func UserDuplicationStatus(phone string) int {
 func GetUserData(ph string) models.UserModel {
 	var name, phone, isBlocked string
 	var avatar *string
-	rows, err := SqlDb.Query(
+	rows, err := models.SqlDb.Query(
 		`SELECT 
     	user_avatar, 
     	user_name, 
@@ -174,7 +130,7 @@ func GetUserData(ph string) models.UserModel {
 func GetRecentChatList(ph string) []models.RecentChatModel {
 	var name, phone string
 	var avatar *string
-	rows, err := SqlDb.Query(
+	rows, err := models.SqlDb.Query(
 		`SELECT 
     	user_avatar, 
     	user_name, 

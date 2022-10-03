@@ -1,7 +1,6 @@
 package models
 
 type UserModel struct {
-	PageTitle     string
 	UserAvatarUrl string
 	UserAbout     string
 	UserName      string
@@ -14,7 +13,6 @@ var userVal *UserModel
 
 func InitUserModel(model UserModel) *UserModel {
 	userVal = &UserModel{
-		PageTitle:     model.PageTitle,
 		UserAvatarUrl: model.UserAvatarUrl,
 		UserAbout:     model.UserAbout,
 		UserName:      model.UserName,

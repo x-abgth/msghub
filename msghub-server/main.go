@@ -5,9 +5,8 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"msghub-server/database"
-	"msghub-server/handlers"
-	"msghub-server/socket"
+	"msghub-server/handlers/routes"
+	"msghub-server/repository"
 	"msghub-server/template"
 	utils "msghub-server/utils/jwt"
 	"net/http"
@@ -39,8 +38,8 @@ func main() {
 
 	flag.Parse()
 
-	database.ConnectDb()
-	defer database.SqlDb.Close()
+	repository.ConnectDb()
+	defer repository.SqlDb.Close()
 
 	err := run()
 	if err != nil {
@@ -63,7 +62,7 @@ func run() error {
 	fileServe := http.FileServer(http.Dir("../msghub-client/assets/"))
 	newMux.PathPrefix("/assets/").Handler(http.StripPrefix("/assets/", fileServe))
 
-	handleFuncs(newMux)
+	routes.InitializeRoutes(newMux)
 
 	server := &http.Server{Addr: ":8080", Handler: newMux}
 	fmt.Println("Starting server on port http://localhost:8080")
@@ -89,36 +88,6 @@ func run() error {
 	}
 
 	return nil
-}
-
-func handleFuncs(theMux *mux.Router) {
-	// creates a new WsServer
-	wsServer := socket.NewWebSocketServer()
-	go wsServer.Run()
-
-	theMux.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
-		socket.ServeWs(wsServer, w, r)
-	})
-
-	// OTHER HANDLERS.
-	theMux.HandleFunc("/", handlers.UserLoginHandler)
-	theMux.HandleFunc("/admin/login-page", handlers.AdminLoginPageHandler)
-	theMux.HandleFunc("/admin/authenticate", handlers.AdminAuthenticateHandler)
-	// theMux.HandleFunc("/admin/dashboard", handlers.AdminAuthenticateHandler)
-
-	// login and register functions
-	theMux.HandleFunc("/register", handlers.UserRegisterHandler)
-	theMux.HandleFunc("/register/otp/getotp", handlers.UserOtpPageHandler)
-	theMux.HandleFunc("/register/otp/verify", handlers.UserVerifyRegisterOtpHandler)
-	theMux.HandleFunc("/login/credentials", handlers.UserLoginCredentialsHandler)
-	theMux.HandleFunc("/login/otp/getphone", handlers.UserLoginWithOtpPhonePageHandler)
-	theMux.HandleFunc("/login/otp/validatephone", handlers.UserLoginOtpPhoneValidateHandler)
-	theMux.HandleFunc("/login/otp/getotp", handlers.UserOtpPageHandler)
-	theMux.HandleFunc("/login/otp/verify", handlers.UserVerifyLoginOtpHandler)
-	theMux.HandleFunc("/user/dashboard", handlers.UserDashboardHandler)
-	theMux.HandleFunc("/user/dashboard/people", handlers.UserShowPeopleHandler)
-
-	theMux.HandleFunc("/user/logout", handlers.UserLogoutHandler).Methods("GET")
 }
 
 /*
