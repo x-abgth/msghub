@@ -189,3 +189,8 @@ func (u UserDb) GetDataForDashboardLogic(phone string) models.UserDashboardModel
 
 	return data
 }
+
+func (u UserDb) GetAllUsersLogic(ph string) []models.UserModel {
+	data := repository.GetAllUsersData(ph)
+	return data
+}

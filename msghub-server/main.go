@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"log"
 	"msghub-server/handlers/routes"
+	"msghub-server/models"
 	"msghub-server/repository"
+	"msghub-server/socket"
 	"msghub-server/template"
 	utils "msghub-server/utils/jwt"
 	"net/http"
@@ -18,28 +20,26 @@ import (
 )
 
 func init() {
-	var err, err1 error
+	var err error
 
 	utils.InitJwtKey()
-	template.Tpl, err = template.Tpl.ParseGlob("../msghub-client/views/user/*.gohtml")
+	template.Tpl, err = template.Tpl.ParseGlob("../msghub-client/views/*.gohtml")
 	template.Tpl.New("partials").ParseGlob("../msghub-client/views/base_partials/*.gohtml")
+	template.Tpl.New("user").ParseGlob("../msghub-client/views/user/*.gohtml")
+	template.Tpl.New("user_partials").ParseGlob("../msghub-client/views/user/user_partials/*.gohtml")
 	template.Tpl.New("admin").ParseGlob("../msghub-client/views/admin/*.gohtml")
 
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-	if err1 != nil {
-		log.Fatal(err1.Error())
-	}
 }
 
 // The application starts from here.
 func main() {
-
 	flag.Parse()
 
 	repository.ConnectDb()
-	defer repository.SqlDb.Close()
+	defer models.SqlDb.Close()
 
 	err := run()
 	if err != nil {
@@ -49,20 +49,17 @@ func main() {
 	fmt.Println("Server shutdown successfully!")
 }
 
-// This function helps to cleanly shutdown the server
+// This function helps to cleanly shut down the server
 func run() error {
-	defer func() { // recovers panic
-		if e := recover(); e != nil {
-			fmt.Println("Recovered from panic")
-		}
-	}()
-
 	newMux := mux.NewRouter()
 	// serving other files like css, and images using only http package
 	fileServe := http.FileServer(http.Dir("../msghub-client/assets/"))
 	newMux.PathPrefix("/assets/").Handler(http.StripPrefix("/assets/", fileServe))
 
-	routes.InitializeRoutes(newMux)
+	// creates a new WsServer
+	wsServer := socket.NewWebSocketServer()
+	go wsServer.Run()
+	routes.InitializeRoutes(newMux, wsServer)
 
 	server := &http.Server{Addr: ":8080", Handler: newMux}
 	fmt.Println("Starting server on port http://localhost:8080")
@@ -89,15 +86,3 @@ func run() error {
 
 	return nil
 }
-
-/*
-	TODOS:
-		- Input validation while authentication
-	 	- While sign up duplicate phone numbers should not be allowed
-		- Sign in with otp
-		- OTP validation while Sign up
-		- forgot password
-		- User dashboard ui
-		- Chat ui
-		- Socket connection and chatting
-*/

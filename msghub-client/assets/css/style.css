@@ -505,34 +505,33 @@ form#adminLoginForm input {
 }
 
 /* SHOW PEOPLE PAGE STYLE */
-
-section.show-people-page{
+section.members-page{
+	background-color: #E2F3F5 !important;
 	display: flex;
 	flex-direction: column;
 }
 
-section .show-people-header{
+section.members-page header{
 	height: 10vh;
 	box-shadow: rgba(0, 0, 0, 0.45) 0px 0px 15px -5px;
 }
 
-section .show-people-header a{
+section.members-page header a{
 	text-decoration: none;
 	color: black;
 }
 
-.show-people-search-bar{
+.members-page-search-bar{
 	display: flex;
 	width: 80%;
 }
 
-.show-people-search-bar input[type="text"] {
+.members-page-search-bar input[type="text"] {
 	width: 100%;
 	border: none;
 	outline: none;
 	border-bottom: 1px solid #757575;
 }
-
 
 
 

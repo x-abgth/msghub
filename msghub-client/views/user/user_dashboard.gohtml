@@ -34,6 +34,66 @@
 		color: #00E0FF;
 	}
 
+	/*  */
+
+	div.create-group-image{
+		height: 30vh !important;
+	}
+
+	div.create-group-image img{
+		height: 30vh !important;
+	}
+
+	.input-row input[type="text"], .input-row textarea{
+		width: 100%;
+		border: none;
+		border-bottom: 1px solid #757575;
+	}
+
+	 .input-row textarea{
+	 	max-height: 100px;
+	 	min-height: 100px;
+	 }
+
+	#imageUpload
+	{
+	    display: none;
+	}
+
+	#profileImage
+	{
+	    cursor: pointer;
+	}
+
+	#profile-container {
+	    height: 30vh !important;
+	    overflow: hidden;
+	    -webkit-border-radius: 50%;
+	    -moz-border-radius: 50%;
+	    -ms-border-radius: 50%;
+	    -o-border-radius: 50%;
+	    border-radius: 50%;
+	}
+
+	#dashboard-create-group-body form{
+		width: 80%;
+	}
+
+	#dashboard-create-group-body form label.error {
+		width: 100%;
+		text-align: left;
+	    color: red;
+	 }
+
+	 #dashboard-create-group-body form button{
+	 	width: 70%;
+	 	background: #00E0FF;
+	 	color: white;
+	 	font-weight: bold;
+	 	border-radius: 15px;
+	 	outline: none;
+	 	border: none;
+	 }
 </style>
 
 <section class="overflow-hidden">
@@ -54,7 +114,7 @@
 			        </svg>
 			    </button>
 			    <ul class="dropdown-menu dropdown-menu-white">
-			        <li><a class="py-2 px-4 dropdown-item" href="#">Create Group</a></li>
+			        <li><a class="py-2 px-4 dropdown-item" href="javascript:openCreateGroup()">Create Group</a></li>
 			        <li><a class="py-2 px-4 dropdown-item" href="#">Settings</a></li>
 			        <li><a class="py-2 px-4 dropdown-item" href="#">About</a></li>
 			        <li><a href="/user/logout" class="py-2 px-4 dropdown-item text-danger">Logout</a></li>
@@ -90,167 +150,75 @@
 			</div>
 		</div>
 		
-		<div class="col-12 col-md-7 col-lg-8 chat-section-wrapper h-100">
-			<div class="user-dashboard-top-sec chat-head py-2 px-4 d-flex justify-content-between align-items-center">
-				<div class="d-flex align-items-center">
-					<img src="../../assets/images/user.png" alt="user profile picture">
-					<label id="chat-user-name" class="mx-3">Jack</label>
-				</div>			
-				<a href="#"><i class='fas fa-info-circle' style='font-size:28px'></i></a>	
-			</div>
-			<div class="d-flex flex-column user-chat-sec">
-				<div id="log" class="message-area py-4 px-3 d-flex flex-column">
-					<p class="msg-encrypt-note py-2 px-3 mb-5"><i class='fas fa-lock'></i>&nbsp;&nbsp;Messages are end-to-end encrypted. No one outside of this chat, not even Msghub can read them.</p>
-					<!-- First user message -->
-					<div class="chat-msg-field d-flex flex-column mb-2">
-						<label id="chat-msg" class="chat-bubble px-3 py-2">Hello</label>
-						<label id="chat-msg-time" class="chat-time ms-1" style="font-size: 0.7rem;">5:30 PM</label>
-					</div>
-					<!-- Second user message -->
-					<div class="user-chat-msg-field d-flex flex-column mb-2">
-						<label class="chat-bubble user-chat-bubble px-3 py-2">Hey</label>
-						<div class="d-flex align-items-center" style="margin-left: auto;">
-							<label class="chat-time mx-1" style="font-size: 0.7rem;">5:45 PM</label>
-							<i class='fas fa-check-double' style="font-size: 0.7rem;color: #00E0FF;"></i>	
-						</div>
-					</div>
-					<div class="user-chat-msg-field d-flex flex-column mb-2">
-						<label class="chat-bubble user-chat-bubble px-3 py-2">How are you ?</label>
-						<div class="d-flex align-items-center" style="margin-left: auto;">
-							<label class="chat-time mx-1" style="font-size: 0.7rem;">5:45 PM</label>
-							<i class='fas fa-check-double' style="font-size: 0.7rem;color: #00E0FF;"></i>	
-						</div>
-					</div>
-				</div>
-				<div class="keypad-area d-flex align-items-center px-2">
-					<button class="p-2"><i class='fas fa-plus' style='font-size:18px'></i></button>
-					<form name="chatForm" id="chat-form" class="mx-2 d-flex">
-						<!-- <a href="#" id="smileyBt" class="px-2 d-flex align-items-center"><i class='far fa-smile-wink' style='font-size:24px;color:#00E0FF;'></i></a> -->
-						<div id="smileyBt"></div>
-						<input id="msgInp" class="p-2" type="text" name="chat-keypad" placeholder="Type something ..." autocomplete="off" autofocus>
-						<button id="sendMsg" type="submit" class="py-1 px-3"><i class="fa fa-paper-plane" style="font-size:24px;color:#00E0FF;"></i></button>
-					</form>
-				</div>
-			</div>
+		<div class="col-12 col-md-7 col-lg-8 chat-section-wrapper h-100" id="dashboard-right-col">
+			{{ template "dashboard_chat_part" . }}
+			{{ template "dashboard_create_group_form" . }}
 		</div>
+
 	</div>
 	
 </section>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.0/jquery.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.0/jquery.validate.min.js"></script>
-<script src="https://code.jquery.com/jquery-3.6.1.min.js" integrity="sha256-o88AwQnZB+VDvE9tvIXrMQaPlFFSUTR+nldQm1LuPXQ=" crossorigin="anonymous"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/emojionearea/3.4.2/emojionearea.min.js"></script>
+<script type="text/javascript" src="../../assets/js/user_dashboard_functions.js"></script>
 <script>
-	const input = document.querySelector("#msgInp");
-	const messages = document.querySelector("#log");
-	const send = document.querySelector("#sendMsg");
+	// $(() => {
+ //        // function will get executed 
+ //        // on click of submit button
+ //        $("#create-group-bt").click(function(ev) {
+ //            var form = $("#createNewGroupForm");
+ //        	var fd = new FormData();
+ //        	var files = $('#imageUpload')[0].files[0];
+ //        	const name = form.getElementById('groupName') ;
+	// 		const about = form.getElementById('group-about') ;
 
-	const url = "ws://" + window.location.host + "/ws";
-	const ws = new WebSocket(url);
+ //        	fd.append('file', files);
+ //        	fd.append('name', name.value);
+ //        	fd.append('about', about.value);
 
-    function appendLog(item) {
-        var doScroll = messages.scrollTop > messages.scrollHeight - messages.clientHeight - 1;
-        messages.appendChild(item);
-        if (doScroll) {
-            messages.scrollTop = messages.scrollHeight - messages.clientHeight;
-        }
-    }
+ //            $.ajax({
+	//             type: "POST",
+	//             url: form.action(),
+	//             data: fd,
+	//             success: function(data) {
+	//             	alert("Endhala???" + data);
+	//             	location.href("www.google.com");
+	//             },
+	//             error: function(data) {
+	//                 // Some error in ajax call
+	//                 alert("some Error");
+	//             }
+	//         });
+	//     });
+	// });
 
-	if(!window["WebSocket"]) {
-		var item = document.createElement("div");
-	    item.innerHTML = "<b>Your browser does not support WebSockets.</b>";
-	    appendLog(item);
-	}
+//  const fileInput = document.getElementById('imageUpload') ;
+//  const name = document.getElementById('groupName') ;
+//  const about = document.getElementById('group-about') ;
+//  let button = document.getElementById('create-group-bt')
 
-	ws.onmessage = function(msg) {
-		insertMessage(JSON.parse(msg.data));
-	};
+// button.addEventListener("click", function(){
 
-	ws.onclose = function(event) {
-		console.log("Connection close : ", event);
-	};
 
-	document.getElementById("chat-form").onsubmit = function () {
-        if (!ws) {
-            return false;
-        }
-        if (!input.value) {
-            return false;
-        }
 
-        let current = new Date();
-		let cDate = current.getFullYear() + '-' + (current.getMonth() + 1) + '-' + current.getDate();
-		let cTime =  current.toLocaleString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true })
-		let dateTime = cDate + ' ' + cTime;
-		
-		const message = {
-			firstUser : {{ .UserPhone }},
-	    	secondUser : "",
-	    	message : input.value,
-	    	time : dateTime,
-		}
+// const formData = new FormData();
 
-        ws.send(JSON.stringify(message));
-       	input.value = "";
-        return false;
-    };
+// formData.append('file', fileInput.files[0]);
+// formData.append('name', name.value);
+// formData.append('about', about.value);
 
-	function insertMessage(msgobj) {
-		let item = document.createElement('div');
-	    let innerItem = document.createElement("label");
-	    let itemTime = document.createElement("label");   
-	    let recipient = document.createElement("i");      
-
-		if(msgobj.firstUser == {{ .UserPhone }}) {
-			let msgDetails = document.createElement('div');
-	        item.classList.add("user-chat-msg-field", "d-flex", "flex-column", "mb-2");
-	        innerItem.classList.add("chat-bubble", "user-chat-bubble", "px-3", "py-2", "text-wrap", "word-wrap", "text-break");
-	        msgDetails.classList.add("d-flex", "align-items-center");
-	        itemTime.classList.add("chat-time","mt-1", "mx-2");
-	        let time = msgobj.time.split(" ");
-	        itemTime.innerText = time[1] + " " + time[2];
-
-	        recipient.classList.add("fas", "fa-check-double");
-
-	        msgDetails.appendChild(itemTime);
-	        msgDetails.appendChild(recipient);
-
-	        innerItem.innerText = msgobj.message;
-	        item.appendChild(innerItem);
-	        item.appendChild(msgDetails);
-	        appendLog(item);
-		} else {
-	        item.classList.add("chat-msg-field", "d-flex", "flex-column", "mb-2");
-	        innerItem.classList.add("chat-bubble", "px-3", "py-2", "text-wrap", "word-wrap", "text-break");
-	        itemTime.classList.add("chat-time","mt-1", "ms-2");
-			let time = msgobj.time.split(" ");
-	        itemTime.innerText = time[1] + " " + time[2];
-	        
-	        innerItem.innerText = msgobj.message;
-	        item.appendChild(innerItem);
-	        item.appendChild(itemTime);
-	        appendLog(item);
-		}
-		messages.scrollTop = messages.scrollHeight;
-	}
+//     const options = {
+//       method: 'POST',
+//       body: formData,
+//       // If you add this, upload won't work
+//       headers: {
+//         'Content-Type': 'multipart/form-data',
+//       }
+//     };
+//     fetch('/user/dashboard/create-group',options)
+//     .then(data=>console.log({data}))
+//     })
 </script>
-
-<!-- ADDING EMOJI TO THE KEYBOARD -->
-<script>
-	$(document).ready(function() {
-    	 $("#smileyBt").emojioneArea({
-		    standalone: true,
-		    tones: false,
-		    emojiPlaceholder: ":smile_cat:"
-		});
-  	});
-</script>
-
-<script>
-	function pmHim(uname) {
-		let name = document.getElementById("chat-user-name");
-		name.innerText = uname;
-	}
-</script>
+{{ template "websocketJs" . }}
 
 {{ template "footer_part" . }}

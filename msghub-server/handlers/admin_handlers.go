@@ -4,7 +4,6 @@ import (
 	"log"
 	"msghub-server/logic"
 	"msghub-server/models"
-	"msghub-server/repository"
 	"msghub-server/template"
 	"msghub-server/utils"
 	"net/http"
@@ -21,22 +20,22 @@ func AdminLoginPageHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func AdminAuthenticateHandler(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
+	//r.ParseForm()
+	//
+	//name := r.PostFormValue("signinName")
+	//pass := r.PostFormValue("signinPass")
 
-	name := r.PostFormValue("signinName")
-	pass := r.PostFormValue("signinPass")
-
-	isValid, alert := repository.LoginAdmin(name, pass)
-	if alert != "" {
-		alm := models.AuthErrorModel{
-			ErrorStr: alert,
-		}
-		models.InitAuthErrorModel(alm)
-	}
-
-	if isValid {
-		http.Redirect(w, r, "/admin/dashboard", http.StatusFound)
-	} else {
-		http.Redirect(w, r, "/admin/login-page", http.StatusSeeOther)
-	}
+	//isValid, alert := .LoginAdmin(name, pass)
+	//if alert != "" {
+	//	alm := models.AuthErrorModel{
+	//		ErrorStr: alert,
+	//	}
+	//	models.InitAuthErrorModel(alm)
+	//}
+	//
+	//if isValid {
+	//	http.Redirect(w, r, "/admin/dashboard", http.StatusFound)
+	//} else {
+	//	http.Redirect(w, r, "/admin/login-page", http.StatusSeeOther)
+	//}
 }

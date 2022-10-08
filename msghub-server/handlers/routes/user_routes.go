@@ -22,6 +22,9 @@ func userRoutes(theMux *mux.Router) {
 	theMux.HandleFunc("/login/otp/getotp", handlerInfo.UserVerifyLoginOtpHandler).Methods("POST")
 	theMux.HandleFunc("/user/dashboard", middlewares.UserAuthorizationAfterLogin(handlerInfo.UserDashboardHandler)).Methods("GET")
 	theMux.HandleFunc("/user/dashboard/people", middlewares.UserAuthorizationAfterLogin(handlerInfo.UserShowPeopleHandler)).Methods("GET")
+	theMux.HandleFunc("/user/dashboard/create-group", handlerInfo.UserCreateGroup).Methods("POST")
+	theMux.HandleFunc("/user/dashboard/add-group-members", handlerInfo.UserAddGroupMembers).Methods("GET")
+	theMux.HandleFunc("/user/dashboard/group-created-finally", handlerInfo.UserGroupCreationHandler).Methods("POST")
 
 	theMux.HandleFunc("/user/logout", handlerInfo.UserLogoutHandler).Methods("GET")
 }

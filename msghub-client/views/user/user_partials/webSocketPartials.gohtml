@@ -1,0 +1,96 @@
+{{ define "websocketJs" }}
+	<script>
+		const input = document.querySelector("#msgInp");
+		const messages = document.querySelector("#log");
+		const send = document.querySelector("#sendMsg");
+
+		const url = "ws://" + window.location.host + "/ws";
+		const ws = new WebSocket(url);
+
+	    function appendLog(item) {
+	        var doScroll = messages.scrollTop > messages.scrollHeight - messages.clientHeight - 1;
+	        messages.appendChild(item);
+	        if (doScroll) {
+	            messages.scrollTop = messages.scrollHeight - messages.clientHeight;
+	        }
+	    }
+
+		if(!window["WebSocket"]) {
+			var item = document.createElement("div");
+		    item.innerHTML = "<b>Your browser does not support WebSockets.</b>";
+		    appendLog(item);
+		}
+
+		ws.onmessage = function(msg) {
+			insertMessage(JSON.parse(msg.data));
+		};
+
+		ws.onclose = function(event) {
+			console.log("Connection close : ", event);
+		};
+
+		document.getElementById("chat-form").onsubmit = function () {
+	        if (!ws) {
+	            return false;
+	        }
+	        if (!input.value) {
+	            return false;
+	        }
+
+	        let current = new Date();
+			let cDate = current.getFullYear() + '-' + (current.getMonth() + 1) + '-' + current.getDate();
+			let cTime =  current.toLocaleString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true })
+			let dateTime = cDate + ' ' + cTime;
+			
+			const message = {
+				firstUser : {{ .UserPhone }},
+		    	secondUser : "",
+		    	message : input.value,
+		    	time : dateTime,
+			}
+
+	        ws.send(JSON.stringify(message));
+	       	input.value = "";
+	        return false;
+	    };
+
+		function insertMessage(msgobj) {
+			let item = document.createElement('div');
+		    let innerItem = document.createElement("label");
+		    let itemTime = document.createElement("label");   
+		    let recipient = document.createElement("i");      
+
+			if(msgobj.firstUser == {{ .UserPhone }}) {
+				let msgDetails = document.createElement('div');
+		        item.classList.add("user-chat-msg-field", "d-flex", "flex-column", "mb-2");
+		        innerItem.classList.add("chat-bubble", "user-chat-bubble", "px-3", "py-2", "text-wrap", "word-wrap", "text-break");
+		        msgDetails.classList.add("d-flex", "align-items-center");
+		        itemTime.classList.add("chat-time","mt-1", "mx-2");
+		        let time = msgobj.time.split(" ");
+		        itemTime.innerText = time[1] + " " + time[2];
+
+		        recipient.classList.add("fas", "fa-check-double");
+
+		        msgDetails.appendChild(itemTime);
+		        msgDetails.appendChild(recipient);
+
+		        innerItem.innerText = msgobj.message;
+		        item.appendChild(innerItem);
+		        item.appendChild(msgDetails);
+		        appendLog(item);
+			} else {
+		        item.classList.add("chat-msg-field", "d-flex", "flex-column", "mb-2");
+		        innerItem.classList.add("chat-bubble", "px-3", "py-2", "text-wrap", "word-wrap", "text-break");
+		        itemTime.classList.add("chat-time","mt-1", "ms-2");
+				let time = msgobj.time.split(" ");
+		        itemTime.innerText = time[1] + " " + time[2];
+		        
+		        innerItem.innerText = msgobj.message;
+		        item.appendChild(innerItem);
+		        item.appendChild(itemTime);
+		        appendLog(item);
+			}
+			messages.scrollTop = messages.scrollHeight;
+		}
+	</script>
+{{ end }}

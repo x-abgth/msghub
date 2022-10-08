@@ -88,13 +88,6 @@ func ServeWs(wsServer *WsServer, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	defer func() {
-		if err := conn.Close(); err != nil {
-			log.Println("Error happened when closing websocket connection!")
-			http.Redirect(w, r, "/", http.StatusSeeOther)
-		}
-	}()
-
 	// whenever the function ServeWs is called a new client is created.
 	client := newClient(conn, wsServer)
 

@@ -1,5 +1,7 @@
 package socket
 
+import "fmt"
+
 //	Because our ChatServer acts like a hub for connecting the parts of our chat application,
 //	we will use it to keep track of all the rooms that will be created.
 
@@ -44,6 +46,7 @@ func (server *WsServer) registerClient(client *Client) {
 
 // If the client is left from the socket, we will delete the client key and value.
 func (server *WsServer) unregisterClient(client *Client) {
+	fmt.Println("unregistered")
 	delete(server.clients, client)
 }
 

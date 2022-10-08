@@ -1,13 +1,16 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"msghub-server/logic"
 	"msghub-server/models"
 	"msghub-server/template"
 	"msghub-server/utils"
 	jwtPkg "msghub-server/utils/jwt"
+	"os"
 	"time"
 
 	"net/http"
@@ -238,10 +241,119 @@ func (info *InformationHelper) UserDashboardHandler(w http.ResponseWriter, r *ht
 
 	claim := jwtPkg.GetValueFromJwt(c)
 
+	fmt.Println("In dashboard handler ", claim.User.UserPhone)
 	data := info.userRepo.GetDataForDashboardLogic(claim.User.UserPhone)
 	info.errorStr = ""
 	err2 := template.Tpl.ExecuteTemplate(w, "user_dashboard.gohtml", data)
 	utils.PrintError(err2, "")
+}
+
+func (info *InformationHelper) UserShowPeopleHandler(w http.ResponseWriter, r *http.Request) {
+	err := template.Tpl.ExecuteTemplate(w, "user_show_people.gohtml", nil)
+	if err != nil {
+		fmt.Println(err.Error())
+		http.Redirect(w, r, "/user/dashboard", http.StatusSeeOther)
+	}
+}
+
+func (info *InformationHelper) UserCreateGroup(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseMultipartForm(10 << 24)
+	if err != nil {
+		http.Redirect(w, r, "/user/dashboard", http.StatusSeeOther)
+	}
+
+	groupName := r.PostFormValue("groupName")
+	groupAbout := r.PostFormValue("group-about")
+
+	file, _, _ := r.FormFile("profile_photo")
+
+	if file != nil {
+		defer file.Close()
+
+		imageName := fmt.Sprintf("%s*.png", groupName)
+		out, pathError := os.CreateTemp("../msghub-client/assets/db_files/", imageName)
+		if pathError != nil {
+			log.Println("Error creating a file for writing", pathError)
+			return
+		}
+
+		defer out.Close()
+
+		_, copyError := io.Copy(out, file)
+		if copyError != nil {
+			log.Println("Error copying", copyError)
+		}
+	}
+
+	var groupImage string
+	if file == nil {
+		groupImage = ""
+	} else {
+		groupImage = groupName
+	}
+
+	data := models.GroupModel{
+		Image: groupImage,
+		Name:  groupName,
+		About: groupAbout,
+	}
+	claims := &jwtPkg.UserJwtClaim{
+		GroupModel: data,
+	}
+
+	token := jwtPkg.SignJwtToken(claims)
+	expire := time.Now().AddDate(0, 0, 1)
+	cookie := &http.Cookie{Name: "userGroupDetails", Value: token, Expires: expire, HttpOnly: true, Path: "/user/dashboard/"}
+	http.SetCookie(w, cookie)
+
+	http.Redirect(w, r, "/user/dashboard/add-group-members", http.StatusSeeOther)
+}
+
+func (info *InformationHelper) UserAddGroupMembers(w http.ResponseWriter, r *http.Request) {
+	c, err1 := r.Cookie("userToken")
+	if err1 != nil {
+		if err1 == http.ErrNoCookie {
+			panic("Cookie not found!")
+		}
+		panic("Unknown error occurred!")
+	}
+
+	claim := jwtPkg.GetValueFromJwt(c)
+
+	data := info.userRepo.GetAllUsersLogic(claim.User.UserPhone)
+
+	err2 := template.Tpl.ExecuteTemplate(w, "add_group_members.gohtml", data)
+	if err2 != nil {
+		log.Println(err2.Error())
+		cookie := &http.Cookie{Name: "userGroupDetails", MaxAge: -1, HttpOnly: true, Path: "/user/dashboard/"}
+		http.SetCookie(w, cookie)
+		http.Redirect(w, r, "/user/dashboard", http.StatusSeeOther)
+	}
+}
+
+func (info *InformationHelper) UserGroupCreationHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("Created group reached!")
+	type groupMembers struct {
+		Data []string `json:"data"`
+	}
+	var val groupMembers
+
+	a, _ := io.ReadAll(r.Body)
+	err := json.Unmarshal(a, &val)
+	if err != nil {
+		log.Println("ERROR happened -- ", err.Error())
+		cookie := &http.Cookie{Name: "userGroupDetails", MaxAge: -1, HttpOnly: true, Path: "/user/dashboard/"}
+		http.SetCookie(w, cookie)
+		http.Redirect(w, r, "/user/dashboard", http.StatusSeeOther)
+	}
+
+	// INSERT GROUP DATA TO THE DATABASE
+	
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode("success")
+
+	http.Redirect(w, r, "/user/dashboard", http.StatusFound)
 }
 
 func (info *InformationHelper) UserLogoutHandler(w http.ResponseWriter, r *http.Request) {
@@ -257,12 +369,4 @@ func (info *InformationHelper) UserLogoutHandler(w http.ResponseWriter, r *http.
 	http.SetCookie(w, cookie)
 
 	http.Redirect(w, r, "/", http.StatusFound)
-}
-
-func (info *InformationHelper) UserShowPeopleHandler(w http.ResponseWriter, r *http.Request) {
-	err := template.Tpl.ExecuteTemplate(w, "user_show_people.gohtml", nil)
-	if err != nil {
-		fmt.Println(err.Error())
-		http.Redirect(w, r, "/user/dashboard", http.StatusSeeOther)
-	}
 }

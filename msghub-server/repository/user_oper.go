@@ -169,3 +169,47 @@ func GetRecentChatList(ph string) []models.RecentChatModel {
 
 	return res
 }
+
+func GetAllUsersData(ph string) []models.UserModel {
+	var name, phone, about string
+	var avatar *string
+	rows, err := models.SqlDb.Query(
+		`SELECT 
+    	user_avatar, 
+    	user_name, 
+    	user_about,
+    	user_ph_no 
+	FROM users
+	WHERE is_blocked = $1 AND user_ph_no != $2;`, false, ph)
+	if err != nil {
+		log.Fatal("Error - ", err)
+	}
+
+	defer rows.Close()
+
+	var res []models.UserModel
+	for rows.Next() {
+		if err1 := rows.Scan(
+			&avatar,
+			&name,
+			&about,
+			&phone); err1 != nil {
+			log.Fatal("Error - ", err1)
+		}
+
+		if avatar == nil {
+			null := ""
+
+			avatar = &null
+		}
+		data := models.UserModel{
+			UserName:      name,
+			UserPhone:     phone,
+			UserAbout:     about,
+			UserAvatarUrl: *avatar,
+		}
+		res = append(res, data)
+	}
+
+	return res
+}
