@@ -22,6 +22,7 @@
 		}
 
 		ws.onmessage = function(msg) {
+			console.log(msg.data);
 			insertMessage(JSON.parse(msg.data));
 		};
 
@@ -29,6 +30,7 @@
 			console.log("Connection close : ", event);
 		};
 
+		//  When user sends a message
 		document.getElementById("chat-form").onsubmit = function () {
 	        if (!ws) {
 	            return false;
@@ -53,6 +55,17 @@
 	       	input.value = "";
 	        return false;
 	    };
+
+	    // Send message when user joins on a private room 
+	    function opensAPrivateChat(firstUser, secondUser) {
+	    	if (!ws) {
+	            return false;
+	        }
+	        if (!input.value) {
+	            return false;
+	        }
+	    }
+
 
 		function insertMessage(msgobj) {
 			let item = document.createElement('div');

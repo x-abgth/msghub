@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"errors"
 	"log"
 	"msghub-server/models"
 )
@@ -49,21 +50,21 @@ func (user User) GetUserDataUsingPhone(formPhone string) (int, User, error) {
 	return count, user, nil
 }
 
-func RegisterUser(formName, formPhone, formPass string) (bool, string) {
+func (user User) RegisterUser(formName, formPhone, formPass string) (bool, error) {
 	defaultAbout := "Hey there! Send me a Hi."
 
 	_, err1 := models.SqlDb.Exec(`INSERT INTO users(user_name, user_about, user_ph_no, user_password, is_blocked) 
 VALUES($1, $2, $3, $4, $5);`,
 		formName, defaultAbout, formPhone, formPass, false)
 	if err1 != nil {
-		log.Fatal(err1)
-		return false, "Sorry, An unknown error occurred. Please try again."
+		log.Println(err1)
+		return false, errors.New("sorry, An unknown error occurred. Please try again")
 	}
 
-	return true, ""
+	return true, nil
 }
 
-func UserDuplicationStatus(phone string) int {
+func (user User) UserDuplicationStatus(phone string) int {
 	var total = 0
 
 	rows, err := models.SqlDb.Query(
@@ -82,19 +83,22 @@ func UserDuplicationStatus(phone string) int {
 	return total
 }
 
-func GetUserData(ph string) models.UserModel {
-	var name, phone, isBlocked string
+func (user User) GetUserData(ph string) (models.UserModel, error) {
+	var name, phone, about, isBlocked string
 	var avatar *string
+	var data models.UserModel
+
 	rows, err := models.SqlDb.Query(
 		`SELECT 
     	user_avatar, 
     	user_name, 
     	user_ph_no,
+    	user_about,
     	is_blocked
 	FROM users
 	WHERE user_ph_no = $1 AND is_blocked = $2;`, ph, false)
 	if err != nil {
-		log.Fatal("Error - ", err)
+		return data, err
 	}
 
 	defer rows.Close()
@@ -106,8 +110,9 @@ func GetUserData(ph string) models.UserModel {
 			&avatar,
 			&name,
 			&phone,
+			&about,
 			&isBlocked); err1 != nil {
-			log.Fatal("Error - ", err1)
+			return data, err1
 		}
 	}
 
@@ -116,20 +121,23 @@ func GetUserData(ph string) models.UserModel {
 
 		avatar = &null
 	}
-	data := models.UserModel{
+	data = models.UserModel{
 		UserAvatarUrl: *avatar,
 		UserName:      name,
 		UserPhone:     phone,
+		UserAbout:     about,
 		UserBlocked:   isBlocked,
 	}
 
-	return data
+	return data, nil
 }
 
 // This is not actual list, need to update
-func GetRecentChatList(ph string) []models.RecentChatModel {
+func (user User) GetRecentChatList(ph string) ([]models.RecentChatModel, error) {
 	var name, phone string
 	var avatar *string
+	var res []models.RecentChatModel
+
 	rows, err := models.SqlDb.Query(
 		`SELECT 
     	user_avatar, 
@@ -138,18 +146,17 @@ func GetRecentChatList(ph string) []models.RecentChatModel {
 	FROM users
 	WHERE is_blocked = $1 AND user_ph_no != $2;`, false, ph)
 	if err != nil {
-		log.Fatal("Error - ", err)
+		return res, err
 	}
 
 	defer rows.Close()
 
-	var res []models.RecentChatModel
 	for rows.Next() {
 		if err1 := rows.Scan(
 			&avatar,
 			&name,
 			&phone); err1 != nil {
-			log.Fatal("Error - ", err1)
+			return res, err1
 		}
 
 		if avatar == nil {
@@ -167,12 +174,14 @@ func GetRecentChatList(ph string) []models.RecentChatModel {
 		res = append(res, data)
 	}
 
-	return res
+	return res, nil
 }
 
-func GetAllUsersData(ph string) []models.UserModel {
+func (user User) GetAllUsersData(ph string) ([]models.UserModel, error) {
 	var name, phone, about string
 	var avatar *string
+	var res []models.UserModel
+
 	rows, err := models.SqlDb.Query(
 		`SELECT 
     	user_avatar, 
@@ -182,19 +191,18 @@ func GetAllUsersData(ph string) []models.UserModel {
 	FROM users
 	WHERE is_blocked = $1 AND user_ph_no != $2;`, false, ph)
 	if err != nil {
-		log.Fatal("Error - ", err)
+		return res, err
 	}
 
 	defer rows.Close()
 
-	var res []models.UserModel
 	for rows.Next() {
 		if err1 := rows.Scan(
 			&avatar,
 			&name,
 			&about,
 			&phone); err1 != nil {
-			log.Fatal("Error - ", err1)
+			return res, err1
 		}
 
 		if avatar == nil {
@@ -211,5 +219,15 @@ func GetAllUsersData(ph string) []models.UserModel {
 		res = append(res, data)
 	}
 
-	return res
+	return res, nil
+}
+
+func (user User) UpdateUserData(model models.UserModel) error {
+	_, err1 := models.SqlDb.Exec(`UPDATE users SET user_name = $1, user_about = $2, user_avatar = $3 WHERE user_ph_no = $4;`,
+		model.UserName, model.UserAbout, model.UserAvatarUrl, model.UserPhone)
+	if err1 != nil {
+		return errors.New("couldn't execute the sql query")
+	}
+
+	return nil
 }

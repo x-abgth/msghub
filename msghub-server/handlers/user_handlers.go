@@ -18,9 +18,10 @@ import (
 
 // This might helps to pass error strings from one route to other
 type InformationHelper struct {
-	userRepo logic.UserDb
-	errorStr string
-	title    string
+	userRepo  logic.UserDb
+	groupRepo logic.GroupDataLogicModel
+	errorStr  string
+	title     string
 }
 
 func (info *InformationHelper) UserLoginHandler(w http.ResponseWriter, r *http.Request) {
@@ -193,7 +194,7 @@ func (info *InformationHelper) UserVerifyRegisterOtpHandler(w http.ResponseWrite
 
 	user := models.ReturnUserModel()
 
-	if done, flag := info.userRepo.CheckUserRegisterOtpLogic(otp, user.UserName, user.UserPhone, user.UserPass); done {
+	if ok, flag := info.userRepo.CheckUserRegisterOtpLogic(otp, user.UserName, user.UserPhone, user.UserPass); ok {
 		userData := models.UserModel{
 			UserName:  user.UserName,
 			UserPhone: user.UserPhone,
@@ -241,11 +242,129 @@ func (info *InformationHelper) UserDashboardHandler(w http.ResponseWriter, r *ht
 
 	claim := jwtPkg.GetValueFromJwt(c)
 
-	fmt.Println("In dashboard handler ", claim.User.UserPhone)
-	data := info.userRepo.GetDataForDashboardLogic(claim.User.UserPhone)
+	data, err := info.userRepo.GetDataForDashboardLogic(claim.User.UserPhone)
+	if err != nil {
+		info.errorStr = err.Error()
+		panic(err.Error())
+	}
 	info.errorStr = ""
 	err2 := template.Tpl.ExecuteTemplate(w, "user_dashboard.gohtml", data)
 	utils.PrintError(err2, "")
+}
+
+func (info *InformationHelper) UserProfilePageHandler(w http.ResponseWriter, r *http.Request) {
+	defer func() {
+		// recovers panic
+		if e := recover(); e != nil {
+			fmt.Println("Recovered from panic : ", e)
+			err1 := template.Tpl.ExecuteTemplate(w, "index.gohtml", nil)
+			if err1 != nil {
+				fmt.Println("Error : ", err1)
+			}
+		}
+	}()
+
+	c, err1 := r.Cookie("userToken")
+	if err1 != nil {
+		if err1 == http.ErrNoCookie {
+			panic("Cookie not found!")
+		}
+		panic("Unknown error occurred!")
+	}
+
+	claim := jwtPkg.GetValueFromJwt(c)
+
+	// Take values from the database
+	userInfo, err2 := info.userRepo.GetUserDataLogic(claim.User.UserPhone)
+	if err2 != nil {
+		panic(err2.Error())
+	}
+
+	data := struct {
+		Name  string
+		About string
+		Phone string
+		Image string
+	}{
+		Name:  userInfo.UserName,
+		About: userInfo.UserAbout,
+		Phone: userInfo.UserPhone,
+		Image: userInfo.UserAvatarUrl,
+	}
+
+	err := template.Tpl.ExecuteTemplate(w, "user_profile_update.gohtml", data)
+	if err != nil {
+		log.Println(err.Error())
+		http.Redirect(w, r, "/user/dashboard", http.StatusSeeOther)
+	}
+}
+
+func (info *InformationHelper) UserProfileUpdateHandler(w http.ResponseWriter, r *http.Request) {
+
+	defer func() {
+		if e := recover(); e != nil {
+			log.Println("ERROR HAPPENED -- ", e)
+			http.Redirect(w, r, "/user/dashboard", http.StatusSeeOther)
+		}
+	}()
+
+	err := r.ParseMultipartForm(10 << 24)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	userName := r.PostFormValue("name")
+	userAbout := r.PostFormValue("about")
+
+	file, _, _ := r.FormFile("user_photo")
+
+	c, err1 := r.Cookie("userToken")
+	if err1 != nil {
+		if err1 == http.ErrNoCookie {
+			panic("Cookie not found!")
+		}
+		panic("Unknown error occurred!")
+	}
+
+	claim := jwtPkg.GetValueFromJwt(c)
+
+	var imageName, imageNameA string
+	if file != nil {
+		defer file.Close()
+
+		// Check weather the string is same as in db
+		imageName = fmt.Sprintf("../msghub-client/assets/db_files/user_dp_img/%s.png", claim.User.UserPhone)
+		imageNameA = fmt.Sprintf("%s.png", claim.User.UserPhone)
+		out, pathError := os.Create(imageName)
+		if pathError != nil {
+			log.Println("Error creating a file for writing", pathError)
+			panic(pathError.Error())
+		}
+		imageName = out.Name()
+		fmt.Println("Name of the file, ", imageName)
+
+		defer out.Close()
+
+		_, copyError := io.Copy(out, file)
+		if copyError != nil {
+			panic(copyError.Error())
+		}
+	}
+
+	var userImage string
+	if file == nil {
+		userImage = ""
+	} else {
+		userImage = imageNameA
+	}
+
+	// Update data to the database
+	err2 := info.userRepo.UpdateUserProfileDataLogic(userName, userAbout, userImage, claim.User.UserPhone)
+	if err2 != nil {
+		panic(err2.Error())
+	}
+
+	http.Redirect(w, r, "/user/dashboard", http.StatusFound)
 }
 
 func (info *InformationHelper) UserShowPeopleHandler(w http.ResponseWriter, r *http.Request) {
@@ -257,6 +376,18 @@ func (info *InformationHelper) UserShowPeopleHandler(w http.ResponseWriter, r *h
 }
 
 func (info *InformationHelper) UserCreateGroup(w http.ResponseWriter, r *http.Request) {
+	// Group migration statements
+	groupMigrationError := info.groupRepo.MigrateGroupDb(models.GormDb)
+	if groupMigrationError != nil {
+		log.Fatal("Can't migrate group - ", groupMigrationError.Error())
+	}
+
+	groupUserMigrationError := info.groupRepo.MigrateUserGroupDb(models.GormDb)
+	if groupUserMigrationError != nil {
+		log.Fatal("Can't migrate group - ", groupUserMigrationError.Error())
+	}
+
+	// Parse form to get data
 	err := r.ParseMultipartForm(10 << 24)
 	if err != nil {
 		http.Redirect(w, r, "/user/dashboard", http.StatusSeeOther)
@@ -267,15 +398,29 @@ func (info *InformationHelper) UserCreateGroup(w http.ResponseWriter, r *http.Re
 
 	file, _, _ := r.FormFile("profile_photo")
 
+	c, err1 := r.Cookie("userToken")
+	if err1 != nil {
+		if err1 == http.ErrNoCookie {
+			panic("Cookie not found!")
+		}
+		panic("Unknown error occurred!")
+	}
+
+	claim := jwtPkg.GetValueFromJwt(c)
+
+	var imageName, imageNameA string
 	if file != nil {
 		defer file.Close()
 
-		imageName := fmt.Sprintf("%s*.png", groupName)
-		out, pathError := os.CreateTemp("../msghub-client/assets/db_files/", imageName)
+		// Check weather the string is same as in db
+		imageName = fmt.Sprintf("../msghub-client/assets/db_files/user_dp_img/%s%s.png", groupName, claim.User.UserPhone)
+		imageNameA = fmt.Sprintf("%s%s.png", groupName, claim.User.UserPhone)
+		out, pathError := os.Create(imageName)
 		if pathError != nil {
 			log.Println("Error creating a file for writing", pathError)
 			return
 		}
+		imageName = out.Name()
 
 		defer out.Close()
 
@@ -289,7 +434,7 @@ func (info *InformationHelper) UserCreateGroup(w http.ResponseWriter, r *http.Re
 	if file == nil {
 		groupImage = ""
 	} else {
-		groupImage = groupName
+		groupImage = imageNameA
 	}
 
 	data := models.GroupModel{
@@ -310,6 +455,14 @@ func (info *InformationHelper) UserCreateGroup(w http.ResponseWriter, r *http.Re
 }
 
 func (info *InformationHelper) UserAddGroupMembers(w http.ResponseWriter, r *http.Request) {
+
+	defer func() {
+		if e := recover(); e != nil {
+			log.Println(e)
+			http.Redirect(w, r, "/user/dashboard", http.StatusSeeOther)
+		}
+	}()
+
 	c, err1 := r.Cookie("userToken")
 	if err1 != nil {
 		if err1 == http.ErrNoCookie {
@@ -320,7 +473,10 @@ func (info *InformationHelper) UserAddGroupMembers(w http.ResponseWriter, r *htt
 
 	claim := jwtPkg.GetValueFromJwt(c)
 
-	data := info.userRepo.GetAllUsersLogic(claim.User.UserPhone)
+	data, err := info.userRepo.GetAllUsersLogic(claim.User.UserPhone)
+	if err != nil {
+		panic(err.Error())
+	}
 
 	err2 := template.Tpl.ExecuteTemplate(w, "add_group_members.gohtml", data)
 	if err2 != nil {
@@ -332,7 +488,6 @@ func (info *InformationHelper) UserAddGroupMembers(w http.ResponseWriter, r *htt
 }
 
 func (info *InformationHelper) UserGroupCreationHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Created group reached!")
 	type groupMembers struct {
 		Data []string `json:"data"`
 	}
@@ -347,13 +502,46 @@ func (info *InformationHelper) UserGroupCreationHandler(w http.ResponseWriter, r
 		http.Redirect(w, r, "/user/dashboard", http.StatusSeeOther)
 	}
 
-	// INSERT GROUP DATA TO THE DATABASE
-	
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode("success")
+	// Claim to get group data
+	gc, err1 := r.Cookie("userGroupDetails")
+	if err1 != nil {
+		if err1 == http.ErrNoCookie {
+			panic("Cookie not found!")
+		}
+		panic("Unknown error occurred!")
+	}
 
-	http.Redirect(w, r, "/user/dashboard", http.StatusFound)
+	groupClaim := jwtPkg.GetValueFromJwt(gc)
+
+	// Claim to get user phone number
+	uc, err2 := r.Cookie("userToken")
+	if err2 != nil {
+		if err2 == http.ErrNoCookie {
+			panic("Cookie not found!")
+		}
+		panic("Unknown error occurred!")
+	}
+
+	userClaim := jwtPkg.GetValueFromJwt(uc)
+
+	data := models.GroupModel{
+		Owner:   userClaim.User.UserPhone,
+		Name:    groupClaim.GroupModel.Name,
+		About:   groupClaim.GroupModel.About,
+		Image:   groupClaim.GroupModel.Image,
+		Members: val.Data,
+	}
+
+	status, err3 := info.groupRepo.CreateGroupAndInsertDataLogic(data)
+
+	if status {
+		fmt.Println("Success - Redirect to dashboard")
+		http.Redirect(w, r, "/user/dashboard", http.StatusFound)
+	} else {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(err3.Error())
+	}
 }
 
 func (info *InformationHelper) UserLogoutHandler(w http.ResponseWriter, r *http.Request) {

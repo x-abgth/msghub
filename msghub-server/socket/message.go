@@ -2,6 +2,7 @@ package socket
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 )
 
@@ -14,17 +15,31 @@ const JoinRoomPrivateAction = "join-room-private"
 const RoomJoinedAction = "room-joined"
 
 type Message struct {
-	Action  string  `json:"action"`
-	Message string  `json:"message"`
-	Target  *Room   `json:"target"`
-	Sender  *Client `json:"sender"`
+	Action    string  `json:"action"`
+	Message   string  `json:"message"`
+	Time      string  `json:"time"`
+	Target    *Room   `json:"target"`
+	Sender    *Client `json:"sender"`
+	IsPrivate bool    `json:"is_bool"`
 }
 
 func (message *Message) encode() []byte {
-	json, err := json.Marshal(message)
+	jsonStr, err := json.Marshal(message)
 	if err != nil {
 		log.Println(err)
 	}
 
-	return json
+	return jsonStr
+}
+
+func (message *Message) decode(jsonStr []byte) Message {
+	isValid := json.Valid(jsonStr)
+
+	if isValid {
+		json.Unmarshal(jsonStr, &message)
+		return *message
+	} else {
+		fmt.Println("Json is not valid!")
+		return *message
+	}
 }

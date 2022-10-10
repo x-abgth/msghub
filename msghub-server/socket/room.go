@@ -2,7 +2,6 @@ package socket
 
 import (
 	"fmt"
-	"github.com/google/uuid"
 )
 
 /*
@@ -13,18 +12,18 @@ import (
 const welcomeMessage = "%s joined the room"
 
 type Room struct {
-	ID         uuid.UUID `json:"id"`
-	Name       string    `json:"name"`
-	Private    bool      `json:"private"`
+	ID         string `json:"id"`
+	Name       string `json:"name"`
+	Private    bool   `json:"private"`
 	clients    map[*Client]bool
 	register   chan *Client
 	unregister chan *Client
 	broadcast  chan *Message
 }
 
-func NewRoom(name string, private bool) *Room {
+func NewRoom(name, phone string, private bool) *Room {
 	return &Room{
-		ID:         uuid.New(),
+		ID:         phone,
 		Name:       name,
 		Private:    private,
 		clients:    make(map[*Client]bool),
@@ -83,5 +82,5 @@ func (room *Room) GetName() string {
 }
 
 func (room *Room) GetId() string {
-	return room.ID.String()
+	return room.ID
 }

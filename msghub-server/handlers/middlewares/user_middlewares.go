@@ -52,6 +52,7 @@ func UserAuthorizationAfterLogin(handler http.HandlerFunc) http.HandlerFunc {
 		if claim.IsAuthenticated == false {
 			http.Redirect(w, r, "/", http.StatusFound)
 		} else {
+
 			handler.ServeHTTP(w, r)
 		}
 	}

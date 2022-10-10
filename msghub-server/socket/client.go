@@ -3,7 +3,6 @@ package socket
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"log"
 	"net/http"
@@ -39,16 +38,16 @@ const (
 
 var (
 	newline = []byte{'\n'}
-	// space    = []byte{' '}
+	//space    = []byte{' '}
 	upgrader = websocket.Upgrader{
 		ReadBufferSize:  4096,
 		WriteBufferSize: 4096,
 	}
 )
 
-// This represents the websocket client at the server
+// Client - This represents the websocket client at the server
 type Client struct {
-	ID   uuid.UUID `json:"id"`
+	ID   string `json:"id"`
 	conn *websocket.Conn
 	// We want to the keep a reference to the WsServer for each client
 	wsServer *WsServer
@@ -58,9 +57,9 @@ type Client struct {
 	Name  string `json:"name"`
 }
 
-func newClient(conn *websocket.Conn, wsServer *WsServer) *Client {
+func newClient(conn *websocket.Conn, wsServer *WsServer, phone string) *Client {
 	return &Client{
-		ID:       uuid.New(),
+		ID:       phone,
 		conn:     conn,
 		wsServer: wsServer,
 		//Name:     name,
@@ -74,7 +73,8 @@ func (client *Client) GetName() string {
 }
 
 // ServeWs handles websocket requests from clients requests.
-func ServeWs(wsServer *WsServer, w http.ResponseWriter, r *http.Request) {
+// The ServeWs function will be called from routes.go
+func ServeWs(phone string, wsServer *WsServer, w http.ResponseWriter, r *http.Request) {
 	//name, ok := r.URL.Query()["name"]
 	//
 	//if !ok || len(name[0]) < 1 {
@@ -89,7 +89,7 @@ func ServeWs(wsServer *WsServer, w http.ResponseWriter, r *http.Request) {
 	}
 
 	// whenever the function ServeWs is called a new client is created.
-	client := newClient(conn, wsServer)
+	client := newClient(conn, wsServer, phone)
 
 	go client.writePump()
 	go client.readPump()
@@ -143,6 +143,8 @@ func (client *Client) readPump() {
 */
 
 func (client *Client) writePump() {
+	var messageObj Message
+
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
 		ticker.Stop()
@@ -163,16 +165,25 @@ func (client *Client) writePump() {
 				return
 			}
 			fmt.Println("Writing -- ", string(message))
-			w.Write(message)
 
-			n := len(client.send)
-			for i := 0; i < n; i++ {
-				w.Write(newline)
-				w.Write(<-client.send)
-			}
+			// Check if it is a private chat or not
+			json.Unmarshal(message, &messageObj)
 
-			if err := w.Close(); err != nil {
-				return
+			if messageObj.IsPrivate {
+				room := NewRoom("private", "", true)
+				room.RunRoom()
+			} else {
+				w.Write(message)
+
+				n := len(client.send)
+				for i := 0; i < n; i++ {
+					w.Write(newline)
+					w.Write(<-client.send)
+				}
+
+				if err := w.Close(); err != nil {
+					return
+				}
 			}
 
 		case <-ticker.C:
@@ -248,7 +259,7 @@ func (client *Client) handleJoinRoomPrivateMessage(message Message) {
 	}
 
 	// create unique room name combined to the two IDs
-	roomName := message.Message + client.ID.String()
+	roomName := message.Message + client.ID
 
 	client.joinRoom(roomName, target)
 	target.joinRoom(roomName, client)

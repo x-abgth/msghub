@@ -2,6 +2,7 @@ package logic
 
 import (
 	"errors"
+	"fmt"
 	"gorm.io/gorm"
 	"msghub-server/models"
 	"msghub-server/repository"
@@ -111,7 +112,7 @@ func (u UserDb) UserValidateOtpLogic(phone, otp string) bool {
 }
 
 func (u UserDb) UserRegisterLogic(name, phone, pass string) bool {
-	total := repository.UserDuplicationStatus(phone)
+	total := u.userData.UserDuplicationStatus(phone)
 	encryptedFormPassword, err := utils.HashEncrypt(pass)
 
 	if err != nil {
@@ -156,12 +157,12 @@ func (u UserDb) UserRegisterLogic(name, phone, pass string) bool {
 func (u UserDb) CheckUserRegisterOtpLogic(otp, name, phone, pass string) (bool, string) {
 	status := utils.CheckOtp(phone, otp)
 	if status {
-		done, alert := repository.RegisterUser(name, phone, pass)
+		done, alert := u.userData.RegisterUser(name, phone, pass)
 		if done {
 			return true, ""
 		}
 		alm := models.AuthErrorModel{
-			ErrorStr: alert,
+			ErrorStr: alert.Error(),
 		}
 		models.InitAuthErrorModel(alm)
 		return false, "login"
@@ -176,9 +177,16 @@ func (u UserDb) CheckUserRegisterOtpLogic(otp, name, phone, pass string) (bool, 
 	}
 }
 
-func (u UserDb) GetDataForDashboardLogic(phone string) models.UserDashboardModel {
-	userDetails := repository.GetUserData(phone)
-	recentChatList := repository.GetRecentChatList(phone)
+func (u UserDb) GetDataForDashboardLogic(phone string) (models.UserDashboardModel, error) {
+	userDetails, err1 := u.userData.GetUserData(phone)
+	if err1 != nil {
+		return models.UserDashboardModel{}, err1
+	}
+
+	recentChatList, err2 := u.userData.GetRecentChatList(phone)
+	if err2 != nil {
+		return models.UserDashboardModel{}, err2
+	}
 
 	data := models.UserDashboardModel{
 		UserPhone:      phone,
@@ -187,10 +195,38 @@ func (u UserDb) GetDataForDashboardLogic(phone string) models.UserDashboardModel
 		StoryList:      nil,
 	}
 
-	return data
+	return data, nil
 }
 
-func (u UserDb) GetAllUsersLogic(ph string) []models.UserModel {
-	data := repository.GetAllUsersData(ph)
-	return data
+func (u UserDb) GetAllUsersLogic(ph string) ([]models.UserModel, error) {
+	data, err := u.userData.GetAllUsersData(ph)
+	if err != nil {
+		return []models.UserModel{}, err
+	}
+	return data, nil
+}
+
+func (u UserDb) GetUserDataLogic(ph string) (models.UserModel, error) {
+	data, err := u.userData.GetUserData(ph)
+	if err != nil {
+		return models.UserModel{}, err
+	}
+	return data, nil
+}
+
+func (u UserDb) UpdateUserProfileDataLogic(name, about, image, phone string) error {
+	data := models.UserModel{
+		UserName:      name,
+		UserAbout:     about,
+		UserAvatarUrl: image,
+		UserPhone:     phone,
+	}
+
+	fmt.Println(data)
+
+	err := u.userData.UpdateUserData(data)
+	if err != nil {
+		return err
+	}
+	return nil
 }

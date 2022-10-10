@@ -12,7 +12,7 @@ type StoryModel struct {
 	UserName   string
 	UserPhone  string
 	UserAvatar string
-	StroyImg   string
+	StoryImg   string
 }
 
 type UserDashboardModel struct {

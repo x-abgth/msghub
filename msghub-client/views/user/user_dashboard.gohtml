@@ -16,6 +16,19 @@
 	    font-size: 12px !important;
 	}
 
+	#dashboard-chat-part-header-image-wrapper{
+		height: 50px;
+		width: 50px;
+		overflow: hidden;
+		border-radius: 50%;
+	}
+
+	#dashboard-chat-part-header-image-wrapper img{
+		border-radius: 50%;
+		object-position: center;
+		object-fit: cover;
+	}
+
 	/* FOR MESSAGE BUBBLES */
 	.chat-time{
 		font-size: 0.7rem;
@@ -63,16 +76,20 @@
 	#profileImage
 	{
 	    cursor: pointer;
+	    object-fit: cover;
+	    object-position: center;
 	}
 
 	#profile-container {
 	    height: 30vh !important;
+	    width: 30vh !important;
 	    overflow: hidden;
 	    -webkit-border-radius: 50%;
 	    -moz-border-radius: 50%;
 	    -ms-border-radius: 50%;
 	    -o-border-radius: 50%;
 	    border-radius: 50%;
+	    overflow: hidden;
 	}
 
 	#dashboard-create-group-body form{
@@ -103,9 +120,15 @@
 			<input class="form-control col-md-7 mr-sm-2" type="search" placeholder="Search here ..." aria-label="Search">
 		</form>
 		<div class="col-5 col-md-3 user-dashboard-nav-right-group d-flex align-items-center justify-content-between">
-			<div class="d-none d-md-block user-dashboard-nav-profile-pic-wrapper rounded-circle">
-				<img class="profile-img-icon" src="../../assets/images/user.png" alt="No profile picture">
-			</div>
+			<a href="/user/dashboard/user-profile">
+				<div class="d-none d-md-block user-dashboard-nav-profile-pic-wrapper rounded-circle">
+					{{ if .UserDetails.UserAvatarUrl }}
+						<img class="img-fluid" class="profile-img-icon" src="../../assets/db_files/user_dp_img/{{ .UserDetails.UserAvatarUrl }}" alt="User profile picture" style="object-fit: cover; object-position: center;">
+					{{ else }}
+						<img class="profile-img-icon" src="../../assets/images/user.png" alt="No profile picture">
+					{{ end }}
+				</div>	
+			</a>
 			<a href="/user/dashboard/people"><i class='fas fa-user-friends' style='font-size:24px; color: white;'></i></a>
 			<div class="dropdown">
 			    <button class="btn" type="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -125,17 +148,28 @@
 	<div class="dashboard-content-wrapper d-flex h-100">
 		<div class="user-dashboard-left-col d-none d-md-block col-md-5 col-lg-4 h-100 d-flex flex-column">
 			<div class="user-dashboard-top-sec story-sec py-2 px-4">
-				<img src="../../assets/images/user.png" alt="user profile picture">
+				<div class="user-story-sec-image-wrapper">
+					{{ if .UserDetails.UserAvatarUrl }}
+						<img class="img-fluid" src="../../assets/db_files/user_dp_img/{{ .UserDetails.UserAvatarUrl }}" alt="User profile picture" style="object-fit: cover; object-position: center;">
+					{{ else }}
+						<img src="../../assets/images/user.png" alt="user profile picture">
+					{{ end }}
+				</div>
 			</div>
 			<div class="p-3 h-100 recent-chat-bg">
 				<!-- First char card -->
 
 				{{ if .RecentChatList }}
+					<p class="mb-3" style="font-size: 1.2em; font-weight: 500;">Recent chats</p>
 					{{ range .RecentChatList }}
 						<a href="javascript:pmHim('{{ .UserName }}');">
 							<div class="d-flex align-items-end mb-2 p-3 bg-white recent-chat-card">
 								<div class="recent-chat-dp-wrapper">
-									<img src="../../assets/images/user.png" alt="user profile picture">
+									{{ if .UserAvatar }}
+										<img class="img-fluid" src="../../assets/db_files/user_dp_img/{{ .UserAvatar }}" alt="User profile picture" style="object-fit: cover; object-position: center;">
+									{{ else }}
+										<img src="../../assets/images/user.png" alt="user profile picture">
+									{{ end }}
 								</div>
 								<div class="w-100 d-flex flex-column px-3">
 									<label><strong>{{ .UserName }}</strong></label>
@@ -161,64 +195,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.0/jquery.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.0/jquery.validate.min.js"></script>
 <script type="text/javascript" src="../../assets/js/user_dashboard_functions.js"></script>
-<script>
-	// $(() => {
- //        // function will get executed 
- //        // on click of submit button
- //        $("#create-group-bt").click(function(ev) {
- //            var form = $("#createNewGroupForm");
- //        	var fd = new FormData();
- //        	var files = $('#imageUpload')[0].files[0];
- //        	const name = form.getElementById('groupName') ;
-	// 		const about = form.getElementById('group-about') ;
 
- //        	fd.append('file', files);
- //        	fd.append('name', name.value);
- //        	fd.append('about', about.value);
-
- //            $.ajax({
-	//             type: "POST",
-	//             url: form.action(),
-	//             data: fd,
-	//             success: function(data) {
-	//             	alert("Endhala???" + data);
-	//             	location.href("www.google.com");
-	//             },
-	//             error: function(data) {
-	//                 // Some error in ajax call
-	//                 alert("some Error");
-	//             }
-	//         });
-	//     });
-	// });
-
-//  const fileInput = document.getElementById('imageUpload') ;
-//  const name = document.getElementById('groupName') ;
-//  const about = document.getElementById('group-about') ;
-//  let button = document.getElementById('create-group-bt')
-
-// button.addEventListener("click", function(){
-
-
-
-// const formData = new FormData();
-
-// formData.append('file', fileInput.files[0]);
-// formData.append('name', name.value);
-// formData.append('about', about.value);
-
-//     const options = {
-//       method: 'POST',
-//       body: formData,
-//       // If you add this, upload won't work
-//       headers: {
-//         'Content-Type': 'multipart/form-data',
-//       }
-//     };
-//     fetch('/user/dashboard/create-group',options)
-//     .then(data=>console.log({data}))
-//     })
-</script>
 {{ template "websocketJs" . }}
 
 {{ template "footer_part" . }}

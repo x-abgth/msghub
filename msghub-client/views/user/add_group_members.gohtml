@@ -105,7 +105,7 @@
 						<div class="d-flex justify-content-center align-items-end mb-2 p-3 bg-white recent-chat-card">
 							<div class="recent-chat-dp-wrapper">
 								{{ if .UserAvatarUrl }}
-									<img src="{{ .UserAvatarUrl }}" alt="user profile picture">
+									<img class="img-fluid" src="../../assets/db_files/user_dp_img/{{ .UserAvatarUrl }}" alt="user profile picture">
 								{{ else }}
 									<img src="../../assets/images/user.png" alt="user profile picture">
 								{{ end }}
@@ -121,9 +121,11 @@
 					</a>
 				{{ end }}
 			{{ end }}
+			<a id="hidden-bt" href="/user/dashboard" style="display: hidden;"></a>
 		</div>
 	</section>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.0/jquery.min.js"></script>
+	<script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
 	<script>
 		let groupMembers = [];
 		function addThisGuy(phone) {
@@ -152,6 +154,7 @@
 		}
 
 		let doneBt = document.getElementById('final-done-bt');
+		let redirectBt = document.getElementById('hidden-bt');
 
 		function createThisGroup() {
 			if(groupMembers.length < 3) {
@@ -166,10 +169,24 @@
 			            }),
 			            success: function (response) {
 			                console.log(response);
+			                swal({
+								title: "Group created.",
+								text: "You have successfully created a group!",
+								icon: "success",
+								button: "OK",
+							}).then((isOkay)=>{
+								if (isOkay) {
+									redirectBt.click();
+								} else {
+									redirectBt.click();
+								}
+							});
 			            },
 			            error: function(data) {
 		                	// Some error in ajax call
 		                	alert("some Error + ", data);
+							redirectBt.click();
+
 		            	}
 			        });
 			    });

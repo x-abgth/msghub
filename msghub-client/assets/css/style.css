@@ -287,8 +287,17 @@ nav.msghub-nav .profile-img-icon{
 	height: 2.5rem;
 	width: 2.5rem;
 	border-radius: 50%;
+	background-color: #ffffff50;
 	color: white;
 	overflow: hidden;
+}
+
+.user-dashboard-nav-right-group .user-dashboard-nav-profile-pic-wrapper img {
+	height: 2.5rem;
+	width: 2.5rem;
+	border-radius: 50%;
+	object-fit: cover;
+	object-position: center;
 }
 
 .auth-error-msg {
@@ -319,6 +328,7 @@ div.dashboard-content-wrapper div.recent-chat-bg a: hover{
 }
 
 .recent-chat-dp-wrapper{
+	overflow: hidden;
 	height: 50px;
 	width: 50px;
 	border-radius: 50%;
@@ -327,6 +337,7 @@ div.dashboard-content-wrapper div.recent-chat-bg a: hover{
 .recent-chat-dp-wrapper img{
 	height: 50px;
 	object-fit: cover;
+	object-position: center;
 }
 
 div.recent-chat-bg div.recent-chat-card{
@@ -349,8 +360,18 @@ div.user-dashboard-top-sec{
 	background-color: white;
 }
 
-div.story-sec img {
+div.story-sec div.user-story-sec-image-wrapper{
+	overflow: hidden;
+	background-color: white;
 	height: 50px;
+	width: 50px;
+	border-radius: 50% !important;
+}
+
+div.story-sec div.user-story-sec-image-wrapper img {
+	height: 50px;
+	object-fit: cover;
+	object-position: center;
 }
 
 div.chat-head {

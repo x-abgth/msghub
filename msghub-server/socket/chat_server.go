@@ -1,11 +1,15 @@
 package socket
 
-import "fmt"
+import (
+	"fmt"
+	"msghub-server/models"
+)
 
 //	Because our ChatServer acts like a hub for connecting the parts of our chat application,
 //	we will use it to keep track of all the rooms that will be created.
 
 type WsServer struct {
+	users      []models.UserModel
 	clients    map[*Client]bool
 	register   chan *Client
 	unregister chan *Client
@@ -25,7 +29,7 @@ func NewWebSocketServer() *WsServer {
 }
 
 // Run our websocket server, accepting various requests
-// This function will run infinetly and listens to the channels
+// This function will run finely and listens to the channels
 func (server *WsServer) Run() {
 	for {
 		select {
@@ -41,12 +45,16 @@ func (server *WsServer) Run() {
 
 // If a client is joined we will make the map value to true.
 func (server *WsServer) registerClient(client *Client) {
+	room := NewRoom(client.Name, client.ID, true)
+	room.RunRoom()
+	server.listOnlineClients(client)
 	server.clients[client] = true
 }
 
 // If the client is left from the socket, we will delete the client key and value.
 func (server *WsServer) unregisterClient(client *Client) {
 	fmt.Println("unregistered")
+	server.notifyClientLeft(client)
 	delete(server.clients, client)
 }
 
@@ -54,6 +62,36 @@ func (server *WsServer) unregisterClient(client *Client) {
 func (server *WsServer) broadcastToClients(message []byte) {
 	for client := range server.clients {
 		client.send <- message
+	}
+}
+
+func (server *WsServer) notifyClientJoined(client *Client) {
+	message := &Message{
+		Action: UserJoinedAction,
+		Sender: client,
+	}
+
+	server.broadcastToClients(message.encode())
+}
+
+func (server *WsServer) notifyClientLeft(client *Client) {
+	message := &Message{
+		Action: UserLeftAction,
+		Sender: client,
+	}
+
+	server.broadcastToClients(message.encode())
+}
+
+func (server *WsServer) listOnlineClients(client *Client) {
+	fmt.Println("Inside listonlineclients -- ")
+	for existingClient := range server.clients {
+		message := &Message{
+			Action: UserJoinedAction,
+			Sender: existingClient,
+		}
+		fmt.Println(message)
+		client.send <- message.encode()
 	}
 }
 
@@ -69,12 +107,13 @@ func (server *WsServer) findRoomByName(name string) *Room {
 }
 
 func (server *WsServer) createRoom(name string, private bool) *Room {
-	room := NewRoom(name, private)
+	room := NewRoom(name, "", private)
 	go room.RunRoom()
 	server.rooms[room] = true
 
 	return room
 }
+
 func (server *WsServer) findRoomByID(ID string) *Room {
 	var foundRoom *Room
 	for room := range server.rooms {
@@ -89,7 +128,7 @@ func (server *WsServer) findRoomByID(ID string) *Room {
 func (server *WsServer) findClientByID(ID string) *Client {
 	var foundClient *Client
 	for client := range server.clients {
-		if client.ID.String() == ID {
+		if client.ID == ID {
 			foundClient = client
 			break
 		}
