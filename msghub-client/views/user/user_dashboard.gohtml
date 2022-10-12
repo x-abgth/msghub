@@ -111,6 +111,19 @@
 	 	outline: none;
 	 	border: none;
 	 }
+
+	 .welcome-chat h6, .welcome-chat p{
+	 	text-align: center;
+	 	color: black;
+	 	-webkit-user-select: none; /* Safari */
+		-ms-user-select: none; /* IE 10 and IE 11 */
+		user-select: none; /* Standard syntax */
+	 }
+
+	 .welcome-chat p{
+	 	width: 70%;
+	 }
+
 </style>
 
 <section class="overflow-hidden">
@@ -162,7 +175,7 @@
 				{{ if .RecentChatList }}
 					<p class="mb-3" style="font-size: 1.2em; font-weight: 500;">Recent chats</p>
 					{{ range .RecentChatList }}
-						<a href="javascript:pmHim('{{ .UserName }}');">
+						<a href="javascript:startSocketConnection('{{ .UserPhone }}');">
 							<div class="d-flex align-items-end mb-2 p-3 bg-white recent-chat-card">
 								<div class="recent-chat-dp-wrapper">
 									{{ if .UserAvatar }}
@@ -185,6 +198,7 @@
 		</div>
 		
 		<div class="col-12 col-md-7 col-lg-8 chat-section-wrapper h-100" id="dashboard-right-col">
+			{{ template "chat_welcome_sec" . }}
 			{{ template "dashboard_chat_part" . }}
 			{{ template "dashboard_create_group_form" . }}
 		</div>

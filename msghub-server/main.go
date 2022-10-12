@@ -52,7 +52,7 @@ func main() {
 // This function helps to cleanly shut down the server
 func run() error {
 	newMux := mux.NewRouter()
-	// serving other files like css, and images using only http package
+	// serving other files like css, and assets using only http package
 	fileServe := http.FileServer(http.Dir("../msghub-client/assets/"))
 	newMux.PathPrefix("/assets/").Handler(http.StripPrefix("/assets/", fileServe))
 

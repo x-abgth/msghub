@@ -1,6 +1,6 @@
 {{ define "dashboard_chat_part" }}
 
-	<div id="dashboard-chat-part-header" class="user-dashboard-top-sec chat-head py-2 px-4 d-flex justify-content-between align-items-center">
+	<div id="dashboard-chat-part-header" class="d-none user-dashboard-top-sec chat-head py-2 px-4 d-flex justify-content-between align-items-center">
 		<div class="d-flex align-items-center">
 			<div id="dashboard-chat-part-header-image-wrapper">
 				<img  class="img-fluid" src="../../assets/images/user.png" alt="user profile picture">
@@ -9,7 +9,7 @@
 		</div>			
 		<a href="#"><i class='fas fa-info-circle' style='font-size:28px'></i></a>	
 	</div>
-	<div id="dashboard-chat-part-body" class="d-flex flex-column user-chat-sec">
+	<div id="dashboard-chat-part-body" class="d-none flex-column user-chat-sec">
 		<div id="log" class="message-area py-4 px-3 d-flex flex-column">
 			<p class="msg-encrypt-note py-2 px-3 mb-5"><i class='fas fa-lock'></i>&nbsp;&nbsp;Messages are end-to-end encrypted. No one outside of this chat, not even Msghub can read them.</p>
 			<!-- First user message -->

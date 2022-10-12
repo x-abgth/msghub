@@ -45,23 +45,43 @@ func (server *WsServer) Run() {
 
 // If a client is joined we will make the map value to true.
 func (server *WsServer) registerClient(client *Client) {
-	room := NewRoom(client.Name, client.ID, true)
-	room.RunRoom()
-	server.listOnlineClients(client)
+	//room := NewRoom(client.Name, client.ID, true)
+	//room.RunRoom()
+	//server.listOnlineClients(client)
 	server.clients[client] = true
 }
 
 // If the client is left from the socket, we will delete the client key and value.
 func (server *WsServer) unregisterClient(client *Client) {
 	fmt.Println("unregistered")
-	server.notifyClientLeft(client)
+	//server.notifyClientLeft(client)
 	delete(server.clients, client)
 }
 
 // If the client send a message, it broadcasts to all the other users
 func (server *WsServer) broadcastToClients(message []byte) {
-	for client := range server.clients {
-		client.send <- message
+	//for client := range server.clients {
+	//	client.send <- message
+	//}
+
+	fmt.Println("Reached at broadcast to all clients - ")
+
+	fmt.Println("Client --- ", models.ClientID)
+	fmt.Println("Target --- ", models.TargetID)
+
+	user := server.findClientByID(models.ClientID)
+	target := server.findClientByID(models.TargetID)
+
+	fmt.Println("Client --- ", user)
+	fmt.Println("Target --- ", target)
+
+	fmt.Println(string(message))
+
+	if user != nil {
+		user.send <- message
+	}
+	if target != nil {
+		target.send <- message
 	}
 }
 

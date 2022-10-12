@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/gorilla/websocket"
 	"log"
+	"msghub-server/models"
 	"net/http"
 	"os"
 	"time"
@@ -74,7 +75,7 @@ func (client *Client) GetName() string {
 
 // ServeWs handles websocket requests from clients requests.
 // The ServeWs function will be called from routes.go
-func ServeWs(phone string, wsServer *WsServer, w http.ResponseWriter, r *http.Request) {
+func ServeWs(phone, target string, wsServer *WsServer, w http.ResponseWriter, r *http.Request) {
 	//name, ok := r.URL.Query()["name"]
 	//
 	//if !ok || len(name[0]) < 1 {
@@ -91,6 +92,9 @@ func ServeWs(phone string, wsServer *WsServer, w http.ResponseWriter, r *http.Re
 	// whenever the function ServeWs is called a new client is created.
 	client := newClient(conn, wsServer, phone)
 
+	models.ClientID = client.ID
+	models.TargetID = target
+
 	go client.writePump()
 	go client.readPump()
 
@@ -101,7 +105,15 @@ func ServeWs(phone string, wsServer *WsServer, w http.ResponseWriter, r *http.Re
 	fmt.Println(client)
 }
 
+// ------------------------------------------------------------------------------
+// -------------------- PRIVATE CHAT READ AND WRITE PUMP ------------------------
+// ------------------------------------------------------------------------------
+
+// ------------------------------------------------------------------------------
+// -------------------- BROADCAST READ AND WRITE PUMP ------------------------
+// ------------------------------------------------------------------------------
 func (client *Client) readPump() {
+	fmt.Println("At read pump")
 	defer func() {
 		client.wsServer.unregister <- client
 		client.conn.Close()
@@ -131,8 +143,8 @@ func (client *Client) readPump() {
 			break
 		}
 		//client.handleNewMessage(jsonMessage)
-		client.wsServer.broadcast <- jsonMessage
 		fmt.Println("Reading -- ", string(jsonMessage))
+		client.wsServer.broadcast <- jsonMessage
 	}
 }
 
@@ -143,7 +155,7 @@ func (client *Client) readPump() {
 */
 
 func (client *Client) writePump() {
-	var messageObj Message
+	fmt.Println("At write Pump")
 
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
@@ -156,34 +168,28 @@ func (client *Client) writePump() {
 		case message, ok := <-client.send:
 			client.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if !ok {
+				log.Println("Not okay")
 				client.conn.WriteMessage(websocket.CloseMessage, []byte{})
 				return
 			}
 
 			w, err := client.conn.NextWriter(websocket.TextMessage)
 			if err != nil {
+				log.Println(err.Error())
 				return
 			}
 			fmt.Println("Writing -- ", string(message))
 
-			// Check if it is a private chat or not
-			json.Unmarshal(message, &messageObj)
+			w.Write(message)
 
-			if messageObj.IsPrivate {
-				room := NewRoom("private", "", true)
-				room.RunRoom()
-			} else {
-				w.Write(message)
+			n := len(client.send)
+			for i := 0; i < n; i++ {
+				w.Write(newline)
+				w.Write(<-client.send)
+			}
 
-				n := len(client.send)
-				for i := 0; i < n; i++ {
-					w.Write(newline)
-					w.Write(<-client.send)
-				}
-
-				if err := w.Close(); err != nil {
-					return
-				}
+			if err := w.Close(); err != nil {
+				return
 			}
 
 		case <-ticker.C:

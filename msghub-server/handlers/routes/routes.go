@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"fmt"
 	"github.com/gorilla/mux"
 	"log"
 	"msghub-server/socket"
@@ -11,7 +12,14 @@ import (
 
 func InitializeRoutes(theMux *mux.Router, server *socket.WsServer) {
 
-	theMux.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+	theMux.HandleFunc("/ws/{target}", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println("--------- IN /WS/TARGET HANDLER FUNCTION ------------")
+
+		vars := mux.Vars(r)
+		target := vars["target"]
+
+		fmt.Println(target)
+
 		c, err1 := r.Cookie("userToken")
 		if err1 != nil {
 			if err1 == http.ErrNoCookie {
@@ -22,7 +30,7 @@ func InitializeRoutes(theMux *mux.Router, server *socket.WsServer) {
 
 		claim := jwtPkg.GetValueFromJwt(c)
 
-		socket.ServeWs(claim.User.UserPhone, server, w, r)
+		socket.ServeWs(claim.User.UserPhone, target, server, w, r)
 	})
 
 	userRoutes(theMux)
