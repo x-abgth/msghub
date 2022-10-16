@@ -18,10 +18,11 @@ import (
 
 // This might helps to pass error strings from one route to other
 type InformationHelper struct {
-	userRepo  logic.UserDb
-	groupRepo logic.GroupDataLogicModel
-	errorStr  string
-	title     string
+	userRepo     logic.UserDb
+	messagesRepo logic.MessageDb
+	groupRepo    logic.GroupDataLogicModel
+	errorStr     string
+	title        string
 }
 
 func (info *InformationHelper) UserLoginHandler(w http.ResponseWriter, r *http.Request) {
@@ -231,6 +232,12 @@ func (info *InformationHelper) UserDashboardHandler(w http.ResponseWriter, r *ht
 			}
 		}
 	}()
+
+	// Creates table for user's personal messages
+	migrateErr := info.messagesRepo.MigrateMessagesDb(models.GormDb)
+	if migrateErr != nil {
+		panic(migrateErr.Error())
+	}
 
 	c, err1 := r.Cookie("userToken")
 	if err1 != nil {
@@ -542,6 +549,60 @@ func (info *InformationHelper) UserGroupCreationHandler(w http.ResponseWriter, r
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(err3.Error())
 	}
+}
+
+func (info *InformationHelper) UserNewChatSelectedHandler(w http.ResponseWriter, r *http.Request) {
+
+	defer func() {
+		if e := recover(); e != nil {
+			fmt.Println(e)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(e)
+		}
+	}()
+
+	type targetID struct {
+		Data string `json:"target"`
+	}
+
+	var target targetID
+
+	a, _ := io.ReadAll(r.Body)
+	err := json.Unmarshal(a, &target)
+	if err != nil {
+		panic(err.Error())
+	}
+	fmt.Println("Target is ", target.Data)
+
+	data, err1 := info.messagesRepo.GetMessageDataLogic(target.Data)
+	if err1 != nil {
+		panic(err1.Error())
+	}
+
+	val, err2 := info.userRepo.GetUserDataLogic(target.Data)
+	if err2 != nil {
+		panic(err2.Error())
+	}
+
+	xData := struct {
+		Name   string                `json:"name"`
+		Avatar string                `json:"avatar"`
+		About  string                `json:"about"`
+		Val    []models.MessageModel `json:"data"`
+	}{
+
+		Name:   val.UserName,
+		Avatar: val.UserAvatarUrl,
+		About:  val.UserAbout,
+		Val:    data,
+	}
+
+	// If everything goes well...
+	s, _ := json.Marshal(xData)
+	fmt.Println(xData)
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(s)
 }
 
 func (info *InformationHelper) UserLogoutHandler(w http.ResponseWriter, r *http.Request) {

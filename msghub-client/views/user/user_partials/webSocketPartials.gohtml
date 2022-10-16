@@ -1,6 +1,84 @@
 {{ define "websocketJs" }}
 	<script>
 		function startSocketConnection(target) {
+			$(document).ready(function () {
+		        $.ajax({
+		            type: "POST",
+		            url: "/user/dashboard/new-chat-selected",
+		            data: JSON.stringify({
+		            	target: target,
+		            }),
+		            success: function (response) {
+		                console.log(response);
+		                if (response != null) {
+		                	document.getElementById("chat-user-name").innerText = response.name;
+		                	let arrayLength = response.data.length;
+
+			                for (let i = 0; i < arrayLength; i ++) {
+			                	let item = document.createElement('div');
+							    let innerItem = document.createElement("label");
+							    let itemTime = document.createElement("label");   
+							    let recipient = document.createElement("i");      
+
+								if(response.data[i].from == {{ .UserPhone }}) {
+									let msgDetails = document.createElement('div');
+							        item.classList.add("user-chat-msg-field", "d-flex", "flex-column", "mb-2");
+							        innerItem.classList.add("chat-bubble", "user-chat-bubble", "px-3", "py-2", "text-wrap", "word-wrap", "text-break");
+							        msgDetails.classList.add("d-flex", "align-items-center");
+							        itemTime.classList.add("chat-time","mt-1", "mx-2");
+							        let time = response.data[i].time.split(" ");
+							        itemTime.innerText = time[1] + " " + time[2];
+
+							        recipient.classList.add("fas", "fa-check-double");
+
+							        msgDetails.appendChild(itemTime);
+							        msgDetails.appendChild(recipient);
+
+							        innerItem.innerText = response.data[i].message;
+							        item.appendChild(innerItem);
+							        item.appendChild(msgDetails);
+							        appendLog(item);
+								} else {
+							        item.classList.add("chat-msg-field", "d-flex", "flex-column", "mb-2");
+							        innerItem.classList.add("chat-bubble", "px-3", "py-2", "text-wrap", "word-wrap", "text-break");
+							        itemTime.classList.add("chat-time","mt-1", "ms-2");
+									let time = response.data[i].time.split(" ");
+							        itemTime.innerText = time[1] + " " + time[2];
+							        
+							        innerItem.innerText = response.data[i].message;
+							        item.appendChild(innerItem);
+							        item.appendChild(itemTime);
+							        appendLog(item);
+								}
+			                }
+			                messages.scrollTop = messages.scrollHeight;
+
+			                // 
+			                let userPh = document.getElementById("phone-number-shown");
+		                	let userName = document.getElementById("phone-name-shown");
+		                	let userAbout = document.getElementById("phone-about-shown");
+		                	let userImg = document.getElementById("phone-img-shown");
+
+		                	userPh.innerText = target;
+		                	userName.innerText = response.name;
+		                	userAbout.innerText = response.about;
+		                	if(response.avatar === "") {
+		                		userImg.setAttribute("src", "../../assets/images/user.png")
+		                	} else {
+		                		userImg.setAttribute("src", "../../assets/db_files/user_dp_img/"+response.avatar)
+		                	}
+		                	
+		                } else {
+
+		                }
+		            },
+		            error: function(data) {
+	                	// Some error in ajax call
+	                	alert("some Error + ", data);
+						redirectBt.click();
+	            	}
+		        });
+		    });
 			const chatPartHead = document.getElementById("dashboard-chat-part-header");
 			const chatPartBody = document.getElementById("dashboard-chat-part-body");
 			const welcomeChat = document.getElementById("welcome-chat-sec");
@@ -17,7 +95,6 @@
 					chatPartBody.classList.remove('d-none');
 					chatPartBody.classList.add('d-flex');
 				}
-				
 			}
 
 			const input = document.querySelector("#msgInp");
@@ -26,7 +103,7 @@
 			let url
 			if(url == undefined) {
 				url = "ws://" + window.location.host + "/ws/" + target; 
-				console.log(url)
+				console.log(url);
 			} else {
 				array = url.split("/ws/");
 				url = array[0]+"/ws/";
@@ -70,17 +147,18 @@
 		        }
 
 		        let current = new Date();
-				let cDate = current.getFullYear() + '-' + (current.getMonth() + 1) + '-' + current.getDate();
+				let cDate = current.getDate() + '-' + (current.getMonth() + 1) + '-' + current.getFullYear();
 				let cTime =  current.toLocaleString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true })
 				let dateTime = cDate + ' ' + cTime;
 				
+				console.log(dateTime);
+
 				const message = {
-					message: input.value,
-					firstUser : {{ .UserPhone }},
-			    	secondUser : "",
+					from : {{ .UserPhone }},
 			    	message : input.value,
 			    	time : dateTime,
 				}
+
 
 		        ws.send(JSON.stringify(message));
 		       	input.value = "";
@@ -93,7 +171,7 @@
 			    let itemTime = document.createElement("label");   
 			    let recipient = document.createElement("i");      
 
-				if(msgobj.firstUser == {{ .UserPhone }}) {
+				if(msgobj.from == {{ .UserPhone }}) {
 					let msgDetails = document.createElement('div');
 			        item.classList.add("user-chat-msg-field", "d-flex", "flex-column", "mb-2");
 			        innerItem.classList.add("chat-bubble", "user-chat-bubble", "px-3", "py-2", "text-wrap", "word-wrap", "text-break");

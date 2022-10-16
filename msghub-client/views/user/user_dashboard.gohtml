@@ -124,6 +124,36 @@
 	 	width: 70%;
 	 }
 
+	 #profile-top-part div{
+	 	height: 20em;
+	 	width:  20em;
+	 	overflow: hidden;
+		border-radius: 50%;
+	 }
+
+	 #profile-top-part div img {
+	 	border-radius: 50%;
+		object-position: center;
+		object-fit: cover;
+	 }
+
+	 #profile-top-part h4, #profile-top-part p {
+	 	text-align: center;
+	 }
+
+	 #profile-about-part {
+	 	font-size: 1.3em;
+	 }
+
+	 #dashboard-user-details-body button{
+	 	background: transparent;
+	 	border: none;
+	 	outline: none;
+	 	color: red;
+	 	font-size: 1.2em;
+	 	cursor: pointer;	
+	 }
+
 </style>
 
 <section class="overflow-hidden">
@@ -201,6 +231,7 @@
 			{{ template "chat_welcome_sec" . }}
 			{{ template "dashboard_chat_part" . }}
 			{{ template "dashboard_create_group_form" . }}
+			{{ template "user_details_part" . }}
 		</div>
 
 	</div>
@@ -209,6 +240,60 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.0/jquery.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.0/jquery.validate.min.js"></script>
 <script type="text/javascript" src="../../assets/js/user_dashboard_functions.js"></script>
+<script type="text/javascript">
+	function openUserDetailsSec() {
+
+		// Send an ajax request to get the user details
+		// It should contain -
+		// name, avatar, phone, about
+
+		userDetailsHeader = document.getElementById("dashboard-user-details-header");
+		userDetailsBody = document.getElementById("dashboard-user-details-body");
+
+		userChatHead = document.getElementById("dashboard-chat-part-header");
+		userChatBody = document.getElementById("dashboard-chat-part-body");
+
+		if(userDetailsHeader.classList.contains('d-none')) {
+			if(userChatBody.classList.contains('d-flex')) {
+				userChatHead.classList.remove('d-flex');
+				userChatHead.classList.add('d-none');
+
+				userChatBody.classList.remove('d-flex');
+				userChatBody.classList.add('d-none');
+
+				userDetailsHeader.classList.remove('d-none');
+				userDetailsHeader.classList.add('d-flex');
+
+				userDetailsBody.classList.remove('d-none');
+				userDetailsBody.classList.add('d-flex');
+			}
+		}
+	}
+
+	function closeUserDetailsSec() {
+		userDetailsHeader = document.getElementById("dashboard-user-details-header");
+		userDetailsBody = document.getElementById("dashboard-user-details-body");
+
+		userChatHead = document.getElementById("dashboard-chat-part-header");
+		userChatBody = document.getElementById("dashboard-chat-part-body");
+
+		if(userDetailsHeader.classList.contains('d-flex')) {
+			if(userChatBody.classList.contains('d-none')) {
+				userChatHead.classList.remove('d-none');
+				userChatHead.classList.add('d-flex');
+
+				userChatBody.classList.remove('d-none');
+				userChatBody.classList.add('d-flex');
+
+				userDetailsHeader.classList.remove('d-flex');
+				userDetailsHeader.classList.add('d-none');
+
+				userDetailsBody.classList.remove('d-flex');
+				userDetailsBody.classList.add('d-none');
+			}
+		}
+	}
+</script>
 
 {{ template "websocketJs" . }}
 

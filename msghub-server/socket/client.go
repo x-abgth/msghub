@@ -109,9 +109,6 @@ func ServeWs(phone, target string, wsServer *WsServer, w http.ResponseWriter, r 
 // -------------------- PRIVATE CHAT READ AND WRITE PUMP ------------------------
 // ------------------------------------------------------------------------------
 
-// ------------------------------------------------------------------------------
-// -------------------- BROADCAST READ AND WRITE PUMP ------------------------
-// ------------------------------------------------------------------------------
 func (client *Client) readPump() {
 	fmt.Println("At read pump")
 	defer func() {

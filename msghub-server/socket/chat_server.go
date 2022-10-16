@@ -1,8 +1,12 @@
 package socket
 
 import (
+	"encoding/json"
 	"fmt"
+	"log"
+	"msghub-server/logic"
 	"msghub-server/models"
+	"os"
 )
 
 //	Because our ChatServer acts like a hub for connecting the parts of our chat application,
@@ -60,28 +64,44 @@ func (server *WsServer) unregisterClient(client *Client) {
 
 // If the client send a message, it broadcasts to all the other users
 func (server *WsServer) broadcastToClients(message []byte) {
+	defer func() {
+		if e := recover(); e != nil {
+			log.Println("Error happened in sending message")
+			log.Println(e)
+			os.Exit(1)
+		}
+	}()
+
 	//for client := range server.clients {
 	//	client.send <- message
 	//}
-
-	fmt.Println("Reached at broadcast to all clients - ")
-
-	fmt.Println("Client --- ", models.ClientID)
-	fmt.Println("Target --- ", models.TargetID)
+	var msgModel logic.MessageDb
 
 	user := server.findClientByID(models.ClientID)
 	target := server.findClientByID(models.TargetID)
 
-	fmt.Println("Client --- ", user)
-	fmt.Println("Target --- ", target)
-
-	fmt.Println(string(message))
-
 	if user != nil {
+		var model models.MessageModel
+
+		err := json.Unmarshal(message, &model)
+		if err != nil {
+			panic(err.Error())
+		}
+
+		fmt.Println("model = ", model)
+		a := msgModel.UserData
+		a.Content = model.Content
+		a.FromUserId = model.From
+		a.ToUserId = models.TargetID
+		a.SentTime = model.Time
+		a.Status = logic.IS_SENT
+		fmt.Println("a = ", a)
+		msgModel.StorePersonalMessagesLogic(a)
+
 		user.send <- message
-	}
-	if target != nil {
-		target.send <- message
+		if target != nil {
+			target.send <- message
+		}
 	}
 }
 

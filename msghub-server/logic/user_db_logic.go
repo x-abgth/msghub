@@ -9,10 +9,6 @@ import (
 	"msghub-server/utils"
 )
 
-type Users interface {
-	UserLoginCase()
-}
-
 type UserDb struct {
 	userData repository.User
 	err      error
