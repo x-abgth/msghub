@@ -1,18 +1,18 @@
 package logic
 
 import (
-	"gorm.io/gorm"
 	"log"
 	"msghub-server/models"
 	"msghub-server/repository"
 	"os"
 	"sort"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 type MessageDb struct {
 	UserData repository.Message
-	err      error
 }
 
 // message status constants
@@ -29,37 +29,52 @@ func (m MessageDb) MigrateMessagesDb(db *gorm.DB) error {
 	return err
 }
 
-func (m MessageDb) StorePersonalMessagesLogic(message repository.Message) {
+func (m MessageDb) StorePersonalMessagesLogic(message models.MessageModel) {
 	defer func() {
 		if e := recover(); e != nil {
 			log.Println(e)
 			os.Exit(1)
 		}
 	}()
-	err := m.UserData.InsertMessageDataRepository(message)
+
+	data := m.UserData
+	data.Content = message.Content
+	data.FromUserId = message.From
+	data.ToUserId = message.To
+	data.SentTime = message.Time
+	data.Status = message.Status
+
+	err := m.UserData.InsertMessageDataRepository(data)
 	if err != nil {
 		panic(err.Error())
 	}
 }
 
-func (m MessageDb) GetMessageDataLogic(target string) ([]models.MessageModel, error) {
+func (m MessageDb) GetMessageDataLogic(target, from string) ([]models.MessageModel, error) {
 	var this []models.MessageModel
 
-	err, data := m.UserData.GetAllPersonalMessages(target)
+	data1, err := m.UserData.GetAllPersonalMessages(from, target)
 	if err != nil {
 		return this, err
 	}
 
-	for i := range data {
-		myTime, err := time.Parse("02-01-2006 3:04 PM", data[i].Time)
+	data2, err := m.UserData.GetAllPersonalMessages(target, from)
+	if err != nil {
+		return this, err
+	}
+
+	data1 = append(data1, data2...)
+
+	for i := range data1 {
+		myTime, err := time.Parse("02-01-2006 3:04:05 PM", data1[i].Time)
 		if err != nil {
 			return this, err
 		}
 		diff := time.Now().Sub(myTime)
 		d := models.MessageModel{
-			From:    data[i].From,
-			Content: data[i].Content,
-			Time:    data[i].Time,
+			From:    data1[i].From,
+			Content: data1[i].Content,
+			Time:    data1[i].Time,
 			Order:   float64(diff),
 		}
 

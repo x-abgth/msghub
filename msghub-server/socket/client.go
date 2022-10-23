@@ -89,6 +89,8 @@ func ServeWs(phone, target string, wsServer *WsServer, w http.ResponseWriter, r 
 		return
 	}
 
+	defer conn.Close()
+
 	// whenever the function ServeWs is called a new client is created.
 	client := newClient(conn, wsServer, phone)
 

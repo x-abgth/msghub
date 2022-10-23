@@ -30,11 +30,11 @@ VALUES($1, $2, $3, $4, $5);`,
 	return nil
 }
 
-func (m Message) GetAllPersonalMessages(target string) (error, []models.MessageModel) {
+func (m Message) GetAllPersonalMessages(from, to string) ([]models.MessageModel, error) {
 
 	var (
-		from, msg, time string
-		res             []models.MessageModel
+		fromID, msg, time string
+		res               []models.MessageModel
 	)
 
 	rows, err := models.SqlDb.Query(
@@ -43,29 +43,28 @@ func (m Message) GetAllPersonalMessages(target string) (error, []models.MessageM
     	content,
     	sent_time
 	FROM messages
-	WHERE to_user_id = $1;`, target)
+	WHERE from_user_id = $1 AND to_user_id = $2;`, from, to)
 	if err != nil {
-		errors.New("sorry, An unknown error occurred. Please try again")
-		return err, res
+		return res, err
 	}
 
 	defer rows.Close()
 
 	for rows.Next() {
 		if err1 := rows.Scan(
-			&from,
+			&fromID,
 			&msg,
 			&time); err1 != nil {
-			return err1, res
+			return res, err1
 		}
 
 		data := models.MessageModel{
-			From:    from,
+			From:    fromID,
 			Content: msg,
 			Time:    time,
 		}
 		res = append(res, data)
 	}
 
-	return nil, res
+	return res, nil
 }

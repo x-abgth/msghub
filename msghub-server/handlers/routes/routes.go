@@ -15,6 +15,13 @@ func InitializeRoutes(theMux *mux.Router, server *socket.WsServer) {
 	theMux.HandleFunc("/ws/{target}", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("--------- IN /WS/TARGET HANDLER FUNCTION ------------")
 
+		defer func() {
+			if e := recover(); e != nil {
+				log.Println(e)
+				http.Redirect(w, r, "/", http.StatusSeeOther)
+			}
+		}()
+
 		vars := mux.Vars(r)
 		target := vars["target"]
 
@@ -23,12 +30,15 @@ func InitializeRoutes(theMux *mux.Router, server *socket.WsServer) {
 		c, err1 := r.Cookie("userToken")
 		if err1 != nil {
 			if err1 == http.ErrNoCookie {
-				http.Redirect(w, r, "/", http.StatusSeeOther)
+				panic("No cookie found - " + err1.Error())
 			}
-			http.Redirect(w, r, "/", http.StatusSeeOther)
+			panic(err1.Error())
 		}
 
-		claim := jwtPkg.GetValueFromJwt(c)
+		claim := jwtPkg.GetValueFromJwt(c) // error
+		if claim == nil {
+			panic("JWT error happened!")
+		}
 
 		socket.ServeWs(claim.User.UserPhone, target, server, w, r)
 	})

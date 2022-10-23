@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log"
 	"msghub-server/models"
+	"strconv"
 )
 
 type User struct {
@@ -133,18 +134,20 @@ func (user User) GetUserData(ph string) (models.UserModel, error) {
 }
 
 // This is not actual list, need to update
-func (user User) GetRecentChatList(ph string) ([]models.RecentChatModel, error) {
-	var name, phone string
-	var avatar *string
-	var res []models.RecentChatModel
+func (user User) GetRecentChatList(ph string) ([]models.MessageModel, error) {
+	var from, to, content, sentTime, status string
+
+	var res []models.MessageModel
 
 	rows, err := models.SqlDb.Query(
 		`SELECT 
-    	user_avatar, 
-    	user_name, 
-    	user_ph_no 
-	FROM users
-	WHERE is_blocked = $1 AND user_ph_no != $2;`, false, ph)
+    from_user_id,
+    	to_user_id, 
+    	content, 
+    	sent_time,
+    	status
+	FROM messages
+	WHERE from_user_id = $1 OR to_user_id = $2`, ph, ph)
 	if err != nil {
 		return res, err
 	}
@@ -153,24 +156,22 @@ func (user User) GetRecentChatList(ph string) ([]models.RecentChatModel, error) 
 
 	for rows.Next() {
 		if err1 := rows.Scan(
-			&avatar,
-			&name,
-			&phone); err1 != nil {
+			&from,
+			&to,
+			&content,
+			&sentTime,
+			&status); err1 != nil {
 			return res, err1
 		}
 
-		if avatar == nil {
-			null := ""
+		data := models.MessageModel{
+			From:    from,
+			To:      to,
+			Content: content,
+			Time:    sentTime,
+			Status:  status,
+		}
 
-			avatar = &null
-		}
-		data := models.RecentChatModel{
-			UserName:    name,
-			UserPhone:   phone,
-			UserAvatar:  *avatar,
-			LastMsg:     "Hi",
-			LastMsgTime: "NIL",
-		}
 		res = append(res, data)
 	}
 
@@ -219,6 +220,35 @@ func (user User) GetAllUsersData(ph string) ([]models.UserModel, error) {
 		res = append(res, data)
 	}
 
+	return res, nil
+}
+
+func (user User) GetGroupForUser(userId string) ([]int, error) {
+	var group, userPh, role string
+	rows, err := models.SqlDb.Query(
+		`SELECT 
+    	group_id, 
+    	user_id, 
+    	user_role
+	FROM user_group_relations
+	WHERE user_id = $1;`, userId)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	var res []int
+	for rows.Next() {
+		if err1 := rows.Scan(
+			&group,
+			&userPh,
+			&role); err1 != nil {
+			return nil, err1
+		}
+		n, _ := strconv.Atoi(group)
+		res = append(res, n)
+	}
 	return res, nil
 }
 

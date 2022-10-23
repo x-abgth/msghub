@@ -13,6 +13,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/gorilla/mux"
+
 	"net/http"
 )
 
@@ -22,7 +24,6 @@ type InformationHelper struct {
 	messagesRepo logic.MessageDb
 	groupRepo    logic.GroupDataLogicModel
 	errorStr     string
-	title        string
 }
 
 func (info *InformationHelper) UserLoginHandler(w http.ResponseWriter, r *http.Request) {
@@ -224,12 +225,10 @@ func (info *InformationHelper) UserDashboardHandler(w http.ResponseWriter, r *ht
 	defer func() {
 		// recovers panic
 		if e := recover(); e != nil {
-			fmt.Println("Recovered from panic : ", e)
-			alm := models.ReturnAuthErrorModel()
-			err1 := template.Tpl.ExecuteTemplate(w, "index.gohtml", alm)
-			if err1 != nil {
-				fmt.Println("Error : ", err1)
-			}
+			log.Println(e)
+			cookie := &http.Cookie{Name: "userToken", MaxAge: -1, HttpOnly: true, Path: "/"}
+			http.SetCookie(w, cookie)
+			http.Redirect(w, r, "/", http.StatusSeeOther)
 		}
 	}()
 
@@ -241,6 +240,7 @@ func (info *InformationHelper) UserDashboardHandler(w http.ResponseWriter, r *ht
 
 	c, err1 := r.Cookie("userToken")
 	if err1 != nil {
+		log.Println("NO cookie")
 		if err1 == http.ErrNoCookie {
 			panic("Cookie not found!")
 		}
@@ -251,23 +251,29 @@ func (info *InformationHelper) UserDashboardHandler(w http.ResponseWriter, r *ht
 
 	data, err := info.userRepo.GetDataForDashboardLogic(claim.User.UserPhone)
 	if err != nil {
+		log.Println("Error getting dashboard logic")
 		info.errorStr = err.Error()
 		panic(err.Error())
 	}
+
 	info.errorStr = ""
 	err2 := template.Tpl.ExecuteTemplate(w, "user_dashboard.gohtml", data)
-	utils.PrintError(err2, "")
+	if err2 != nil {
+		log.Println("Error rendering dashboard.")
+		panic("Not yet")
+	}
 }
+
+//
 
 func (info *InformationHelper) UserProfilePageHandler(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		// recovers panic
 		if e := recover(); e != nil {
-			fmt.Println("Recovered from panic : ", e)
-			err1 := template.Tpl.ExecuteTemplate(w, "index.gohtml", nil)
-			if err1 != nil {
-				fmt.Println("Error : ", err1)
-			}
+			log.Println(e)
+			cookie := &http.Cookie{Name: "userToken", MaxAge: -1, HttpOnly: true, Path: "/"}
+			http.SetCookie(w, cookie)
+			http.Redirect(w, r, "/", http.StatusSeeOther)
 		}
 	}()
 
@@ -375,14 +381,71 @@ func (info *InformationHelper) UserProfileUpdateHandler(w http.ResponseWriter, r
 }
 
 func (info *InformationHelper) UserShowPeopleHandler(w http.ResponseWriter, r *http.Request) {
-	err := template.Tpl.ExecuteTemplate(w, "user_show_people.gohtml", nil)
+	defer func() {
+		if e := recover(); e != nil {
+			fmt.Println(e)
+			http.Redirect(w, r, "/user/dashboard", http.StatusSeeOther)
+		}
+	}()
+
+	c, err1 := r.Cookie("userToken")
+	if err1 != nil {
+		if err1 == http.ErrNoCookie {
+			panic("Cookie not found!")
+		}
+		panic("Unknown error occurred!")
+	}
+
+	claim := jwtPkg.GetValueFromJwt(c)
+
+	data, err1 := info.userRepo.GetAllUsersLogic(claim.User.UserPhone)
+	if err1 != nil {
+		panic(err1.Error())
+	}
+
+	err := template.Tpl.ExecuteTemplate(w, "user_show_people.gohtml", data)
 	if err != nil {
 		fmt.Println(err.Error())
 		http.Redirect(w, r, "/user/dashboard", http.StatusSeeOther)
 	}
 }
 
+func (info *InformationHelper) UserNewChatStartedHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	target := vars["target"]
+
+	c, err1 := r.Cookie("userToken")
+	if err1 != nil {
+		if err1 == http.ErrNoCookie {
+			panic("Cookie not found!")
+		}
+		panic("Unknown error occurred!")
+	}
+
+	claim := jwtPkg.GetValueFromJwt(c)
+
+	message := "You started a chat with +91" + target + "."
+	data := models.MessageModel{
+		Content: message,
+		From:    claim.User.UserPhone,
+		To:      target,
+		Time:    time.Now().Format("02-01-2006 3:04:05 PM"),
+		Status:  "ADMIN",
+	}
+
+	info.messagesRepo.StorePersonalMessagesLogic(data)
+
+	http.Redirect(w, r, "/user/dashboard", http.StatusFound)
+}
+
 func (info *InformationHelper) UserCreateGroup(w http.ResponseWriter, r *http.Request) {
+
+	defer func() {
+		if e := recover(); e != nil {
+			http.Redirect(w, r, "/user/dashboard", http.StatusSeeOther)
+		}
+	}()
+
 	// Group migration statements
 	groupMigrationError := info.groupRepo.MigrateGroupDb(models.GormDb)
 	if groupMigrationError != nil {
@@ -392,6 +455,11 @@ func (info *InformationHelper) UserCreateGroup(w http.ResponseWriter, r *http.Re
 	groupUserMigrationError := info.groupRepo.MigrateUserGroupDb(models.GormDb)
 	if groupUserMigrationError != nil {
 		log.Fatal("Can't migrate group - ", groupUserMigrationError.Error())
+	}
+
+	groupMessageMigrationError := info.groupRepo.MigrateGroupMessagesDb(models.GormDb)
+	if groupMessageMigrationError != nil {
+		log.Fatal("Can't migrate group - ", groupMessageMigrationError.Error())
 	}
 
 	// Parse form to get data
@@ -427,7 +495,6 @@ func (info *InformationHelper) UserCreateGroup(w http.ResponseWriter, r *http.Re
 			log.Println("Error creating a file for writing", pathError)
 			return
 		}
-		imageName = out.Name()
 
 		defer out.Close()
 
@@ -573,9 +640,18 @@ func (info *InformationHelper) UserNewChatSelectedHandler(w http.ResponseWriter,
 	if err != nil {
 		panic(err.Error())
 	}
-	fmt.Println("Target is ", target.Data)
 
-	data, err1 := info.messagesRepo.GetMessageDataLogic(target.Data)
+	uc, err2 := r.Cookie("userToken")
+	if err2 != nil {
+		if err2 == http.ErrNoCookie {
+			panic("Cookie not found!")
+		}
+		panic("Unknown error occurred!")
+	}
+
+	userClaim := jwtPkg.GetValueFromJwt(uc)
+
+	data, err1 := info.messagesRepo.GetMessageDataLogic(target.Data, userClaim.User.UserPhone)
 	if err1 != nil {
 		panic(err1.Error())
 	}
@@ -591,7 +667,6 @@ func (info *InformationHelper) UserNewChatSelectedHandler(w http.ResponseWriter,
 		About  string                `json:"about"`
 		Val    []models.MessageModel `json:"data"`
 	}{
-
 		Name:   val.UserName,
 		Avatar: val.UserAvatarUrl,
 		About:  val.UserAbout,

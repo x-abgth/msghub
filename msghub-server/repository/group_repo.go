@@ -24,6 +24,14 @@ type UserGroupRelation struct {
 	UserRole string `gorm:"not null" json:"user_role"`
 }
 
+type GroupMessage struct {
+	MsgId          int    `gorm:"not null;primary key;autoIncrement:true" json:"msg_id"`
+	GroupId        int    `gorm:"not null" json:"group_id"`
+	SenderId       string `gorm:"not null" json:"sender_id"`
+	MessageContent string `gorm:"not null" json:"message_content"`
+	SentTime       string `gorm:"not null" json:"sent_time"`
+}
+
 func CreateGroup(data Group) (int, error) {
 	var id int
 	if err := models.SqlDb.QueryRow(`INSERT INTO groups
@@ -47,4 +55,84 @@ func (relation UserGroupRelation) CreateUserGroupRelation(groupId int, userId, r
 	}
 
 	return nil
+}
+
+func (gm GroupMessage) InsertGroupMessagesRepo(message GroupMessage) error {
+	_, err1 := models.SqlDb.Exec(`INSERT INTO group_messages(
+	                 group_id, sender_id, message_content, sent_time)
+	VALUES($1, $2, $3, $4);`,
+		message.GroupId, message.SenderId, message.MessageContent, message.SentTime)
+	if err1 != nil {
+		log.Println(err1.Error())
+		return errors.New("sorry, An unknown error occurred. Please try again")
+	}
+
+	return nil
+}
+
+func (relation UserGroupRelation) GetAllGroupsForAUser(ph string) ([]int, error) {
+	var (
+		num int
+		res []int
+	)
+	rows, err := models.SqlDb.Query(
+		`SELECT 
+    	group_id
+	FROM user_group_relations
+	WHERE user_id = $1;`, ph)
+	if err != nil {
+		return res, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		if err := rows.Scan(&num); err != nil {
+			return res, err
+		}
+		res = append(res, num)
+	}
+
+	return res, nil
+}
+
+func (gm GroupMessage) GetAllMessagesFromGroup(id int) ([]models.GrpMsgModel, error) {
+	var (
+		name, avtr, sender, content, time string
+		res                               []models.GrpMsgModel
+	)
+	rows, err := models.SqlDb.Query(
+		`SELECT groups.group_name, groups.group_avatar, group_messages.sender_id, group_messages.message_content, group_messages.sent_time 
+FROM groups 
+    INNER JOIN group_messages 
+        ON groups.group_id = group_messages.group_id WHERE groups.group_id = $1;`, id)
+	if err != nil {
+		return res, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		if err1 := rows.Scan(
+			&name,
+			&avtr,
+			&sender,
+			&content,
+			&time,
+		); err1 != nil {
+			return res, err1
+		}
+
+		data := models.GrpMsgModel{
+			Name:    name,
+			Avatar:  avtr,
+			Sender:  sender,
+			Message: content,
+			Time:    time,
+		}
+
+		res = append(res, data)
+	}
+	return res, nil
+
 }

@@ -132,6 +132,7 @@
 	 }
 
 	 #profile-top-part div img {
+	 	height: 20em;
 	 	border-radius: 50%;
 		object-position: center;
 		object-fit: cover;
@@ -146,12 +147,18 @@
 	 }
 
 	 #dashboard-user-details-body button{
+	 	width: 100%;
 	 	background: transparent;
 	 	border: none;
 	 	outline: none;
 	 	color: red;
 	 	font-size: 1.2em;
+	 	text-align: left;
 	 	cursor: pointer;	
+	 }
+
+	 #dashboard-user-details-body button:hover{
+	 	background: #cccccc30;
 	 }
 
 </style>
@@ -180,7 +187,7 @@
 			        </svg>
 			    </button>
 			    <ul class="dropdown-menu dropdown-menu-white">
-			        <li><a class="py-2 px-4 dropdown-item" href="javascript:openCreateGroup()">Create Group</a></li>
+			        <li><a class="py-2 px-4 dropdown-item" onclick="openCreateGroup()">Create Group</a></li>
 			        <li><a class="py-2 px-4 dropdown-item" href="#">Settings</a></li>
 			        <li><a class="py-2 px-4 dropdown-item" href="#">About</a></li>
 			        <li><a href="/user/logout" class="py-2 px-4 dropdown-item text-danger">Logout</a></li>
@@ -233,16 +240,16 @@
 			{{ template "dashboard_create_group_form" . }}
 			{{ template "user_details_part" . }}
 		</div>
-
 	</div>
-	
 </section>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.0/jquery.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.0/jquery.validate.min.js"></script>
 <script type="text/javascript" src="../../assets/js/user_dashboard_functions.js"></script>
 <script type="text/javascript">
-	function openUserDetailsSec() {
+	//
 
+
+	function openUserDetailsSec() {
 		// Send an ajax request to get the user details
 		// It should contain -
 		// name, avatar, phone, about

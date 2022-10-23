@@ -88,15 +88,9 @@ func (server *WsServer) broadcastToClients(message []byte) {
 			panic(err.Error())
 		}
 
-		fmt.Println("model = ", model)
-		a := msgModel.UserData
-		a.Content = model.Content
-		a.FromUserId = model.From
-		a.ToUserId = models.TargetID
-		a.SentTime = model.Time
-		a.Status = logic.IS_SENT
-		fmt.Println("a = ", a)
-		msgModel.StorePersonalMessagesLogic(a)
+		model.Status = logic.IS_SENT
+
+		msgModel.StorePersonalMessagesLogic(model)
 
 		user.send <- message
 		if target != nil {

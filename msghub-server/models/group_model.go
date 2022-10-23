@@ -8,3 +8,11 @@ type GroupModel struct {
 	About   string
 	Members []string
 }
+
+type GroupMessageModel struct {
+	MsgId    string
+	GroupId  string
+	SenderId string
+	Content  string
+	Time     string
+}

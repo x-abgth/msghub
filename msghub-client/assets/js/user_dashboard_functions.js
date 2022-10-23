@@ -9,12 +9,21 @@ function openCreateGroup() {
 	const chatPartBody = document.getElementById("dashboard-chat-part-body");
 	const createGroupHeader = document.getElementById("dashboard-create-group-header");
 	const createGroupBody = document.getElementById("dashboard-create-group-body");
+	const welcomeChatSec = document.getElementById("welcome-chat-sec");
+
+	console.log("openCreateGroup function");
+	if(welcomeChatSec.classList.contains('d-flex')) {
+		console.log("inside if condition");
+		welcomeChatSec.classList.remove('d-flex');
+		welcomeChatSec.classList.add('d-none');
+	} else {
+		console.log("inside else condition");
+		chatPartHeader.classList.add("d-none");
+		chatPartBody.classList.add("d-none");
+	}
 	
 	createGroupHeader.classList.remove("d-none");
 	createGroupBody.classList.remove("d-none");
-
-	chatPartHeader.classList.add("d-none");
-	chatPartBody.classList.add("d-none");
 
 	createGroupHeader.classList.add("d-block");
 	createGroupBody.classList.add("d-block");
@@ -25,19 +34,22 @@ function closeCreateGroup() {
 	const chatPartBody = document.getElementById("dashboard-chat-part-body");
 	const createGroupHeader = document.getElementById("dashboard-create-group-header");
 	const createGroupBody = document.getElementById("dashboard-create-group-body");
-	
-	chatPartHeader.classList.remove("d-none");
-	chatPartBody.classList.remove("d-none");
+	const welcomeChatSec = document.getElementById("welcome-chat-sec");
 
+	if(welcomeChatSec.classList.contains('d-none')) {
+		welcomeChatSec.classList.remove('d-none');
+		welcomeChatSec.classList.add('d-flex');
+	}
+	
 	createGroupHeader.classList.add("d-none");
 	createGroupBody.classList.add("d-none");
+}
 
-	chatPartHeader.classList.add("d-block");
-	chatPartBody.classList.add("d-block");
+function chatThis(target) {
+	console.log("Endhada??");
 }
 
 // Upload image to the create group 
-
 $("#profileImage").click(function(e) {
     $("#imageUpload").click();
 });

@@ -437,6 +437,16 @@ div.user-chat-sec {
 	margin-left: auto;
 } 
 
+.message-area .chat-bubble.admin-chat-bubble {
+		width: fit-content;
+		text-align: center;
+		margin: 0 auto;
+		border-radius: 8px;
+		background-color: #fff4e3;
+		color: #ff8a5c;
+		font-size: 0.8em;
+} 
+
 .user-chat-sec div.keypad-area {
 	height: 50px;
 	width: 100%;
