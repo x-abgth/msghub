@@ -1,89 +1,10 @@
 {{ define "websocketJs" }}
 	<script>
 		function startSocketConnection(val) {
-			$(document).ready(function () {
-		        $.ajax({
-		            type: "POST",
-		            url: "/user/dashboard/chat-selected",
-		            data: JSON.stringify({
-		            	target: val,
-		            }),
-		            success: function (response) { 
-		                console.log(response);
-		                if (response != null) {
-		                	document.getElementById("chat-user-name").innerText = response.name;
-		                	if(response.avatar === "") {
-			                	document.getElementById("dashboard-chat-part-header-image").setAttribute("src", "../../assets/images/user.png");
-		                	} else {
-		                		document.getElementById("dashboard-chat-part-header-image").setAttribute("src", "../../assets/db_files/user_dp_img/" + response.avatar);
-		                	}
-
-		                	if(response.data != null) {
-
-			                	let arrayLength = response.data.length;
-
-		                		for (let i = 0; i < arrayLength; i ++) {
-				                	let item = document.createElement('div');
-								    let innerItem = document.createElement("label");
-								    let itemTime = document.createElement("label");   
-								    let recipient = document.createElement("i");      
-
-									if(response.data[i].from == {{ .UserPhone }}) {
-										let msgDetails = document.createElement('div');
-								        item.classList.add("user-chat-msg-field", "d-flex", "flex-column", "mb-2");
-								        innerItem.classList.add("chat-bubble", "user-chat-bubble", "px-3", "py-2", "text-wrap", "word-wrap", "text-break");
-								        msgDetails.classList.add("d-flex", "align-items-center");
-								        itemTime.classList.add("chat-time","mt-1", "mx-2");
-								        let time = response.data[i].time.split(" ");
-								        itemTime.innerText = time[1] + " " + time[2];
-
-								        recipient.classList.add("fas", "fa-check-double");
-
-								        msgDetails.appendChild(itemTime);
-								        msgDetails.appendChild(recipient);
-
-								        innerItem.innerText = response.data[i].message;
-								        item.appendChild(innerItem);
-								        item.appendChild(msgDetails);
-								        appendLog(item);
-									} else {
-								        item.classList.add("chat-msg-field", "d-flex", "flex-column", "mb-2");
-								        innerItem.classList.add("chat-bubble", "px-3", "py-2", "text-wrap", "word-wrap", "text-break");
-								        itemTime.classList.add("chat-time","mt-1", "ms-2");
-										let time = response.data[i].time.split(" ");
-								        itemTime.innerText = time[1] + " " + time[2];
-								        
-								        innerItem.innerText = response.data[i].message;
-								        item.appendChild(innerItem);
-								        item.appendChild(itemTime);
-								        appendLog(item);
-									}
-				                }
-				                messages.scrollTop = messages.scrollHeight;
-		                	}
-			                // 
-			                console.log("Value passed is " + val)
-		                	document.getElementById("phone-number-shown").innerText = val;
-		                	document.getElementById("user-name-shown").innerText = response.name;
-		                	document.getElementById("user-about-shown").innerText = response.about;
-		                	if(response.avatar === "") {
-		                		document.getElementById("user-img-shown").setAttribute("src", "../../assets/images/user.png");
-		                	} else {
-		                		document.getElementById("user-img-shown").setAttribute("src", "../../assets/db_files/user_dp_img/" + response.avatar);
-		                	}
-		                }
-		            },
-		            error: function(data) {
-	                	// Some error in ajax call
-	                	alert("some Error + ", data);
-						redirectBt.click();
-	            	}
-		        });
-		    });
+		
 			const chatPartHead = document.getElementById("dashboard-chat-part-header");
 			const chatPartBody = document.getElementById("dashboard-chat-part-body");
 			const welcomeChat = document.getElementById("welcome-chat-sec");
-
 
 			if(chatPartBody.classList.contains('d-none')) {
 				if(welcomeChat.classList.contains('d-flex')) {
@@ -113,6 +34,7 @@
 				console.log(url);
 			}		
 
+			console.log("Wbsocket is connecting");
 			const ws = new WebSocket(url);
 
 		    function appendLog(item) {
@@ -122,6 +44,8 @@
 		            messages.scrollTop = messages.scrollHeight - messages.clientHeight;
 		        }
 		    }
+
+		    console.log("reached at 131");
 
 			if(!window["WebSocket"]) {
 				var item = document.createElement("div");
@@ -134,26 +58,32 @@
 				insertMessage(JSON.parse(msg.data));
 			};
 
+			ws.onerror = function(evt) {
+				console.log("Webscket error - " + evt);
+			}
+
 			ws.onclose = function(event) {
 				console.log("Connection close : ", event);
 			};
 
+			console.log("reach at 150");
+
 			//  When user sends a message
 			document.getElementById("chat-form").onsubmit = function () {
 		        if (!ws) {
+		        	console.log("Hey");
 		            return false;
 		        }
 		        if (!input.value) {
+		        	console.log("Hello");
 		            return false;
 		        }
 
 		        let current = new Date();
 				let cDate = current.getDate() + '-' + (current.getMonth() + 1) + '-' + current.getFullYear();
-				let cTime =  current.toLocaleString('en-US', { hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: true })
+				let cTime =  current.toLocaleString('en-US', { hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: true });
 				let dateTime = cDate + ' ' + cTime;
-				
-				console.log(dateTime);
-
+			
 				const message = {
 					from : {{ .UserPhone }},
 					to: val,
@@ -161,13 +91,17 @@
 			    	time : dateTime,
 				}
 
+				console.log(message);
 
 		        ws.send(JSON.stringify(message));
 		       	input.value = "";
 		        return false;
 		    };
 
+		    console.log("Reached at 183");
+
 			function insertMessage(msgobj) {
+				console.log("Inside insert message !");
 				let item = document.createElement('div');
 			    let innerItem = document.createElement("label");
 			    let itemTime = document.createElement("label");   
@@ -207,7 +141,9 @@
 			        appendLog(item);
 				}
 				messages.scrollTop = messages.scrollHeight;
+				console.log("End of insert message");
 			}
+			console.log("Reached at 228");
 		}
 	</script>
 {{ end }}

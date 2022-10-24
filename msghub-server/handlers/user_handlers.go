@@ -238,6 +238,22 @@ func (info *InformationHelper) UserDashboardHandler(w http.ResponseWriter, r *ht
 		panic(migrateErr.Error())
 	}
 
+	// Group migration statements
+	groupMigrationError := info.groupRepo.MigrateGroupDb(models.GormDb)
+	if groupMigrationError != nil {
+		log.Fatal("Can't migrate group - ", groupMigrationError.Error())
+	}
+
+	groupUserMigrationError := info.groupRepo.MigrateUserGroupDb(models.GormDb)
+	if groupUserMigrationError != nil {
+		log.Fatal("Can't migrate group - ", groupUserMigrationError.Error())
+	}
+
+	groupMessageMigrationError := info.groupRepo.MigrateGroupMessagesDb(models.GormDb)
+	if groupMessageMigrationError != nil {
+		log.Fatal("Can't migrate group - ", groupMessageMigrationError.Error())
+	}
+
 	c, err1 := r.Cookie("userToken")
 	if err1 != nil {
 		log.Println("NO cookie")
@@ -424,7 +440,7 @@ func (info *InformationHelper) UserNewChatStartedHandler(w http.ResponseWriter, 
 
 	claim := jwtPkg.GetValueFromJwt(c)
 
-	message := "You started a chat with +91" + target + "."
+	message := "You started a chat with +91 " + target + "."
 	data := models.MessageModel{
 		Content: message,
 		From:    claim.User.UserPhone,
@@ -445,22 +461,6 @@ func (info *InformationHelper) UserCreateGroup(w http.ResponseWriter, r *http.Re
 			http.Redirect(w, r, "/user/dashboard", http.StatusSeeOther)
 		}
 	}()
-
-	// Group migration statements
-	groupMigrationError := info.groupRepo.MigrateGroupDb(models.GormDb)
-	if groupMigrationError != nil {
-		log.Fatal("Can't migrate group - ", groupMigrationError.Error())
-	}
-
-	groupUserMigrationError := info.groupRepo.MigrateUserGroupDb(models.GormDb)
-	if groupUserMigrationError != nil {
-		log.Fatal("Can't migrate group - ", groupUserMigrationError.Error())
-	}
-
-	groupMessageMigrationError := info.groupRepo.MigrateGroupMessagesDb(models.GormDb)
-	if groupMessageMigrationError != nil {
-		log.Fatal("Can't migrate group - ", groupMessageMigrationError.Error())
-	}
 
 	// Parse form to get data
 	err := r.ParseMultipartForm(10 << 24)

@@ -81,6 +81,8 @@ func (server *WsServer) broadcastToClients(message []byte) {
 	target := server.findClientByID(models.TargetID)
 
 	if user != nil {
+		fmt.Println("-----------MESSAGE ---------------")
+		fmt.Println(message)
 		var model models.MessageModel
 
 		err := json.Unmarshal(message, &model)

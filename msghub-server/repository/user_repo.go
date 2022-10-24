@@ -16,7 +16,11 @@ type User struct {
 	IsBlocked    bool    `gorm:"not null" json:"is_blocked"`
 }
 
-func (user User) GetUserDataUsingPhone(formPhone string) (int, User, error) {
+func (user User) GetUserDataUsingPhone(formPhone string) (int, models.UserModel, error) {
+	var (
+		model     models.UserModel
+		userModel User
+	)
 
 	rows, err := models.SqlDb.Query(
 		`SELECT 
@@ -29,7 +33,7 @@ func (user User) GetUserDataUsingPhone(formPhone string) (int, User, error) {
 	FROM users
 	WHERE user_ph_no = $1;`, formPhone)
 	if err != nil {
-		return 0, user, err
+		return 0, models.UserModel{}, err
 	}
 
 	defer rows.Close()
@@ -38,17 +42,31 @@ func (user User) GetUserDataUsingPhone(formPhone string) (int, User, error) {
 	for rows.Next() {
 		count++
 		if err1 := rows.Scan(
-			&user.UserAvatar,
-			&user.UserAbout,
-			&user.UserName,
-			&user.UserPhNo,
-			&user.UserPassword,
-			&user.IsBlocked); err1 != nil {
-			return 0, user, err1
+			&userModel.UserAvatar,
+			&userModel.UserAbout,
+			&userModel.UserName,
+			&userModel.UserPhNo,
+			&userModel.UserPassword,
+			&userModel.IsBlocked); err1 != nil {
+			return 0, models.UserModel{}, err1
 		}
 	}
 
-	return count, user, nil
+	var blank = ""
+	if userModel.UserAvatar == nil {
+		userModel.UserAvatar = &blank
+	}
+
+	model = models.UserModel{
+		UserAvatarUrl: *userModel.UserAvatar,
+		UserAbout:     userModel.UserAbout,
+		UserName:      userModel.UserName,
+		UserPhone:     userModel.UserPhNo,
+		UserPass:      userModel.UserPassword,
+		UserBlocked:   userModel.IsBlocked,
+	}
+
+	return count, model, nil
 }
 
 func (user User) RegisterUser(formName, formPhone, formPass string) (bool, error) {
@@ -85,7 +103,8 @@ func (user User) UserDuplicationStatus(phone string) int {
 }
 
 func (user User) GetUserData(ph string) (models.UserModel, error) {
-	var name, phone, about, isBlocked string
+	var name, phone, about string
+	var isBlocked bool
 	var avatar *string
 	var data models.UserModel
 
@@ -147,7 +166,7 @@ func (user User) GetRecentChatList(ph string) ([]models.MessageModel, error) {
     	sent_time,
     	status
 	FROM messages
-	WHERE from_user_id = $1 OR to_user_id = $2`, ph, ph)
+	WHERE is_recent = $1 AND (from_user_id = $2 OR to_user_id = $3) ORDER BY sent_time;`, true, ph, ph)
 	if err != nil {
 		return res, err
 	}

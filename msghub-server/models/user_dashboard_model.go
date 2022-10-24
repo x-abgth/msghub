@@ -1,11 +1,18 @@
 package models
 
-type RecentChatModel struct {
-	UserName    string
-	UserPhone   string
-	UserAvatar  string
+type RecentMessages struct {
+	Id          string
+	Name        string
+	Avatar      string
 	LastMsg     string
 	LastMsgTime string
+}
+
+type RecentChatModel struct {
+	Content RecentMessages
+	Sender  string
+	IsGroup bool
+	Order   float64
 }
 
 type StoryModel struct {

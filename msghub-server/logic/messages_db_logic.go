@@ -70,6 +70,7 @@ func (m MessageDb) GetMessageDataLogic(target, from string) ([]models.MessageMod
 		if err != nil {
 			return this, err
 		}
+
 		diff := time.Now().Sub(myTime)
 		d := models.MessageModel{
 			From:    data1[i].From,

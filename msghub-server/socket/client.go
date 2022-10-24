@@ -1,14 +1,15 @@
 package socket
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/gorilla/websocket"
 	"log"
 	"msghub-server/models"
 	"net/http"
-	"os"
 	"time"
+
+	"github.com/gorilla/websocket"
 )
 
 /*
@@ -38,8 +39,8 @@ const (
 )
 
 var (
-	newline = []byte{'\n'}
-	//space    = []byte{' '}
+	newline  = []byte{'\n'}
+	space    = []byte{' '}
 	upgrader = websocket.Upgrader{
 		ReadBufferSize:  4096,
 		WriteBufferSize: 4096,
@@ -118,18 +119,8 @@ func (client *Client) readPump() {
 		client.conn.Close()
 	}()
 
-	defer func() {
-		if e := recover(); e != nil {
-			fmt.Println(e)
-			os.Exit(1)
-		}
-	}()
-
 	client.conn.SetReadLimit(maxMessageSize)
-	err1 := client.conn.SetReadDeadline(time.Now().Add(pongWait))
-	if err1 != nil {
-		panic("SetReadDeadLine error - " + err1.Error())
-	}
+	client.conn.SetReadDeadline(time.Now().Add(pongWait))
 	client.conn.SetPongHandler(func(string) error { client.conn.SetReadDeadline(time.Now().Add(pongWait)); return nil })
 
 	// start endless read loop, waiting for messages from client.
@@ -141,6 +132,7 @@ func (client *Client) readPump() {
 			}
 			break
 		}
+		jsonMessage = bytes.TrimSpace(bytes.Replace(jsonMessage, newline, space, -1))
 		//client.handleNewMessage(jsonMessage)
 		fmt.Println("Reading -- ", string(jsonMessage))
 		client.wsServer.broadcast <- jsonMessage

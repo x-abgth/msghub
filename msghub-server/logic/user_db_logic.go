@@ -8,7 +8,6 @@ import (
 	"msghub-server/repository"
 	"msghub-server/utils"
 	"sort"
-	"strconv"
 	"time"
 
 	"gorm.io/gorm"
@@ -28,14 +27,17 @@ func (u *UserDb) MigrateUserDb(db *gorm.DB) error {
 
 func (u *UserDb) UserLoginLogic(phone, password string) (bool, error) {
 
-	var count int
-	count, u.userData, u.err = u.userData.GetUserDataUsingPhone(phone)
+	var (
+		count    int
+		userData models.UserModel
+	)
+	count, userData, u.err = u.userData.GetUserDataUsingPhone(phone)
 	if u.err != nil {
 		return false, errors.New("you don't have an account, Please register")
 	}
 
 	// Check the value is isBlocked and if string convert to bool using if()
-	if u.userData.IsBlocked {
+	if userData.UserBlocked {
 		return false, errors.New("you are temporarily blocked from this application")
 	} else if count < 1 {
 		return false, errors.New("you don't have an account, Please register")
@@ -43,21 +45,9 @@ func (u *UserDb) UserLoginLogic(phone, password string) (bool, error) {
 		return false, errors.New("something went wrong. Try login again")
 		// SHOULD DELETE EXTRA REGISTERED NUMBER!
 	} else {
-		if utils.CheckPasswordMatch(password, u.userData.UserPassword) {
-			var user models.UserModel
+		if utils.CheckPasswordMatch(password, userData.UserPass) {
 
-			var blank = ""
-			if u.userData.UserAvatar == nil {
-				u.userData.UserAvatar = &blank
-			}
-			user = models.UserModel{
-				UserAvatarUrl: *u.userData.UserAvatar,
-				UserAbout:     u.userData.UserAbout,
-				UserName:      u.userData.UserName,
-				UserPhone:     phone,
-			}
-
-			models.InitUserModel(user)
+			models.InitUserModel(userData)
 			return true, nil
 		} else {
 			return false, errors.New("invalid phone number or password")
@@ -187,163 +177,129 @@ func (u *UserDb) GetDataForDashboardLogic(phone string) (models.UserDashboardMod
 		}
 	}()
 
+	// Got recent personal chats
+	personalMessages, err := u.userData.GetRecentChatList(phone)
+	if err != nil {
+		return models.UserDashboardModel{}, err
+	}
+
+	// Get recent group chats
+	userGroups, err := u.userData.GetGroupForUser(phone)
+	if err != nil {
+		return models.UserDashboardModel{}, err
+	}
+
+	var groupMessages []models.GrpMsgModel
+	for i := range userGroups {
+		data, err := u.groupMsg.GetRecentGroupMessages(userGroups[i])
+		if err != nil {
+			return models.UserDashboardModel{}, err
+		}
+
+		groupMessages = append(groupMessages, data)
+	}
+
+	// assign it to dashboard model
+	var recents []models.RecentChatModel
+
+	// Recent chats for personal messages
+	for i := range personalMessages {
+		var recentData models.RecentChatModel
+
+		msgSentTime, err := time.Parse("02-01-2006 3:04:05 PM", personalMessages[i].Time)
+		if err != nil {
+			return models.UserDashboardModel{}, err
+		}
+		diff := time.Now().Sub(msgSentTime)
+
+		if personalMessages[i].From == phone {
+
+			// Get user datas like dp, name
+			_, usersData, err := u.userData.GetUserDataUsingPhone(personalMessages[i].To)
+			if err != nil {
+				return models.UserDashboardModel{}, err
+			}
+
+			recentData = models.RecentChatModel{
+				Content: models.RecentMessages{
+					Id:          personalMessages[i].To,
+					Name:        usersData.UserName,
+					Avatar:      usersData.UserAvatarUrl,
+					LastMsg:     personalMessages[i].Content,
+					LastMsgTime: personalMessages[i].Time,
+				},
+				Sender:  personalMessages[i].From,
+				IsGroup: false,
+				Order:   float64(diff),
+			}
+		} else {
+			// Get user datas like dp, name
+			_, usersData, err := u.userData.GetUserDataUsingPhone(personalMessages[i].From)
+			if err != nil {
+				return models.UserDashboardModel{}, err
+			}
+
+			recentData = models.RecentChatModel{
+				Content: models.RecentMessages{
+					Id:          personalMessages[i].From,
+					Name:        usersData.UserName,
+					Avatar:      usersData.UserAvatarUrl,
+					LastMsg:     personalMessages[i].Content,
+					LastMsgTime: personalMessages[i].Time,
+				},
+				Sender:  personalMessages[i].From,
+				IsGroup: false,
+				Order:   float64(diff),
+			}
+		}
+		recents = append(recents, recentData)
+	}
+
+	for i := range groupMessages {
+		groupSentTime, err := time.Parse("02-01-2006 3:04:05 PM", groupMessages[i].Time)
+		if err != nil {
+			return models.UserDashboardModel{}, err
+		}
+		diff := time.Now().Sub(groupSentTime)
+		recentData := models.RecentChatModel{
+			Content: models.RecentMessages{
+				Id:          groupMessages[i].Id,
+				Name:        groupMessages[i].Name,
+				Avatar:      groupMessages[i].Avatar,
+				LastMsg:     groupMessages[i].Message,
+				LastMsgTime: groupMessages[i].Time,
+			},
+			Sender:  groupMessages[i].Sender,
+			IsGroup: true,
+			Order:   float64(diff),
+		}
+		recents = append(recents, recentData)
+	}
+
+	// join personal message array and group message array
+
+	// sort the resultant array
+	sort.Slice(recents, func(i, j int) bool {
+		return recents[i].Order < recents[j].Order
+	})
+
+	fmt.Println(recents)
+
+	// get user details
 	userDetails, err1 := u.userData.GetUserData(phone)
 	if err1 != nil {
 		log.Println("getting userDetails")
 		return models.UserDashboardModel{}, err1
 	}
 
-	recentChatList, err2 := u.userData.GetRecentChatList(phone)
-	if err2 != nil {
-		log.Println("Getting recentChatList")
-		return models.UserDashboardModel{}, err2
-	}
-	fmt.Println(recentChatList)
-
-	/*
-		Also should add group recent chats.
-		Therefore, first get all the groups that this user is in
-		then find get all the message of that each group,
-		remove all the duplicates according to the time
-	*/
-	// TODO: Get all the groups the user is in (as an array)
-	groupsArr, err2 := u.userData.GetGroupForUser(phone)
-	if err2 != nil {
-		log.Println("Getting groupsArr")
-		return models.UserDashboardModel{}, err2
-	}
-	fmt.Println(groupsArr)
-
-	// TODO: Get all the chats from the groups
-	var groupRecent []models.RecentChatModel
-	for i := range groupsArr {
-		data, err3 := u.groupMsg.GetAllMessagesFromGroup(groupsArr[i])
-		if err3 != nil {
-			return models.UserDashboardModel{}, err3
-		}
-		if len(data) == 0 {
-			continue
-		}
-
-		for j := range data {
-			val := models.RecentChatModel{
-				UserName:    data[j].Name,
-				UserAvatar:  data[j].Avatar,
-				LastMsg:     data[j].Message,
-				LastMsgTime: data[j].Time,
-				UserPhone:   strconv.Itoa(groupsArr[j]),
-			}
-
-			groupRecent = append(groupRecent, val)
-		}
-	}
-	fmt.Println("----------------------------------------------------------------------------")
-	fmt.Println(groupRecent)
-
-	// TODO: Delete the chats and keep only the last one
-	// recentChatList - contains a list of all the chats from and to the current user
-	var recent []models.MessageModel
-	for i := range recentChatList {
-		myTime, err := time.Parse("02-01-2006 3:04:05 PM", recentChatList[i].Time)
-		if err != nil {
-			return models.UserDashboardModel{}, err
-		}
-		diff := time.Now().Sub(myTime)
-		d := models.MessageModel{
-			From:    recentChatList[i].From,
-			To:      recentChatList[i].To,
-			Content: recentChatList[i].Content,
-			Time:    recentChatList[i].Time,
-			Status:  recentChatList[i].Status,
-			Order:   float64(diff),
-		}
-		recent = append(recent, d)
-	}
-
-	sort.Slice(recent, func(i, j int) bool {
-		return recent[i].Order > recent[j].Order
-	})
-
-	var (
-		fromOrder, toOrder int
-		recentChats        []models.RecentChatModel
-	)
-
-	if len(recent) == 0 {
-		return models.UserDashboardModel{}, errors.New("length is zero")
-	}
-	for i := range recent {
-		for j := i; j < len(recent); j++ {
-			if recent[j].From == phone {
-				fromOrder = j
-				break
-			}
-		}
-
-		for j := i; j < len(recent); j++ {
-			if recent[j].To == phone {
-				toOrder = j
-				break
-			}
-		}
-
-		// This only gives one chat result, we need a list of chat with different targets
-		if fromOrder < toOrder {
-			mdl, err4 := u.userData.GetUserData(recent[fromOrder].From)
-			if err4 != nil {
-				return models.UserDashboardModel{}, err4
-			}
-			fmt.Println("data of fromOrder in to - ", mdl)
-
-			d := models.RecentChatModel{
-				UserName:    mdl.UserName,
-				UserAvatar:  mdl.UserAvatarUrl,
-				UserPhone:   recent[fromOrder].To,
-				LastMsg:     recent[fromOrder].Content,
-				LastMsgTime: recent[fromOrder].Time,
-			}
-			recentChats = append(recentChats, d)
-		} else {
-			mdl, _ := u.userData.GetUserData(recent[toOrder].To)
-
-			fmt.Println("data of toOrder in from - ", mdl)
-
-			d := models.RecentChatModel{
-				UserName:    mdl.UserName,
-				UserAvatar:  mdl.UserAvatarUrl,
-				UserPhone:   recent[toOrder].From,
-				LastMsg:     recent[toOrder].Content,
-				LastMsgTime: recent[toOrder].Time,
-			}
-			recentChats = append(recentChats, d)
-		}
-	}
-
-	recentChats = append(recentChats, groupRecent...)
-
-	fmt.Println("--------------- RECENT CHAT ARRAY -----------------")
-
-	for i := 0; i < len(recentChats); i++ {
-		for j := i; j < len(recentChats); j++ {
-			if i == j {
-				continue
-			}
-			if recentChats[i].UserPhone == recentChats[j].UserPhone {
-				recentChats = append(recentChats[:i], recentChats[i+1:]...)
-			}
-		}
-	}
-
-	fmt.Println(recentChats)
-
-	data := models.UserDashboardModel{
+	returnData := models.UserDashboardModel{
 		UserPhone:      phone,
 		UserDetails:    userDetails,
-		RecentChatList: recentChats,
+		RecentChatList: recents,
 		StoryList:      nil,
 	}
 
-	return data, nil
+	return returnData, nil
 }
 
 func (u *UserDb) GetAllUsersLogic(ph string) ([]models.UserModel, error) {

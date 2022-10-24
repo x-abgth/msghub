@@ -2,6 +2,7 @@ package repository
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"msghub-server/models"
 )
@@ -30,6 +31,7 @@ type GroupMessage struct {
 	SenderId       string `gorm:"not null" json:"sender_id"`
 	MessageContent string `gorm:"not null" json:"message_content"`
 	SentTime       string `gorm:"not null" json:"sent_time"`
+	IsRecent       bool   `gorm:"not null" json:"is_recent"`
 }
 
 func CreateGroup(data Group) (int, error) {
@@ -58,10 +60,47 @@ func (relation UserGroupRelation) CreateUserGroupRelation(groupId int, userId, r
 }
 
 func (gm GroupMessage) InsertGroupMessagesRepo(message GroupMessage) error {
+
+	var (
+		msgID int
+		res   []int
+	)
+
+	rows, err := models.SqlDb.Query(
+		`SELECT 
+    	msg_id
+	FROM group_messages
+	WHERE (is_recent = true) AND group_id = $1`, message.GroupId)
+	if err != nil {
+		return err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		if err1 := rows.Scan(
+			&msgID); err1 != nil {
+			return err1
+		}
+
+		res = append(res, msgID)
+	}
+
+	for i := range res {
+		_, err1 := models.SqlDb.Exec(`UPDATE group_messages
+		SET is_recent = false
+		WHERE msg_id = $1`,
+			res[i])
+		if err1 != nil {
+			log.Println(err1)
+			return errors.New("sorry, An unknown error occurred. Please try again")
+		}
+	}
+
 	_, err1 := models.SqlDb.Exec(`INSERT INTO group_messages(
-	                 group_id, sender_id, message_content, sent_time)
-	VALUES($1, $2, $3, $4);`,
-		message.GroupId, message.SenderId, message.MessageContent, message.SentTime)
+	                 group_id, sender_id, message_content, sent_time, is_recent)
+	VALUES($1, $2, $3, $4, $5);`,
+		message.GroupId, message.SenderId, message.MessageContent, message.SentTime, true)
 	if err1 != nil {
 		log.Println(err1.Error())
 		return errors.New("sorry, An unknown error occurred. Please try again")
@@ -92,6 +131,49 @@ func (relation UserGroupRelation) GetAllGroupsForAUser(ph string) ([]int, error)
 		}
 		res = append(res, num)
 	}
+
+	return res, nil
+}
+
+func (gm GroupMessage) GetRecentGroupMessages(id int) (models.GrpMsgModel, error) {
+	var (
+		groupID, name, avtr, sender, content, time string
+		res                                        models.GrpMsgModel
+	)
+	rows, err := models.SqlDb.Query(
+		`SELECT groups.group_id, groups.group_name, groups.group_avatar, group_messages.sender_id, group_messages.message_content, group_messages.sent_time 
+FROM groups 
+    INNER JOIN group_messages 
+        ON groups.group_id = group_messages.group_id WHERE groups.group_id = $1 AND group_messages.is_recent = true ORDER BY sent_time`, id)
+	if err != nil {
+		return res, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		if err1 := rows.Scan(
+			&id,
+			&name,
+			&avtr,
+			&sender,
+			&content,
+			&time,
+		); err1 != nil {
+			return res, err1
+		}
+
+		res = models.GrpMsgModel{
+			Id:      groupID,
+			Name:    name,
+			Avatar:  avtr,
+			Sender:  sender,
+			Message: content,
+			Time:    time,
+		}
+	}
+
+	fmt.Println(res)
 
 	return res, nil
 }

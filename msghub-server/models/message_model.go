@@ -10,6 +10,7 @@ type MessageModel struct {
 }
 
 type GrpMsgModel struct {
+	Id      string
 	Name    string
 	Avatar  string
 	Message string

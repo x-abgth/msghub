@@ -207,25 +207,25 @@
 				</div>
 			</div>
 			<div class="p-3 h-100 recent-chat-bg">
-				<!-- First char card -->
+				<!-- First chat card -->
 
 				{{ if .RecentChatList }}
 					<p class="mb-3" style="font-size: 1.2em; font-weight: 500;">Recent chats</p>
 					{{ range .RecentChatList }}
-						<a href="javascript:startSocketConnection('{{ .UserPhone }}');">
+						<a href="javascript:startSocketConnection('{{ .Content.Id }}');">
 							<div class="d-flex align-items-end mb-2 p-3 bg-white recent-chat-card">
 								<div class="recent-chat-dp-wrapper">
-									{{ if .UserAvatar }}
-										<img class="img-fluid" src="../../assets/db_files/user_dp_img/{{ .UserAvatar }}" alt="User profile picture" style="object-fit: cover; object-position: center;">
+									{{ if .Content.Avatar }}
+										<img class="img-fluid" src="../../assets/db_files/user_dp_img/{{ .Content.Avatar }}" alt="User profile picture" style="object-fit: cover; object-position: center;">
 									{{ else }}
 										<img src="../../assets/images/user.png" alt="user profile picture">
 									{{ end }}
 								</div>
 								<div class="w-100 d-flex flex-column px-3">
-									<label><strong>{{ .UserName }}</strong></label>
-									<label>{{ .LastMsg }}</label>
+									<label><strong>{{ .Content.Name }}</strong></label>
+									<label>{{ .Content.LastMsg }}</label>
 								</div>
-								<label class="recent-chat-time-text">{{ .LastMsgTime }}</label>
+								<label class="recent-chat-time-text">{{ .Content.LastMsgTime }}</label>
 							</div>
 						</a>
 					{{ end }}

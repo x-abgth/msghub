@@ -18,6 +18,7 @@ func (admin Admin) LoginAdmin(uname, pass string) (bool, error) {
     	admin_pass
 	FROM admins
 	WHERE admin_name = $1;`, uname)
+
 	if err != nil {
 		return false, errors.New("an unknown error occurred, please try again")
 	}

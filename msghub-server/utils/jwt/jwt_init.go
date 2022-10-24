@@ -14,7 +14,6 @@ type UserJwtClaim struct {
 	User            models.UserModel
 	GroupModel      models.GroupModel
 	IsAuthenticated bool
-
 	jwt.RegisteredClaims
 }
 

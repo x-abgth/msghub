@@ -14,16 +14,54 @@ type Message struct {
 	Content    string `gorm:"not null" json:"content"`
 	SentTime   string `gorm:"not null" json:"sent_time"`
 	Status     string `gorm:"not null" json:"status"`
+	IsRecent   bool   `gorm:"not null" json:"is_recent"`
 }
 
 func (m Message) InsertMessageDataRepository(data Message) error {
+
+	var (
+		msgID int
+		res   []int
+	)
+
 	fmt.Println("In repo = ", data)
 
-	_, err1 := models.SqlDb.Exec(`INSERT INTO messages(from_user_id, to_user_id, content, sent_time, status) 
-VALUES($1, $2, $3, $4, $5);`,
-		data.FromUserId, data.ToUserId, data.Content, data.SentTime, data.Status)
-	if err1 != nil {
-		log.Println(err1)
+	rows, err := models.SqlDb.Query(
+		`SELECT 
+    	msg_id
+	FROM messages
+	WHERE (is_recent = true) AND (from_user_id = $1 AND to_user_id = $2) OR (from_user_id = $3 AND to_user_id = $4);`, data.FromUserId, data.ToUserId, data.ToUserId, data.FromUserId)
+	if err != nil {
+		return err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		if err1 := rows.Scan(
+			&msgID); err1 != nil {
+			return err1
+		}
+
+		res = append(res, msgID)
+	}
+
+	for i := range res {
+		_, err1 := models.SqlDb.Exec(`UPDATE messages
+		SET is_recent = false
+		WHERE msg_id = $1`,
+			res[i])
+		if err1 != nil {
+			log.Println(err1)
+			return errors.New("sorry, An unknown error occurred. Please try again")
+		}
+	}
+
+	_, err2 := models.SqlDb.Exec(`INSERT INTO messages(from_user_id, to_user_id, content, sent_time, status, is_recent) 
+VALUES($1, $2, $3, $4, $5, $6);`,
+		data.FromUserId, data.ToUserId, data.Content, data.SentTime, data.Status, true)
+	if err2 != nil {
+		log.Println(err2)
 		return errors.New("sorry, An unknown error occurred. Please try again")
 	}
 
