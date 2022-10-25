@@ -2,9 +2,9 @@ package repository
 
 import (
 	"errors"
-	"fmt"
 	"log"
 	"msghub-server/models"
+	"strconv"
 )
 
 type Group struct {
@@ -153,7 +153,7 @@ FROM groups
 
 	for rows.Next() {
 		if err1 := rows.Scan(
-			&id,
+			&groupID,
 			&name,
 			&avtr,
 			&sender,
@@ -173,48 +173,79 @@ FROM groups
 		}
 	}
 
-	fmt.Println(res)
-
 	return res, nil
 }
 
-func (gm GroupMessage) GetAllMessagesFromGroup(id int) ([]models.GrpMsgModel, error) {
+func (gm GroupMessage) GetAllMessagesFromGroup(id int) ([]models.MessageModel, error) {
 	var (
-		name, avtr, sender, content, time string
-		res                               []models.GrpMsgModel
+		sender, message, time string
+		res                   []models.MessageModel
 	)
 	rows, err := models.SqlDb.Query(
-		`SELECT groups.group_name, groups.group_avatar, group_messages.sender_id, group_messages.message_content, group_messages.sent_time 
-FROM groups 
-    INNER JOIN group_messages 
-        ON groups.group_id = group_messages.group_id WHERE groups.group_id = $1;`, id)
+		`SELECT sender_id, message_content, sent_time FROM group_messages WHERE group_id = $1;`, id)
 	if err != nil {
-		return res, err
+		return nil, err
 	}
 
 	defer rows.Close()
 
 	for rows.Next() {
 		if err1 := rows.Scan(
-			&name,
-			&avtr,
 			&sender,
-			&content,
+			&message,
 			&time,
 		); err1 != nil {
-			return res, err1
+			return nil, err1
 		}
 
-		data := models.GrpMsgModel{
-			Name:    name,
-			Avatar:  avtr,
-			Sender:  sender,
-			Message: content,
+		data := models.MessageModel{
+			From:    sender,
+			Content: message,
 			Time:    time,
 		}
 
 		res = append(res, data)
 	}
+
 	return res, nil
+}
+
+func (group Group) GetGroupDetailsRepo(id int) (models.GroupModel, error) {
+	var (
+		name, avatar, about, creator, date, totalMembers string
+	)
+	rows, err := models.SqlDb.Query(
+		`SELECT group_name, group_avatar, group_about, group_creator, group_created_date, group_total_members FROM groups WHERE group_id = $1;`, id)
+	if err != nil {
+		return models.GroupModel{}, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		if err := rows.Scan(
+			&name,
+			&avatar,
+			&about,
+			&creator,
+			&date,
+			&totalMembers,
+		); err != nil {
+			return models.GroupModel{}, err
+		}
+	}
+
+	n, nerr := strconv.Atoi(totalMembers)
+	if nerr != nil {
+		return models.GroupModel{}, nerr
+	}
+	return models.GroupModel{
+		Name:        name,
+		Image:       avatar,
+		About:       about,
+		Owner:       creator,
+		CreatedDate: date,
+		NoOfMembers: n,
+	}, nil
 
 }

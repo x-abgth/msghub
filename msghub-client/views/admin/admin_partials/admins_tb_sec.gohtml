@@ -1,0 +1,32 @@
+{{ define "admin_tb_sec" }}
+
+	<!--  Table starts from here  -->
+	<div class="row my-5 complete-table-wrap" id="admins-table-sec">
+	  <h3 class="fs-4 mb-3">Admins Table</h3>
+	  <div class="col">
+	    <table class="table bg-white rounded shadow-sm  table-hover"  id="admins-table">
+	      <thead>
+	      <tr>
+	        <th scope="col" width="50">admin_id</th>
+	        <th scope="col">admin_name</th>
+	        <th scope="col">operations</th>
+	      </tr>
+	      </thead>
+	      <tbody>
+	      {{ range .AdminTbContent }}
+	        <tr>
+	          <th scope="row">{{ .AdminId }}</th>
+	          <td>{{ .AdminName }}</td>
+	          <td>
+	            <a href=""><i class="material-icons" style="font-size:28px">edit</i></a>
+	            &nbsp;&nbsp;
+	            <a href=""><i class="material-icons" style="font-size:28px;color:red">delete</i></a>
+	          </td>
+	        </tr>
+	      {{ end }}
+	      </tbody>
+	    </table>
+	  </div>
+	</div>
+
+{{ end }}

@@ -1,7 +1,6 @@
 package socket
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -40,7 +39,6 @@ const (
 
 var (
 	newline  = []byte{'\n'}
-	space    = []byte{' '}
 	upgrader = websocket.Upgrader{
 		ReadBufferSize:  4096,
 		WriteBufferSize: 4096,
@@ -90,8 +88,6 @@ func ServeWs(phone, target string, wsServer *WsServer, w http.ResponseWriter, r 
 		return
 	}
 
-	defer conn.Close()
-
 	// whenever the function ServeWs is called a new client is created.
 	client := newClient(conn, wsServer, phone)
 
@@ -132,7 +128,6 @@ func (client *Client) readPump() {
 			}
 			break
 		}
-		jsonMessage = bytes.TrimSpace(bytes.Replace(jsonMessage, newline, space, -1))
 		//client.handleNewMessage(jsonMessage)
 		fmt.Println("Reading -- ", string(jsonMessage))
 		client.wsServer.broadcast <- jsonMessage

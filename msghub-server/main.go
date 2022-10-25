@@ -28,6 +28,7 @@ func init() {
 	template.Tpl.New("user").ParseGlob("../msghub-client/views/user/*.gohtml")
 	template.Tpl.New("user_partials").ParseGlob("../msghub-client/views/user/user_partials/*.gohtml")
 	template.Tpl.New("admin").ParseGlob("../msghub-client/views/admin/*.gohtml")
+	template.Tpl.New("admin_partials").ParseGlob("../msghub-client/views/admin/admin_partials/*.gohtml")
 
 	if err != nil {
 		log.Fatal(err.Error())
@@ -46,6 +47,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "%s\n", err)
 		os.Exit(1)
 	}
+
 	fmt.Println("Server shutdown successfully!")
 }
 

@@ -1,8 +1,87 @@
 {{ define "websocketJs" }}
 	<script>
-		function startSocketConnection(val) {
-		
-			const chatPartHead = document.getElementById("dashboard-chat-part-header");
+		// This function only works for group messaging
+		function startGroupSocketConnection(val) {
+			const input = document.querySelector("#msgInp");
+			const messages = document.querySelector("#log");
+			const send = document.querySelector("#sendMsg");
+
+			console.log(val);
+			$(document).ready(function () {
+		        $.ajax({
+		            type: "POST",
+		            url: "/user/dashboard/group-chat-selected",
+		            data: JSON.stringify({
+		            	target: val,
+		            }),
+		            success: function (response) { 
+		        		console.log(response);
+		        		if(response == null) {
+		        			return
+		        		}
+
+		        		document.getElementById("chat-user-name").innerText = response.name;
+	                	if(response.avatar === "") {
+		                	document.getElementById("dashboard-chat-part-header-image").setAttribute("src", "../../assets/images/group.png");
+	                	} else {
+	                		document.getElementById("dashboard-chat-part-header-image").setAttribute("src", "../../assets/db_files/group_dp_img/" + response.avatar);
+	                	}
+
+		        		if(response.data != null) {
+		                	let arrayLength = response.data.length;
+
+	                		for (let i = 0; i < arrayLength; i ++) {
+			                	let item = document.createElement('div');
+							    let innerItem = document.createElement("label");
+							    let itemTime = document.createElement("label");   
+							    let recipient = document.createElement("i");      
+
+								if(response.data[i].from == {{ .UserPhone }}) {
+									let msgDetails = document.createElement('div');
+							        item.classList.add("user-chat-msg-field", "d-flex", "flex-column", "mb-2");
+							        innerItem.classList.add("chat-bubble", "user-chat-bubble", "px-3", "py-2", "text-wrap", "word-wrap", "text-break");
+							        msgDetails.classList.add("d-flex", "align-items-center");
+							        itemTime.classList.add("chat-time","mt-1", "mx-2");
+							        let time = response.data[i].time.split(" ");
+							        itemTime.innerText = time[1] + " " + time[2];
+
+							        recipient.classList.add("fas", "fa-check-double");
+
+							        msgDetails.appendChild(itemTime);
+							        msgDetails.appendChild(recipient);
+
+							        innerItem.innerText = response.data[i].message;
+							        item.appendChild(innerItem);
+							        item.appendChild(msgDetails);
+							        appendLog(item);
+								} else if(response.data[i].from == "admin"){
+									let msgDetails = document.createElement('div');
+			    					item.classList.add("user-chat-msg-field", "d-flex", "flex-column", "mb-2");
+								} else {
+							        item.classList.add("chat-msg-field", "d-flex", "flex-column", "mb-2");
+							        innerItem.classList.add("chat-bubble", "px-3", "py-2", "text-wrap", "word-wrap", "text-break");
+							        itemTime.classList.add("chat-time","mt-1", "ms-2");
+									let time = response.data[i].time.split(" ");
+							        itemTime.innerText = time[1] + " " + time[2];
+							        
+							        innerItem.innerText = response.data[i].message;
+							        item.appendChild(innerItem);
+							        item.appendChild(itemTime);
+							        appendLog(item);
+								}
+			                }
+			                messages.scrollTop = messages.scrollHeight;
+			            }
+		            },
+		            error: function(data) {
+	                	// Some error in ajax call
+	                	alert("some Error + ", data);
+						redirectBt.click();
+	            	}
+		        });
+		    });
+
+		    const chatPartHead = document.getElementById("dashboard-chat-part-header");
 			const chatPartBody = document.getElementById("dashboard-chat-part-body");
 			const welcomeChat = document.getElementById("welcome-chat-sec");
 
@@ -19,10 +98,9 @@
 				}
 			}
 
-			const input = document.querySelector("#msgInp");
-			const messages = document.querySelector("#log");
-			const send = document.querySelector("#sendMsg");
-			let url
+
+			// Make it as like for the group 
+			let url;
 			if(url == undefined) {
 				url = "ws://" + window.location.host + "/ws/" + val; 
 				console.log(url);
@@ -34,7 +112,6 @@
 				console.log(url);
 			}		
 
-			console.log("Wbsocket is connecting");
 			const ws = new WebSocket(url);
 
 		    function appendLog(item) {
@@ -45,7 +122,6 @@
 		        }
 		    }
 
-		    console.log("reached at 131");
 
 			if(!window["WebSocket"]) {
 				var item = document.createElement("div");
@@ -66,16 +142,13 @@
 				console.log("Connection close : ", event);
 			};
 
-			console.log("reach at 150");
 
 			//  When user sends a message
 			document.getElementById("chat-form").onsubmit = function () {
 		        if (!ws) {
-		        	console.log("Hey");
 		            return false;
 		        }
 		        if (!input.value) {
-		        	console.log("Hello");
 		            return false;
 		        }
 
@@ -98,10 +171,8 @@
 		        return false;
 		    };
 
-		    console.log("Reached at 183");
 
 			function insertMessage(msgobj) {
-				console.log("Inside insert message !");
 				let item = document.createElement('div');
 			    let innerItem = document.createElement("label");
 			    let itemTime = document.createElement("label");   
@@ -141,9 +212,225 @@
 			        appendLog(item);
 				}
 				messages.scrollTop = messages.scrollHeight;
-				console.log("End of insert message");
 			}
-			console.log("Reached at 228");
+
+		}
+
+		// This function only works for personal messaging
+		function startPersonalSocketConnection(val) {
+			$(document).ready(function () {
+		        $.ajax({
+		            type: "POST",
+		            url: "/user/dashboard/chat-selected",
+		            data: JSON.stringify({
+		            	target: val,
+		            }),
+		            success: function (response) { 
+		                if (response != null) {
+		                	document.getElementById("chat-user-name").innerText = response.name;
+		                	if(response.avatar === "") {
+			                	document.getElementById("dashboard-chat-part-header-image").setAttribute("src", "../../assets/images/user.png");
+		                	} else {
+		                		document.getElementById("dashboard-chat-part-header-image").setAttribute("src", "../../assets/db_files/user_dp_img/" + response.avatar);
+		                	}
+
+		                	if(response.data != null) {
+			                	let arrayLength = response.data.length;
+
+		                		for (let i = 0; i < arrayLength; i ++) {
+				                	let item = document.createElement('div');
+								    let innerItem = document.createElement("label");
+								    let itemTime = document.createElement("label");   
+								    let recipient = document.createElement("i");      
+
+									if(response.data[i].from == {{ .UserPhone }}) {
+										let msgDetails = document.createElement('div');
+								        item.classList.add("user-chat-msg-field", "d-flex", "flex-column", "mb-2");
+								        innerItem.classList.add("chat-bubble", "user-chat-bubble", "px-3", "py-2", "text-wrap", "word-wrap", "text-break");
+								        msgDetails.classList.add("d-flex", "align-items-center");
+								        itemTime.classList.add("chat-time","mt-1", "mx-2");
+								        let time = response.data[i].time.split(" ");
+								        itemTime.innerText = time[1] + " " + time[2];
+
+								        recipient.classList.add("fas", "fa-check-double");
+
+								        msgDetails.appendChild(itemTime);
+								        msgDetails.appendChild(recipient);
+
+								        innerItem.innerText = response.data[i].message;
+								        item.appendChild(innerItem);
+								        item.appendChild(msgDetails);
+								        appendLog(item);
+									} else {
+								        item.classList.add("chat-msg-field", "d-flex", "flex-column", "mb-2");
+								        innerItem.classList.add("chat-bubble", "px-3", "py-2", "text-wrap", "word-wrap", "text-break");
+								        itemTime.classList.add("chat-time","mt-1", "ms-2");
+										let time = response.data[i].time.split(" ");
+								        itemTime.innerText = time[1] + " " + time[2];
+								        
+								        innerItem.innerText = response.data[i].message;
+								        item.appendChild(innerItem);
+								        item.appendChild(itemTime);
+								        appendLog(item);
+									}
+				                }
+				                messages.scrollTop = messages.scrollHeight;
+		                	} else {
+		                		console.log("Response is null -");
+		                	}
+			                // 
+			               
+		                	document.getElementById("phone-number-shown").innerText = val;
+		                	document.getElementById("user-name-shown").innerText = response.name;
+		                	document.getElementById("user-about-shown").innerText = response.about;
+		                	if(response.avatar === "") {
+		                		document.getElementById("user-img-shown").setAttribute("src", "../../assets/images/user.png");
+		                	} else {
+		                		document.getElementById("user-img-shown").setAttribute("src", "../../assets/db_files/user_dp_img/" + response.avatar);
+		                	}
+		                }
+		            },
+		            error: function(data) {
+	                	// Some error in ajax call
+	                	alert("some Error + ", data);
+						redirectBt.click();
+	            	}
+		        });
+		    });
+
+			const chatPartHead = document.getElementById("dashboard-chat-part-header");
+			const chatPartBody = document.getElementById("dashboard-chat-part-body");
+			const welcomeChat = document.getElementById("welcome-chat-sec");
+
+			if(chatPartBody.classList.contains('d-none')) {
+				if(welcomeChat.classList.contains('d-flex')) {
+					welcomeChat.classList.remove('d-flex');
+					welcomeChat.classList.add('d-none');
+
+					chatPartHead.classList.remove('d-none');
+					chatPartHead.classList.add('d-flex');
+
+					chatPartBody.classList.remove('d-none');
+					chatPartBody.classList.add('d-flex');
+				}
+			}
+
+			const input = document.querySelector("#msgInp");
+			const messages = document.querySelector("#log");
+			const send = document.querySelector("#sendMsg");
+			let url
+			if(url == undefined) {
+				url = "ws://" + window.location.host + "/ws/" + val; 
+				console.log(url);
+			} else {
+				array = url.split("/ws/");
+				url = array[0]+"/ws/";
+				url = url + val; 
+
+				console.log(url);
+			}		
+
+			const ws = new WebSocket(url);
+
+		    function appendLog(item) {
+		        var doScroll = messages.scrollTop > messages.scrollHeight - messages.clientHeight - 1;
+		        messages.appendChild(item);
+		        if (doScroll) {
+		            messages.scrollTop = messages.scrollHeight - messages.clientHeight;
+		        }
+		    }
+
+
+			if(!window["WebSocket"]) {
+				var item = document.createElement("div");
+			    item.innerHTML = "<b>Your browser does not support WebSockets.</b>";
+			    appendLog(item);
+			}
+
+			ws.onmessage = function(msg) {
+				console.log(msg.data);
+				insertMessage(JSON.parse(msg.data));
+			};
+
+			ws.onerror = function(evt) {
+				console.log("Webscket error - " + evt);
+			}
+
+			ws.onclose = function(event) {
+				console.log("Connection close : ", event);
+			};
+
+
+			//  When user sends a message
+			document.getElementById("chat-form").onsubmit = function () {
+		        if (!ws) {
+		            return false;
+		        }
+		        if (!input.value) {
+		            return false;
+		        }
+
+		        let current = new Date();
+				let cDate = current.getDate() + '-' + (current.getMonth() + 1) + '-' + current.getFullYear();
+				let cTime =  current.toLocaleString('en-US', { hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: true });
+				let dateTime = cDate + ' ' + cTime;
+			
+				const message = {
+					from : {{ .UserPhone }},
+					to: val,
+			    	message : input.value,
+			    	time : dateTime,
+				}
+
+				console.log(message);
+
+		        ws.send(JSON.stringify(message));
+		       	input.value = "";
+		        return false;
+		    };
+
+
+			function insertMessage(msgobj) {
+				let item = document.createElement('div');
+			    let innerItem = document.createElement("label");
+			    let itemTime = document.createElement("label");   
+			    let recipient = document.createElement("i");      
+
+			    if(msgobj.status === "ADMIN") {
+			    	let msgDetails = document.createElement('div');
+			    	item.classList.add("user-chat-msg-field", "d-flex", "flex-column", "mb-2");
+			    } else if(msgobj.from == {{ .UserPhone }}) {
+					let msgDetails = document.createElement('div');
+			        item.classList.add("admin-chat-msg-field", "d-flex", "flex-column", "mb-2", "ms-auto");
+			        innerItem.classList.add("chat-bubble", "admin-chat-bubble", "px-3", "py-2", "text-wrap", "word-wrap", "text-break", "ms-auto");
+			        msgDetails.classList.add("d-flex", "align-items-center");
+			        itemTime.classList.add("chat-time","mt-1", "mx-2");
+			        let time = msgobj.time.split(" ");
+			        itemTime.innerText = time[1] + " " + time[2];
+
+			        recipient.classList.add("fas", "fa-check-double");
+
+			        msgDetails.appendChild(itemTime);
+			        msgDetails.appendChild(recipient);
+
+			        innerItem.innerText = msgobj.message;
+			        item.appendChild(innerItem);
+			        item.appendChild(msgDetails);
+			        appendLog(item);
+				} else {
+			        item.classList.add("chat-msg-field", "d-flex", "flex-column", "mb-2");
+			        innerItem.classList.add("chat-bubble", "px-3", "py-2", "text-wrap", "word-wrap", "text-break");
+			        itemTime.classList.add("chat-time","mt-1", "ms-2");
+					let time = msgobj.time.split(" ");
+			        itemTime.innerText = time[1] + " " + time[2];
+			        
+			        innerItem.innerText = msgobj.message;
+			        item.appendChild(innerItem);
+			        item.appendChild(itemTime);
+			        appendLog(item);
+				}
+				messages.scrollTop = messages.scrollHeight;
+			}
 		}
 	</script>
 {{ end }}

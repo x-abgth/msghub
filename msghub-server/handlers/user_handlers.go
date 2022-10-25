@@ -680,6 +680,67 @@ func (info *InformationHelper) UserNewChatSelectedHandler(w http.ResponseWriter,
 	w.Write(s)
 }
 
+func (info *InformationHelper) UserGroupChatSelectedHandler(w http.ResponseWriter, r *http.Request) {
+	defer func() {
+		if e := recover(); e != nil {
+			fmt.Println(e)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(e)
+		}
+	}()
+
+	type targetID struct {
+		Data string `json:"target"`
+	}
+
+	var target targetID
+
+	a, _ := io.ReadAll(r.Body)
+	err := json.Unmarshal(a, &target)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	// Get all messages from the group using group id
+	messages, err := info.groupRepo.GetAllGroupMessagesLogic(target.Data)
+	if err != nil {
+		panic(err)
+	}
+
+	// Get all group data using the group_id (target)
+	// - group_id, group_name, avatar, messages.
+	data, err := info.groupRepo.GetGroupDetailsLogic(target.Data)
+	if err != nil {
+		panic(err)
+	}
+
+	// make struct and parse data to json format and send
+	xData := struct {
+		Name         string                `json:"name"`
+		Avatar       string                `json:"avatar"`
+		About        string                `json:"about"`
+		Owner        string                `json:"owner"`
+		Created      string                `json:"created"`
+		TotalMembers int                   `json:"total_members"`
+		Val          []models.MessageModel `json:"data"`
+	}{
+		Name:         data.Name,
+		Avatar:       data.Image,
+		About:        data.About,
+		Owner:        data.Owner,
+		Created:      data.CreatedDate,
+		TotalMembers: data.NoOfMembers,
+		Val:          messages,
+	}
+
+	// If everything goes well...
+	s, _ := json.Marshal(xData)
+	fmt.Println(xData)
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(s)
+}
+
 func (info *InformationHelper) UserLogoutHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Logout pressed!")
 	// assigning JWT tokens

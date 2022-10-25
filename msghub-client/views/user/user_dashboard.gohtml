@@ -212,7 +212,11 @@
 				{{ if .RecentChatList }}
 					<p class="mb-3" style="font-size: 1.2em; font-weight: 500;">Recent chats</p>
 					{{ range .RecentChatList }}
-						<a href="javascript:startSocketConnection('{{ .Content.Id }}');">
+						{{ if .IsGroup }}
+							<a href="javascript:startGroupSocketConnection('{{ .Content.Id }}');">
+						{{ else }}
+							<a href="javascript:startPersonalSocketConnection('{{ .Content.Id }}');">
+						{{ end }}
 							<div class="d-flex align-items-end mb-2 p-3 bg-white recent-chat-card">
 								<div class="recent-chat-dp-wrapper">
 									{{ if .Content.Avatar }}
@@ -247,12 +251,7 @@
 <script type="text/javascript" src="../../assets/js/user_dashboard_functions.js"></script>
 <script type="text/javascript">
 	//
-
-
 	function openUserDetailsSec() {
-		// Send an ajax request to get the user details
-		// It should contain -
-		// name, avatar, phone, about
 
 		userDetailsHeader = document.getElementById("dashboard-user-details-header");
 		userDetailsBody = document.getElementById("dashboard-user-details-body");

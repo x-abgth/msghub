@@ -189,16 +189,6 @@ func (u *UserDb) GetDataForDashboardLogic(phone string) (models.UserDashboardMod
 		return models.UserDashboardModel{}, err
 	}
 
-	var groupMessages []models.GrpMsgModel
-	for i := range userGroups {
-		data, err := u.groupMsg.GetRecentGroupMessages(userGroups[i])
-		if err != nil {
-			return models.UserDashboardModel{}, err
-		}
-
-		groupMessages = append(groupMessages, data)
-	}
-
 	// assign it to dashboard model
 	var recents []models.RecentChatModel
 
@@ -255,6 +245,18 @@ func (u *UserDb) GetDataForDashboardLogic(phone string) (models.UserDashboardMod
 		recents = append(recents, recentData)
 	}
 
+	//  GETTING GROUP MESSAGES
+
+	var groupMessages []models.GrpMsgModel
+	for i := range userGroups {
+		data, err := u.groupMsg.GetRecentGroupMessages(userGroups[i])
+		if err != nil {
+			return models.UserDashboardModel{}, err
+		}
+
+		groupMessages = append(groupMessages, data)
+	}
+
 	for i := range groupMessages {
 		groupSentTime, err := time.Parse("02-01-2006 3:04:05 PM", groupMessages[i].Time)
 		if err != nil {
@@ -282,8 +284,6 @@ func (u *UserDb) GetDataForDashboardLogic(phone string) (models.UserDashboardMod
 	sort.Slice(recents, func(i, j int) bool {
 		return recents[i].Order < recents[j].Order
 	})
-
-	fmt.Println(recents)
 
 	// get user details
 	userDetails, err1 := u.userData.GetUserData(phone)

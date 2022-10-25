@@ -3,6 +3,7 @@ package repository
 import (
 	"errors"
 	"msghub-server/models"
+	"strconv"
 )
 
 type Admin struct {
@@ -11,7 +12,8 @@ type Admin struct {
 	AdminPass string `gorm:"not null" json:"admin_pass"`
 }
 
-func (admin Admin) LoginAdmin(uname, pass string) (bool, error) {
+func (admin Admin) LoginAdmin(uname, pass string) (Admin, error) {
+	var name, password string
 	rows, err := models.SqlDb.Query(
 		`SELECT 
     	admin_name,
@@ -20,20 +22,156 @@ func (admin Admin) LoginAdmin(uname, pass string) (bool, error) {
 	WHERE admin_name = $1;`, uname)
 
 	if err != nil {
-		return false, errors.New("an unknown error occurred, please try again")
+		return Admin{}, errors.New("an unknown error occurred, please try again")
 	}
 
 	defer rows.Close()
 	for rows.Next() {
 		if err1 := rows.Scan(
-			&admin.AdminName,
-			&admin.AdminPass,
+			&name,
+			&password,
 		); err1 != nil {
-			return false, err1
+			return Admin{}, err1
 		}
 	}
 
-	// TODO: Create a table and add a dummy admin user
-	// TODO: Initialize admin data to a model class to pass it to the logic module
-	return true, nil
+	data := Admin{
+		AdminName: name,
+		AdminPass: password,
+	}
+
+	return data, nil
+}
+
+func (admin Admin) GetAdminsData(uname string) ([]models.AdminModel, error) {
+	var (
+		adminID, adminName string
+		res                []models.AdminModel
+	)
+	rows, err := models.SqlDb.Query(
+		`SELECT 
+		admin_id, 
+    	admin_name
+	FROM admins
+	WHERE admin_name != $1;`, uname)
+
+	if err != nil {
+		return res, errors.New("an unknown error occurred, please try again")
+	}
+
+	for rows.Next() {
+		if err := rows.Scan(
+			&adminID,
+			&adminName,
+		); err != nil {
+			return res, err
+		}
+
+		data := models.AdminModel{
+			AdminId:   adminID,
+			AdminName: adminName,
+		}
+
+		res = append(res, data)
+	}
+
+	return res, nil
+}
+
+func (admin Admin) GetAllUsersData() ([]models.UserModel, error) {
+	var (
+		phone, name, about string
+		avatar             *string
+		isBlocked          bool
+		res                []models.UserModel
+	)
+	rows, err := models.SqlDb.Query(
+		`SELECT user_ph_no, user_name, user_avatar, user_about, is_blocked FROM users;`)
+	if err != nil {
+		return res, errors.New("an unknown error occurred, please try again")
+	}
+
+	for rows.Next() {
+		if err := rows.Scan(
+			&phone,
+			&name,
+			&avatar,
+			&about,
+			&isBlocked,
+		); err != nil {
+			return res, err
+		}
+
+		null := ""
+		if avatar == nil {
+			avatar = &null
+		}
+
+		data := models.UserModel{
+			UserPhone:     phone,
+			UserAvatarUrl: *avatar,
+			UserName:      name,
+			UserAbout:     about,
+			UserBlocked:   isBlocked,
+		}
+
+		res = append(res, data)
+	}
+
+	return res, nil
+}
+
+func (admin Admin) GetGroupsData() ([]models.GroupModel, error) {
+	var (
+		id, name, about, date, members, creator string
+		avatar                                  *string
+
+		isBanned bool
+		res      []models.GroupModel
+	)
+	rows, err := models.SqlDb.Query(
+		`SELECT group_id, group_name, group_avatar, group_about, group_creator, group_created_date, group_total_members, is_banned FROM groups;`)
+	if err != nil {
+		return res, errors.New("an unknown error occurred, please try again")
+	}
+
+	for rows.Next() {
+		if err := rows.Scan(
+			&id,
+			&name,
+			&avatar,
+			&about,
+			&creator,
+			&date,
+			&members,
+			&isBanned,
+		); err != nil {
+			return res, err
+		}
+
+		null := ""
+		if avatar == nil {
+			avatar = &null
+		}
+
+		m, err := strconv.Atoi(members)
+		if err != nil {
+			return res, err
+		}
+
+		data := models.GroupModel{
+			Id:          id,
+			Owner:       creator,
+			Image:       *avatar,
+			Name:        name,
+			About:       about,
+			CreatedDate: date,
+			NoOfMembers: m,
+			IsBanned:    isBanned,
+		}
+
+		res = append(res, data)
+	}
+
+	return res, nil
 }

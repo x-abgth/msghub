@@ -52,10 +52,8 @@ func UserAuthorizationAfterLogin(handler http.HandlerFunc) http.HandlerFunc {
 
 		claim := jwtPkg.GetValueFromJwt(c)
 		if !claim.IsAuthenticated {
-			log.Println("Redirecting to login page")
-			http.Redirect(w, r, "/", http.StatusFound)
+			panic("redirecting to login page")
 		} else {
-
 			handler.ServeHTTP(w, r)
 		}
 	}

@@ -1,13 +1,19 @@
 package routes
 
 import (
-	"github.com/gorilla/mux"
 	"msghub-server/handlers"
+	"msghub-server/handlers/middlewares"
+
+	"github.com/gorilla/mux"
 )
 
 func adminRoutes(theMux *mux.Router) {
+	adminHandlerInfo := handlers.AdminHandlerStruct{}
+
 	// OTHER HANDLERS.
-	theMux.HandleFunc("/admin/login-page", handlers.AdminLoginPageHandler).Methods("GET")
-	theMux.HandleFunc("/admin/login-page", handlers.AdminAuthenticateHandler).Methods("POST")
-	// theMux.HandleFunc("/admin/dashboard", handlers.AdminAuthenticateHandler)
+	admin := theMux.PathPrefix("/admin").Subrouter()
+	admin.HandleFunc("/login-page", adminHandlerInfo.AdminLoginPageHandler).Methods("GET")
+	admin.HandleFunc("/login-page", adminHandlerInfo.AdminAuthenticateHandler).Methods("POST")
+	admin.HandleFunc("/dashboard", middlewares.AdminAuthenticationMiddleware(adminHandlerInfo.AdminDashboardHandler)).Methods("GET")
+	admin.HandleFunc("/logout", adminHandlerInfo.AdminLogoutHandler).Methods("GET")
 }

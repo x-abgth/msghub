@@ -4,6 +4,7 @@ import (
 	"log"
 	"msghub-server/models"
 	"msghub-server/repository"
+	"sort"
 	"strconv"
 	"time"
 
@@ -99,4 +100,44 @@ func (group GroupDataLogicModel) InsertMessagesToGroup(message models.GroupMessa
 	}
 
 	return nil
+}
+
+func (group GroupDataLogicModel) GetAllGroupMessagesLogic(groupID string) ([]models.MessageModel, error) {
+	id, err := strconv.Atoi(groupID)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := group.messageGroupTb.GetAllMessagesFromGroup(id)
+	if err != nil {
+		return nil, err
+	}
+
+	// Need to sort the messages according to the time sent.
+	for i := range data {
+		messageSentTime, err := time.Parse("02-01-2006 3:04:05 PM", data[i].Time)
+		if err != nil {
+			return nil, err
+		}
+		diff := time.Now().Sub(messageSentTime)
+
+		data[i].Order = float64(diff)
+	}
+
+	// Sorting the array of messages
+	sort.Slice(data, func(i, j int) bool {
+		return data[i].Order > data[j].Order
+	})
+
+	return data, nil
+}
+
+func (group GroupDataLogicModel) GetGroupDetailsLogic(gId string) (models.GroupModel, error) {
+	id, err := strconv.Atoi(gId)
+	if err != nil {
+		return models.GroupModel{}, err
+	}
+
+	data, err := group.groupTb.GetGroupDetailsRepo(id)
+	return data, err
 }
