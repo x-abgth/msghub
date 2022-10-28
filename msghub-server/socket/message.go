@@ -23,6 +23,13 @@ type Message struct {
 	IsPrivate bool    `json:"is_bool"`
 }
 
+type GMessage struct {
+	Body string `json:"body"`
+	Time string `json:"time"`
+	By   string `json:"by"`
+	Room string `json:"room"`
+}
+
 func (message *Message) encode() []byte {
 	jsonStr, err := json.Marshal(message)
 	if err != nil {

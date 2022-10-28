@@ -66,7 +66,7 @@ func (m MessageDb) GetMessageDataLogic(target, from string) ([]models.MessageMod
 	data1 = append(data1, data2...)
 
 	for i := range data1 {
-		myTime, err := time.Parse("02-01-2006 3:04:05 PM", data1[i].Time)
+		myTime, err := time.Parse("02 Jan 2006 3:04:05 PM", data1[i].Time)
 		if err != nil {
 			return this, err
 		}

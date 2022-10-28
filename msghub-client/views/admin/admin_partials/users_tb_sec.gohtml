@@ -24,14 +24,21 @@
 	          <td>{{ .UserBlocked }}</td>
 	          <td>
 	           <div class="dropdown">
-				  <button class="btn btn-secondary btn-danger dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+
+	           	{{ if .UserBlocked }}
+				  <button disabled class="btn btn-secondary btn-danger dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
 				    Block
 				  </button>
+				{{ else }}
+				 <button class="btn btn-secondary btn-danger dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+				    Block
+				  </button>
+				{{ end }}
 				  <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-				    <a class="dropdown-item" href="#">1 Day Block</a>
-				    <a class="dropdown-item" href="#">1 Week Block</a>
-				    <a class="dropdown-item" href="#">1 Month Block</a>
-				    <a class="dropdown-item" href="#">Permanent Block</a>
+				    <a class="dropdown-item" href="/admin/user-block/{{ .UserPhone }}/day">1 Day Block</a>
+				    <a class="dropdown-item" href="/admin/user-block/{{ .UserPhone }}/week">1 Week Block</a>
+				    <a class="dropdown-item" href="/admin/user-block/{{ .UserPhone }}/month">1 Month Block</a>
+				    <a class="dropdown-item" href="/admin/user-block/{{ .UserPhone }}/permanent">Permanent Block</a>
 				  </div>
 				</div>
 	          </td>

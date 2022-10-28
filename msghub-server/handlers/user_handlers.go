@@ -272,6 +272,8 @@ func (info *InformationHelper) UserDashboardHandler(w http.ResponseWriter, r *ht
 		panic(err.Error())
 	}
 
+	fmt.Println("Recent data == ", data)
+
 	info.errorStr = ""
 	err2 := template.Tpl.ExecuteTemplate(w, "user_dashboard.gohtml", data)
 	if err2 != nil {
@@ -445,7 +447,7 @@ func (info *InformationHelper) UserNewChatStartedHandler(w http.ResponseWriter, 
 		Content: message,
 		From:    claim.User.UserPhone,
 		To:      target,
-		Time:    time.Now().Format("02-01-2006 3:04:05 PM"),
+		Time:    time.Now().Format("02 Jan 2006 3:04:05 PM"),
 		Status:  "ADMIN",
 	}
 

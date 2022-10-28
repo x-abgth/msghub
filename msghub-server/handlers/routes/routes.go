@@ -1,49 +1,16 @@
 package routes
 
 import (
-	"fmt"
-	"github.com/gorilla/mux"
 	"log"
 	"msghub-server/socket"
 	"msghub-server/template"
-	jwtPkg "msghub-server/utils/jwt"
 	"net/http"
+
+	"github.com/gorilla/mux"
 )
 
 func InitializeRoutes(theMux *mux.Router, server *socket.WsServer) {
-
-	theMux.HandleFunc("/ws/{target}", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("--------- IN /WS/TARGET HANDLER FUNCTION ------------")
-
-		defer func() {
-			if e := recover(); e != nil {
-				log.Println(e)
-				http.Redirect(w, r, "/", http.StatusSeeOther)
-			}
-		}()
-
-		vars := mux.Vars(r)
-		target := vars["target"]
-
-		fmt.Println(target)
-
-		c, err1 := r.Cookie("userToken")
-		if err1 != nil {
-			if err1 == http.ErrNoCookie {
-				panic("No cookie found - " + err1.Error())
-			}
-			panic(err1.Error())
-		}
-
-		claim := jwtPkg.GetValueFromJwt(c) // error
-		if claim == nil {
-			panic("JWT error happened!")
-		}
-
-		socket.ServeWs(claim.User.UserPhone, target, server, w, r)
-	})
-
-	userRoutes(theMux)
+	userRoutes(theMux, server)
 	adminRoutes(theMux)
 	theMux.NotFoundHandler = http.HandlerFunc(noPageHandler)
 }

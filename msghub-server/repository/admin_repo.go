@@ -2,6 +2,7 @@ package repository
 
 import (
 	"errors"
+	"log"
 	"msghub-server/models"
 	"strconv"
 )
@@ -174,4 +175,14 @@ func (admin Admin) GetGroupsData() ([]models.GroupModel, error) {
 	}
 
 	return res, nil
+}
+
+func (admin Admin) AdminBlockThisUserRepo(id, condition string) error {
+	_, err1 := models.SqlDb.Exec(`UPDATE users SET is_blocked = true, block_duration = $1 WHERE user_ph_no = $2 AND is_blocked = false;`, condition, id)
+	if err1 != nil {
+		log.Println(err1)
+		return errors.New("sorry, An unknown error occurred. Please try again")
+	}
+
+	return nil
 }

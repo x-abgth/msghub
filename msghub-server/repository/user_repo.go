@@ -8,12 +8,13 @@ import (
 )
 
 type User struct {
-	UserPhNo     string  `gorm:"not null;primaryKey;autoIncrement:false" json:"user_ph_no"`
-	UserName     string  `gorm:"not null" json:"user_name"`
-	UserAvatar   *string `json:"user_avatar"`
-	UserAbout    string  `gorm:"not null" json:"user_about"`
-	UserPassword string  `gorm:"not null" json:"user_password"`
-	IsBlocked    bool    `gorm:"not null" json:"is_blocked"`
+	UserPhNo        string  `gorm:"not null;primaryKey;autoIncrement:false" json:"user_ph_no"`
+	UserName        string  `gorm:"not null" json:"user_name"`
+	UserAvatar      *string `json:"user_avatar"`
+	UserAbout       string  `gorm:"not null" json:"user_about"`
+	UserPassword    string  `gorm:"not null" json:"user_password"`
+	IsBlocked       bool    `gorm:"not null" json:"is_blocked"`
+	BlockedDuration *string `json:"block_duration"`
 }
 
 func (user User) GetUserDataUsingPhone(formPhone string) (int, models.UserModel, error) {
@@ -29,7 +30,8 @@ func (user User) GetUserDataUsingPhone(formPhone string) (int, models.UserModel,
     	user_name, 
     	user_ph_no,
     	user_password, 
-    	is_blocked
+    	is_blocked, 
+    	block_duration
 	FROM users
 	WHERE user_ph_no = $1;`, formPhone)
 	if err != nil {
@@ -47,7 +49,9 @@ func (user User) GetUserDataUsingPhone(formPhone string) (int, models.UserModel,
 			&userModel.UserName,
 			&userModel.UserPhNo,
 			&userModel.UserPassword,
-			&userModel.IsBlocked); err1 != nil {
+			&userModel.IsBlocked,
+			&userModel.BlockedDuration,
+		); err1 != nil {
 			return 0, models.UserModel{}, err1
 		}
 	}
@@ -57,6 +61,10 @@ func (user User) GetUserDataUsingPhone(formPhone string) (int, models.UserModel,
 		userModel.UserAvatar = &blank
 	}
 
+	if userModel.BlockedDuration == nil {
+		userModel.BlockedDuration = &blank
+	}
+
 	model = models.UserModel{
 		UserAvatarUrl: *userModel.UserAvatar,
 		UserAbout:     userModel.UserAbout,
@@ -64,6 +72,7 @@ func (user User) GetUserDataUsingPhone(formPhone string) (int, models.UserModel,
 		UserPhone:     userModel.UserPhNo,
 		UserPass:      userModel.UserPassword,
 		UserBlocked:   userModel.IsBlocked,
+		BlockDur:      *userModel.BlockedDuration,
 	}
 
 	return count, model, nil
@@ -276,6 +285,16 @@ func (user User) UpdateUserData(model models.UserModel) error {
 		model.UserName, model.UserAbout, model.UserAvatarUrl, model.UserPhone)
 	if err1 != nil {
 		return errors.New("couldn't execute the sql query")
+	}
+
+	return nil
+}
+
+func (user User) UndoAdminBlockRepo(id string) error {
+	_, err1 := models.SqlDb.Exec(`UPDATE users SET is_blocked = false, block_duration = '' WHERE user_ph_no = $1;`, id)
+	if err1 != nil {
+		log.Println(err1)
+		return errors.New("sorry, An unknown error occurred. Please try again")
 	}
 
 	return nil

@@ -51,3 +51,9 @@ func (admin AdminDb) GetGroupsData() ([]models.GroupModel, error) {
 
 	return data, err
 }
+
+func (admin AdminDb) BlockThisUserLogic(id, condition string) error {
+	err := admin.repo.AdminBlockThisUserRepo(id, condition)
+
+	return err
+}

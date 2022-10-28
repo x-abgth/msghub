@@ -1,13 +1,25 @@
 package routes
 
 import (
+	"fmt"
+	"github.com/gorilla/mux"
+	"log"
 	"msghub-server/handlers"
 	"msghub-server/handlers/middlewares"
-
-	"github.com/gorilla/mux"
+	"msghub-server/socket"
+	jwtPkg "msghub-server/utils/jwt"
+	"net/http"
 )
 
-func userRoutes(theMux *mux.Router) {
+func userRoutes(theMux *mux.Router, s *socket.WsServer) {
+	hub := &socket.Hub{
+		Clients:    make(map[string]map[*socket.GClient]bool),
+		Register:   make(chan *socket.GClient),
+		Unregister: make(chan *socket.GClient),
+		Broadcast:  make(chan *socket.WSMessage),
+	}
+	go hub.Run()
+
 	handlerInfo := handlers.InformationHelper{}
 
 	theMux.HandleFunc("/register", handlerInfo.UserRegisterHandler).Methods("POST")
@@ -33,4 +45,55 @@ func userRoutes(theMux *mux.Router) {
 	theMux.HandleFunc("/user/dashboard/group-chat-selected", handlerInfo.UserGroupChatSelectedHandler).Methods("POST")
 
 	theMux.HandleFunc("/user/logout", handlerInfo.UserLogoutHandler).Methods("GET")
+
+	// WEBSOCKET CONNECTIONS
+
+	// For personal messaging
+	theMux.HandleFunc("/ws/{target}", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println("--------- IN /WS/TARGET HANDLER FUNCTION ------------")
+
+		defer func() {
+			if e := recover(); e != nil {
+				log.Println(e)
+				http.Redirect(w, r, "/", http.StatusSeeOther)
+			}
+		}()
+
+		vars := mux.Vars(r)
+		target := vars["target"]
+
+		fmt.Println(target)
+
+		c, err1 := r.Cookie("userToken")
+		if err1 != nil {
+			if err1 == http.ErrNoCookie {
+				panic("No cookie found - " + err1.Error())
+			}
+			panic(err1.Error())
+		}
+
+		claim := jwtPkg.GetValueFromJwt(c) // error
+		if claim == nil {
+			panic("JWT error happened!")
+		}
+
+		socket.ServeWs(claim.User.UserPhone, target, s, w, r)
+	})
+
+	// For group messaging
+	theMux.HandleFunc("/ws/group/{id}", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println("--------- IN /WS/TARGET HANDLER FUNCTION ------------")
+
+		defer func() {
+			if e := recover(); e != nil {
+				log.Println(e)
+				http.Redirect(w, r, "/", http.StatusSeeOther)
+			}
+		}()
+
+		vars := mux.Vars(r)
+		target := vars["id"]
+
+		socket.ServeGroupWs(hub, target, w, r)
+	})
 }

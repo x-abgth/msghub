@@ -71,7 +71,7 @@ func (group GroupDataLogicModel) CreateGroupAndInsertDataLogic(groupData models.
 		GroupId:  strconv.Itoa(id),
 		SenderId: "admin",
 		Content:  "+91 " + groupData.Owner + " created a group named " + groupData.Name + ".",
-		Time:     time.Now().Format("02-01-2006 3:04:05 PM"),
+		Time:     time.Now().Format("02 Jan 2006 3:04:05 PM"),
 	}
 	err2 := group.InsertMessagesToGroup(msg)
 	if err2 != nil {
@@ -115,7 +115,7 @@ func (group GroupDataLogicModel) GetAllGroupMessagesLogic(groupID string) ([]mod
 
 	// Need to sort the messages according to the time sent.
 	for i := range data {
-		messageSentTime, err := time.Parse("02-01-2006 3:04:05 PM", data[i].Time)
+		messageSentTime, err := time.Parse("02 Jan 2006 3:04:05 PM", data[i].Time)
 		if err != nil {
 			return nil, err
 		}

@@ -1,5 +1,7 @@
 {{ define "websocketJs" }}
 	<script>
+		const monthAsWord = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
 		// This function only works for group messaging
 		function startGroupSocketConnection(val) {
 			const input = document.querySelector("#msgInp");
@@ -36,7 +38,21 @@
 							    let itemTime = document.createElement("label");   
 							    let recipient = document.createElement("i");      
 
-								if(response.data[i].from == {{ .UserPhone }}) {
+								if(response.data[i].from  === "admin") {
+							    	let msgDetails = document.createElement('div');
+							        item.classList.add("admin-chat-msg-field", "d-flex", "flex-column", "mb-2", "ms-auto");
+							    	item.classList.add("admin-chat-msg-field", "d-flex", "flex-column", "mb-2");
+							    	msgDetails.classList.add("d-flex", "align-items-center");
+
+							        recipient.classList.add("fas", "fa-check-double");
+
+							        msgDetails.appendChild(recipient);
+
+							        innerItem.innerText = msgobj.message;
+							        item.appendChild(innerItem);
+							        item.appendChild(msgDetails);
+							        appendLog(item);
+							    } else if(response.data[i].from == {{ .UserPhone }}) {
 									let msgDetails = document.createElement('div');
 							        item.classList.add("user-chat-msg-field", "d-flex", "flex-column", "mb-2");
 							        innerItem.classList.add("chat-bubble", "user-chat-bubble", "px-3", "py-2", "text-wrap", "word-wrap", "text-break");
@@ -54,9 +70,6 @@
 							        item.appendChild(innerItem);
 							        item.appendChild(msgDetails);
 							        appendLog(item);
-								} else if(response.data[i].from == "admin"){
-									let msgDetails = document.createElement('div');
-			    					item.classList.add("user-chat-msg-field", "d-flex", "flex-column", "mb-2");
 								} else {
 							        item.classList.add("chat-msg-field", "d-flex", "flex-column", "mb-2");
 							        innerItem.classList.add("chat-bubble", "px-3", "py-2", "text-wrap", "word-wrap", "text-break");
@@ -98,15 +111,14 @@
 				}
 			}
 
-
 			// Make it as like for the group 
 			let url;
 			if(url == undefined) {
-				url = "ws://" + window.location.host + "/ws/" + val; 
+				url = "ws://" + window.location.host + "/ws/group/" + val; 
 				console.log(url);
 			} else {
-				array = url.split("/ws/");
-				url = array[0]+"/ws/";
+				array = url.split("/ws/group/");
+				url = array[0]+"/ws/group/";
 				url = url + val; 
 
 				console.log(url);
@@ -122,7 +134,6 @@
 		        }
 		    }
 
-
 			if(!window["WebSocket"]) {
 				var item = document.createElement("div");
 			    item.innerHTML = "<b>Your browser does not support WebSockets.</b>";
@@ -130,8 +141,16 @@
 			}
 
 			ws.onmessage = function(msg) {
-				console.log(msg.data);
-				insertMessage(JSON.parse(msg.data));
+				console.log("The message is ", msg.data);
+				if (msg.data.type == "message") {
+					const msgObj = {
+						from : msg.data.payload.by,
+						message : msg.data.payload.body,
+						time : msg.data.payload.body,
+					}
+
+				  	insertMessage(msgObj)
+				}
 			};
 
 			ws.onerror = function(evt) {
@@ -142,49 +161,129 @@
 				console.log("Connection close : ", event);
 			};
 
+			const messageInput = document.querySelector("#msgInp")
+				const ty = document.querySelector(".typing")
 
-			//  When user sends a message
-			document.getElementById("chat-form").onsubmit = function () {
-		        if (!ws) {
-		            return false;
-		        }
-		        if (!input.value) {
-		            return false;
-		        }
+				let currentTyping
 
-		        let current = new Date();
-				let cDate = current.getDate() + '-' + (current.getMonth() + 1) + '-' + current.getFullYear();
-				let cTime =  current.toLocaleString('en-US', { hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: true });
-				let dateTime = cDate + ' ' + cTime;
-			
-				const message = {
-					from : {{ .UserPhone }},
-					to: val,
-			    	message : input.value,
-			    	time : dateTime,
+				ws.addEventListener("message", function (message) {
+					console.log("this is switch case")
+				  console.log(JSON.parse(message.data))
+				  const data = JSON.parse(message.data)
+				  switch (data.type) {
+				    case "message":
+				    	console.log("Message has been")
+				      	add(data.payload)
+				      	break
+				    case "typing":
+				      	typing(data.payload)
+				      	break
+				    case "stoptyping":
+				      	stoptyping(data.payload)
+				      	break
+				    default:
+				      	break
+				  	}
+				})
+
+				document.getElementById("chat-form").onsubmit = function (e) {
+				  e.preventDefault();
+				  	let current = new Date();
+					let cDate = current.getDate() + ' ' + monthAsWord[(current.getMonth() + 1)] + ' ' + current.getFullYear();
+					let cTime =  current.toLocaleString('en-US', { hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: true });
+					let dateTime = cDate + ' ' + cTime;
+				  const m = {
+				    type: "message",
+				    payload: {
+				      body: messageInput.value,
+				      time: dateTime,
+				      by: {{ .UserPhone }},
+				      room: val
+				    }
+				  }
+				  console.log(m)
+				  ws.send(JSON.stringify(m))
+				  messageInput.value = ""
 				}
 
-				console.log(message);
+				function add(message) {
+				  	console.log("Add message: ", message)
+					let current = new Date();
+					let cDate = current.getDate() + ' ' + monthAsWord[(current.getMonth() + 1)] + ' ' + current.getFullYear();
+					let cTime =  current.toLocaleString('en-US', { hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: true });
+					let dateTime = cDate + ' ' + cTime;
 
-		        ws.send(JSON.stringify(message));
-		       	input.value = "";
-		        return false;
-		    };
+					const msgObj = {
+						from : message.by,
+						message : message.body,
+						time : dateTime,
+					}
 
+				  	insertMessage(msgObj)
+				}
+
+				function typing(message) {
+					console.log("typing: ", message)
+					if (message.by === {{ .UserPhone }}) return;
+					ty.textContent = message.by + " is typing ..."
+					currentTyping = message.by
+					console.log("Currently typing: ", currentTyping)
+				}
+
+				function stoptyping(message) {
+					console.log("stoptyping: ", message)
+					if (message.by === {{ .UserPhone }}) return
+					if (message.by !== currentTyping) return
+					ty.textContent = ""
+					currentTyping = null
+				}
+
+				messageInput.addEventListener("focusin", function () {
+				  console.log("Focus in")
+				  const m = {
+				    type: "typing",
+				    payload: {
+				      room: val,
+				    }
+				  }
+				  ws.send(JSON.stringify(m))
+				})
+				messageInput.addEventListener("focusout", function () {
+				  console.log("Focus out")
+				  const m = {
+				    type: "stoptyping",
+				    payload: {
+				      room: val,
+				    }
+				  }
+				  ws.send(JSON.stringify(m))
+				})
 
 			function insertMessage(msgobj) {
+				console.log("i'm called")
 				let item = document.createElement('div');
 			    let innerItem = document.createElement("label");
 			    let itemTime = document.createElement("label");   
 			    let recipient = document.createElement("i");      
 
-			    if(msgobj.status === "ADMIN") {
+			   	if(msgobj.from === "admin") {
 			    	let msgDetails = document.createElement('div');
-			    	item.classList.add("user-chat-msg-field", "d-flex", "flex-column", "mb-2");
-			    } else if(msgobj.from == {{ .UserPhone }}) {
-					let msgDetails = document.createElement('div');
 			        item.classList.add("admin-chat-msg-field", "d-flex", "flex-column", "mb-2", "ms-auto");
-			        innerItem.classList.add("chat-bubble", "admin-chat-bubble", "px-3", "py-2", "text-wrap", "word-wrap", "text-break", "ms-auto");
+			    	item.classList.add("admin-chat-msg-field", "d-flex", "flex-column", "mb-2");
+			    	msgDetails.classList.add("d-flex", "align-items-center");
+
+			        recipient.classList.add("fas", "fa-check-double");
+
+			        msgDetails.appendChild(recipient);
+
+			        innerItem.innerText = msgobj.message;
+			        item.appendChild(innerItem);
+			        item.appendChild(msgDetails);
+			        appendLog(item);
+			    } else if(msgobj.from == {{ .UserPhone }}) {
+			        let msgDetails = document.createElement('div');
+			    	item.classList.add("user-chat-msg-field", "d-flex", "flex-column", "mb-2");
+			        innerItem.classList.add("chat-bubble", "user-chat-bubble", "px-3", "py-2", "text-wrap", "word-wrap", "text-break", "ms-auto");
 			        msgDetails.classList.add("d-flex", "align-items-center");
 			        itemTime.classList.add("chat-time","mt-1", "mx-2");
 			        let time = msgobj.time.split(" ");
@@ -243,7 +342,21 @@
 								    let itemTime = document.createElement("label");   
 								    let recipient = document.createElement("i");      
 
-									if(response.data[i].from == {{ .UserPhone }}) {
+									if(msgobj.status === "ADMIN") {
+								    	let msgDetails = document.createElement('div');
+								        item.classList.add("admin-chat-msg-field", "d-flex", "flex-column", "mb-2", "ms-auto");
+								    	item.classList.add("admin-chat-msg-field", "d-flex", "flex-column", "mb-2");
+								    	msgDetails.classList.add("d-flex", "align-items-center");
+
+								        recipient.classList.add("fas", "fa-check-double");
+
+								        msgDetails.appendChild(recipient);
+
+								        innerItem.innerText = msgobj.message;
+								        item.appendChild(innerItem);
+								        item.appendChild(msgDetails);
+								        appendLog(item);
+								    } else if(response.data[i].from == {{ .UserPhone }}) {
 										let msgDetails = document.createElement('div');
 								        item.classList.add("user-chat-msg-field", "d-flex", "flex-column", "mb-2");
 								        innerItem.classList.add("chat-bubble", "user-chat-bubble", "px-3", "py-2", "text-wrap", "word-wrap", "text-break");
@@ -371,7 +484,7 @@
 		        }
 
 		        let current = new Date();
-				let cDate = current.getDate() + '-' + (current.getMonth() + 1) + '-' + current.getFullYear();
+				let cDate = current.getDate() + ' ' + monthAsWord[(current.getMonth() + 1)] + ' ' + current.getFullYear();
 				let cTime =  current.toLocaleString('en-US', { hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: true });
 				let dateTime = cDate + ' ' + cTime;
 			
@@ -398,11 +511,22 @@
 
 			    if(msgobj.status === "ADMIN") {
 			    	let msgDetails = document.createElement('div');
-			    	item.classList.add("user-chat-msg-field", "d-flex", "flex-column", "mb-2");
+			        item.classList.add("admin-chat-msg-field", "d-flex", "flex-column", "mb-2", "ms-auto");
+			    	item.classList.add("admin-chat-msg-field", "d-flex", "flex-column", "mb-2");
+			    	msgDetails.classList.add("d-flex", "align-items-center");
+
+			        recipient.classList.add("fas", "fa-check-double");
+
+			        msgDetails.appendChild(recipient);
+
+			        innerItem.innerText = msgobj.message;
+			        item.appendChild(innerItem);
+			        item.appendChild(msgDetails);
+			        appendLog(item);
 			    } else if(msgobj.from == {{ .UserPhone }}) {
 					let msgDetails = document.createElement('div');
-			        item.classList.add("admin-chat-msg-field", "d-flex", "flex-column", "mb-2", "ms-auto");
-			        innerItem.classList.add("chat-bubble", "admin-chat-bubble", "px-3", "py-2", "text-wrap", "word-wrap", "text-break", "ms-auto");
+			        item.classList.add("user-chat-msg-field", "d-flex", "flex-column", "mb-2", "ms-auto");
+			        innerItem.classList.add("chat-bubble", "user-chat-bubble", "px-3", "py-2", "text-wrap", "word-wrap", "text-break", "ms-auto");
 			        msgDetails.classList.add("d-flex", "align-items-center");
 			        itemTime.classList.add("chat-time","mt-1", "mx-2");
 			        let time = msgobj.time.split(" ");

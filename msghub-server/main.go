@@ -61,6 +61,7 @@ func run() error {
 	// creates a new WsServer
 	wsServer := socket.NewWebSocketServer()
 	go wsServer.Run()
+
 	routes.InitializeRoutes(newMux, wsServer)
 
 	server := &http.Server{Addr: ":8080", Handler: newMux}

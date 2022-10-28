@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"fmt"
+	"github.com/gorilla/mux"
 	"log"
 	"msghub-server/logic"
 	"msghub-server/models"
@@ -136,9 +138,54 @@ func (admin *AdminHandlerStruct) AdminDashboardHandler(w http.ResponseWriter, r 
 	}
 }
 
-func (admin *AdminHandlerStruct) AdminLogoutHandler(w http.ResponseWriter, r *http.Request) {
-	userCookie := &http.Cookie{Name: "adminToken", MaxAge: -1, HttpOnly: true, Path: "/admin/"}
+func (admin *AdminHandlerStruct) AdminBlocksUserHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	uid := vars["id"]
+	condition := vars["condition"]
+
+	defer func() {
+		if e := recover(); e != nil {
+			log.Println(e)
+			http.Redirect(w, r, "/admin/dashboard", http.StatusSeeOther)
+		}
+	}()
+
+	fmt.Println("UID = ", uid)
+	var t string
+
+	switch condition {
+	case "day":
+		t = time.Now().Add(time.Hour * 24).Format("02-01-2006 3:04:05 PM")
+		fmt.Println(t)
+	case "week":
+		t = time.Now().Add(time.Hour * 168).Format("02-01-2006 3:04:05 PM")
+		fmt.Println(t)
+	case "month":
+		t = time.Now().Add(time.Hour * 720).Format("02-01-2006 3:04:05 PM")
+		fmt.Println(t)
+	case "permanent":
+		t = "permanent"
+	default:
+		log.Println("Sorry, wrong choice.")
+		panic("wrong choice")
+	}
+
+	// change block value to true and update block duration
+	err := admin.logics.BlockThisUserLogic(uid, t)
+	if err != nil {
+		panic(err)
+	}
+
+	// clear cookie and check user block while login
+	userCookie := &http.Cookie{Name: "userToken", MaxAge: -1, HttpOnly: true, Path: "/"}
 	http.SetCookie(w, userCookie)
+
+	http.Redirect(w, r, "/admin/dashboard", http.StatusFound)
+}
+
+func (admin *AdminHandlerStruct) AdminLogoutHandler(w http.ResponseWriter, r *http.Request) {
+	adminCookie := &http.Cookie{Name: "adminToken", MaxAge: -1, HttpOnly: true, Path: "/admin/"}
+	http.SetCookie(w, adminCookie)
 
 	http.Redirect(w, r, "/admin/login-page", http.StatusFound)
 }

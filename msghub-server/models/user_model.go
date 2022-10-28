@@ -7,6 +7,7 @@ type UserModel struct {
 	UserPhone     string
 	UserPass      string
 	UserBlocked   bool
+	BlockDur      string
 }
 
 var userVal *UserModel
