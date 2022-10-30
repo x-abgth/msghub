@@ -150,7 +150,6 @@ func (admin *AdminHandlerStruct) AdminBlocksUserHandler(w http.ResponseWriter, r
 		}
 	}()
 
-	fmt.Println("UID = ", uid)
 	var t string
 
 	switch condition {
@@ -179,6 +178,46 @@ func (admin *AdminHandlerStruct) AdminBlocksUserHandler(w http.ResponseWriter, r
 	// clear cookie and check user block while login
 	userCookie := &http.Cookie{Name: "userToken", MaxAge: -1, HttpOnly: true, Path: "/"}
 	http.SetCookie(w, userCookie)
+
+	http.Redirect(w, r, "/admin/dashboard", http.StatusFound)
+}
+
+func (admin *AdminHandlerStruct) AdminBlocksGroupHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	gid := vars["id"]
+	condition := vars["condition"]
+
+	defer func() {
+		if e := recover(); e != nil {
+			log.Println(e)
+			http.Redirect(w, r, "/admin/dashboard", http.StatusSeeOther)
+		}
+	}()
+
+	var t string
+	switch condition {
+	case "day":
+		t = time.Now().Add(time.Hour * 24).Format("Jan 02, 2006 03:04:05 PM")
+		fmt.Println(t)
+	case "week":
+		t = time.Now().Add(time.Hour * 168).Format("Jan 02, 2006 03:04:05 PM")
+		fmt.Println(t)
+	case "month":
+		t = time.Now().Add(time.Hour * 720).Format("Jan 02, 2006 03:04:05 PM")
+		fmt.Println(t)
+	case "permanent":
+		t = "permanent"
+	default:
+		log.Println("Sorry, wrong choice.")
+		panic("wrong choice")
+	}
+
+	fmt.Println(gid)
+
+	err := admin.logics.BlockThisGroupLogic(gid, t)
+	if err != nil {
+		panic(err)
+	}
 
 	http.Redirect(w, r, "/admin/dashboard", http.StatusFound)
 }

@@ -8,8 +8,9 @@ type GroupModel struct {
 	About       string
 	CreatedDate string
 	NoOfMembers int
-	Members     []string
 	IsBanned    bool
+	BanTime     string
+	Members     []string
 }
 
 type GroupMessageModel struct {
@@ -18,4 +19,11 @@ type GroupMessageModel struct {
 	SenderId string
 	Content  string
 	Time     string
+}
+
+type GroupMembersModel struct {
+	MPhone   string `json:"phone"`
+	MName    string `json:"name"`
+	MAvatar  string `json:"avatar"`
+	MIsAdmin bool   `json:"is_admin"`
 }

@@ -199,15 +199,25 @@ func (u *UserDb) GetDataForDashboardLogic(phone string) (models.UserDashboardMod
 		}
 	}()
 
+	blockList, err := u.userData.GetUserBlockList(phone)
+	if err != nil {
+		log.Println(err)
+		return models.UserDashboardModel{}, err
+	}
+
+	blockArr := strings.Split(blockList, ",")
+
 	// Got recent personal chats
 	personalMessages, err := u.userData.GetRecentChatList(phone)
 	if err != nil {
+		log.Println(err)
 		return models.UserDashboardModel{}, err
 	}
 
 	// Get recent group chats
 	userGroups, err := u.userData.GetGroupForUser(phone)
 	if err != nil {
+		log.Println(err)
 		return models.UserDashboardModel{}, err
 	}
 
@@ -221,7 +231,8 @@ func (u *UserDb) GetDataForDashboardLogic(phone string) (models.UserDashboardMod
 
 			msgSentTime, err := time.Parse("02 Jan 2006 3:04:05 PM", personalMessages[i].Time)
 			if err != nil {
-				return models.UserDashboardModel{}, err
+				log.Println(err)
+				break
 			}
 			diff := time.Now().Sub(msgSentTime)
 
@@ -230,7 +241,19 @@ func (u *UserDb) GetDataForDashboardLogic(phone string) (models.UserDashboardMod
 				// Get user datas like dp, name
 				_, usersData, err := u.userData.GetUserDataUsingPhone(personalMessages[i].To)
 				if err != nil {
-					return models.UserDashboardModel{}, err
+					log.Println(err)
+					break
+				}
+
+				var isBlocked bool
+
+				for i := range blockArr {
+					for j := range personalMessages {
+						if blockArr[i] == personalMessages[j].To {
+							isBlocked = true
+							break
+						}
+					}
 				}
 
 				recentData = models.RecentChatModel{
@@ -241,15 +264,27 @@ func (u *UserDb) GetDataForDashboardLogic(phone string) (models.UserDashboardMod
 						LastMsg:     personalMessages[i].Content,
 						LastMsgTime: personalMessages[i].Time,
 					},
-					Sender:  personalMessages[i].From,
-					IsGroup: false,
-					Order:   float64(diff),
+					Sender:    personalMessages[i].From,
+					IsGroup:   false,
+					Order:     float64(diff),
+					IsBlocked: isBlocked,
 				}
 			} else {
 				// Get user datas like dp, name
 				_, usersData, err := u.userData.GetUserDataUsingPhone(personalMessages[i].From)
 				if err != nil {
-					return models.UserDashboardModel{}, err
+					log.Println(err)
+					break
+				}
+
+				var isBlocked bool
+				for i := range blockArr {
+					for j := range personalMessages {
+						if blockArr[i] == personalMessages[j].From {
+							isBlocked = true
+							break
+						}
+					}
 				}
 
 				recentData = models.RecentChatModel{
@@ -260,9 +295,10 @@ func (u *UserDb) GetDataForDashboardLogic(phone string) (models.UserDashboardMod
 						LastMsg:     personalMessages[i].Content,
 						LastMsgTime: personalMessages[i].Time,
 					},
-					Sender:  personalMessages[i].From,
-					IsGroup: false,
-					Order:   float64(diff),
+					Sender:    personalMessages[i].From,
+					IsGroup:   false,
+					Order:     float64(diff),
+					IsBlocked: isBlocked,
 				}
 			}
 			recents = append(recents, recentData)
@@ -274,9 +310,12 @@ func (u *UserDb) GetDataForDashboardLogic(phone string) (models.UserDashboardMod
 	for i := range userGroups {
 		data, err := u.groupMsg.GetRecentGroupMessages(userGroups[i])
 		if err != nil {
-			return models.UserDashboardModel{}, err
-		} else if data.Id == "" {
-			return models.UserDashboardModel{}, err
+			log.Println(err)
+			break
+		}
+		if data.Id == "" {
+			log.Println("The recent group message id is missing")
+			continue
 		}
 
 		groupMessages = append(groupMessages, data)
@@ -286,7 +325,8 @@ func (u *UserDb) GetDataForDashboardLogic(phone string) (models.UserDashboardMod
 		for i := range groupMessages {
 			groupSentTime, err := time.Parse("02 Jan 2006 3:04:05 PM", groupMessages[i].Time)
 			if err != nil {
-				return models.UserDashboardModel{}, err
+				log.Println(err)
+				break
 			}
 			diff := time.Now().Sub(groupSentTime)
 			recentData := models.RecentChatModel{
@@ -315,7 +355,7 @@ func (u *UserDb) GetDataForDashboardLogic(phone string) (models.UserDashboardMod
 	// get user details
 	userDetails, err1 := u.userData.GetUserData(phone)
 	if err1 != nil {
-		log.Println("getting userDetails")
+		log.Println(err1)
 		return models.UserDashboardModel{}, err1
 	}
 
@@ -330,11 +370,44 @@ func (u *UserDb) GetDataForDashboardLogic(phone string) (models.UserDashboardMod
 }
 
 func (u *UserDb) GetAllUsersLogic(ph string) ([]models.UserModel, error) {
+	blockList, err := u.userData.GetUserBlockList(ph)
+	if err != nil {
+		log.Println(err)
+		return []models.UserModel{}, err
+	}
+
+	blockArr := strings.Split(blockList, ",")
+
 	data, err := u.userData.GetAllUsersData(ph)
 	if err != nil {
 		return []models.UserModel{}, err
 	}
-	return data, nil
+
+	var res []models.UserModel
+
+	for i := range data {
+		for j := range blockArr {
+			if data[i].UserPhone == blockArr[j] {
+				res = append(res, models.UserModel{
+					UserName:      data[i].UserName,
+					UserPhone:     data[i].UserPhone,
+					UserAbout:     data[i].UserAbout,
+					UserAvatarUrl: data[i].UserAvatarUrl,
+					IsBlocked:     true,
+				})
+			} else {
+				res = append(res, models.UserModel{
+					UserName:      data[i].UserName,
+					UserPhone:     data[i].UserPhone,
+					UserAbout:     data[i].UserAbout,
+					UserAvatarUrl: data[i].UserAvatarUrl,
+					IsBlocked:     false,
+				})
+			}
+		}
+	}
+
+	return res, nil
 }
 
 func (u *UserDb) GetUserDataLogic(ph string) (models.UserModel, error) {
@@ -353,11 +426,73 @@ func (u *UserDb) UpdateUserProfileDataLogic(name, about, image, phone string) er
 		UserPhone:     phone,
 	}
 
-	fmt.Println(data)
-
 	err := u.userData.UpdateUserData(data)
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func (u *UserDb) GroupUnblockLogic(id string) error {
+	err := u.userData.UnblockGroupRepo(id)
+
+	return err
+}
+
+func (u *UserDb) UserBlockUserLogic(uid, buid string) error {
+	list, err := u.userData.GetUserBlockList(uid)
+	if err != nil {
+		return err
+	}
+
+	if list == "" {
+		list = buid
+	} else {
+		list = list + "," + buid
+	}
+
+	err = u.userData.UpdateUserBlockList(uid, list)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (u *UserDb) UserUnblockUserLogic(uid, buid string) error {
+	var val string
+
+	list, err := u.userData.GetUserBlockList(uid)
+	if err != nil {
+		return err
+	}
+
+	if list == "" {
+		return nil
+	}
+	data := strings.Split(list, ",")
+
+	fmt.Println("Array of data = ", data)
+
+	for i := range data {
+		fmt.Println("The index of array = ", i)
+
+		if data[i] == buid {
+			continue
+		} else {
+			if val == "" {
+				val = data[i]
+			} else {
+				val = val + "," + data[i]
+			}
+		}
+		fmt.Println("Value = ", val)
+	}
+
+	err = u.userData.UpdateUserBlockList(uid, val)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }

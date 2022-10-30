@@ -16,6 +16,7 @@ type Group struct {
 	GroupCreatedDate  string `gorm:"not null" json:"group_created_date"`
 	GroupTotalMembers int    `gorm:"not null" json:"group_total_members"`
 	IsBanned          bool   `gorm:"not null" json:"is_banned"`
+	BannedTime        string `json:"banned_time"`
 }
 
 type UserGroupRelation struct {
@@ -140,12 +141,14 @@ func (gm GroupMessage) GetRecentGroupMessages(id int) (models.GrpMsgModel, error
 		groupID, name, avtr, sender, content, time string
 		res                                        models.GrpMsgModel
 	)
+
 	rows, err := models.SqlDb.Query(
 		`SELECT groups.group_id, groups.group_name, groups.group_avatar, group_messages.sender_id, group_messages.message_content, group_messages.sent_time 
 FROM groups 
     INNER JOIN group_messages 
-        ON groups.group_id = group_messages.group_id WHERE groups.group_id = $1 AND group_messages.is_recent = true ORDER BY sent_time`, id)
+        ON groups.group_id = group_messages.group_id WHERE groups.group_id = $1 AND group_messages.is_recent = true ORDER BY sent_time;`, id)
 	if err != nil {
+		log.Println("From repo ===== ", err)
 		return res, err
 	}
 
@@ -160,6 +163,7 @@ FROM groups
 			&content,
 			&time,
 		); err1 != nil {
+			log.Println("The recent msg row from repo is ", err)
 			return res, err1
 		}
 
@@ -213,9 +217,11 @@ func (gm GroupMessage) GetAllMessagesFromGroup(id int) ([]models.MessageModel, e
 func (group Group) GetGroupDetailsRepo(id int) (models.GroupModel, error) {
 	var (
 		name, avatar, about, creator, date, totalMembers string
+		banTime                                          *string
+		isBan                                            bool
 	)
 	rows, err := models.SqlDb.Query(
-		`SELECT group_name, group_avatar, group_about, group_creator, group_created_date, group_total_members FROM groups WHERE group_id = $1;`, id)
+		`SELECT group_name, group_avatar, group_about, group_creator, group_created_date, group_total_members, is_banned, banned_time FROM groups WHERE group_id = $1;`, id)
 	if err != nil {
 		return models.GroupModel{}, err
 	}
@@ -230,9 +236,16 @@ func (group Group) GetGroupDetailsRepo(id int) (models.GroupModel, error) {
 			&creator,
 			&date,
 			&totalMembers,
+			&isBan,
+			&banTime,
 		); err != nil {
 			return models.GroupModel{}, err
 		}
+	}
+
+	null := ""
+	if banTime == nil {
+		banTime = &null
 	}
 
 	n, nerr := strconv.Atoi(totalMembers)
@@ -246,6 +259,56 @@ func (group Group) GetGroupDetailsRepo(id int) (models.GroupModel, error) {
 		Owner:       creator,
 		CreatedDate: date,
 		NoOfMembers: n,
+		IsBanned:    isBan,
+		BanTime:     *banTime,
 	}, nil
+}
 
+func (group Group) CheckGroupBlockedRepo(id int) bool {
+	var isBan bool
+	rows, err := models.SqlDb.Query(
+		`SELECT is_banned FROM groups WHERE group_id = $1;`, id)
+	if err != nil {
+		return false
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		if e := rows.Scan(&isBan); e != nil {
+			return false
+		}
+	}
+
+	return true
+}
+
+func (relation UserGroupRelation) GetAllTheGroupMembersRepo(id string) []string {
+	var uid, role, admin string
+	var res []string
+	rows, err := models.SqlDb.Query(
+		`SELECT user_id, user_role FROM user_group_relations WHERE group_id = $1;`, id)
+	if err != nil {
+		return res
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		if e := rows.Scan(&uid, &role); e != nil {
+			return res
+		}
+
+		if role == "admin" {
+			admin = uid
+			continue
+		}
+		res = append(res, uid)
+	}
+
+	if admin != "" {
+		res = append([]string{admin}, res...)
+	}
+
+	return res
 }

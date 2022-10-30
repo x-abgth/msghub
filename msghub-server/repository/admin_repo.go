@@ -186,3 +186,13 @@ func (admin Admin) AdminBlockThisUserRepo(id, condition string) error {
 
 	return nil
 }
+
+func (admin Admin) AdminBlockThisGroupRepo(id, condition string) error {
+	_, err1 := models.SqlDb.Exec(`UPDATE groups SET is_banned = true, banned_time = $1 WHERE group_id = $2 AND is_banned = false;`, condition, id)
+	if err1 != nil {
+		log.Println(err1)
+		return errors.New("sorry, An unknown error occurred. Please try again")
+	}
+
+	return nil
+}

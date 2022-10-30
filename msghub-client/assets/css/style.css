@@ -409,7 +409,7 @@ div.user-chat-sec {
   display: none;
 }
 
-.message-area .msg-encrypt-note{
+.message-area .admin-msg-note{
 	width: fit-content;
 	text-align: center;
 	margin: 0 auto;

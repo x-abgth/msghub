@@ -76,6 +76,7 @@ func (m MessageDb) GetMessageDataLogic(target, from string) ([]models.MessageMod
 			From:    data1[i].From,
 			Content: data1[i].Content,
 			Time:    data1[i].Time,
+			Status:  data1[i].Status,
 			Order:   float64(diff),
 		}
 

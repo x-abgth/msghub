@@ -161,6 +161,83 @@
 	 	background: #cccccc30;
 	 }
 
+	 #dashboard-group-details-header {
+	 	position: relative;
+	 }
+
+	 #dashboard-group-details-body {
+	 	position: relative;
+	 	height: 90%;
+	 	overflow-y: auto !important;
+	 }
+
+	 #leaveGroupBt {
+	 	position: sticky;
+	 	width: 100%;
+	 	left: 5px;
+	 	right: 5px;
+	 	bottom: 5px;
+	 	border: none;
+	 	background: red;
+	 	color: white;
+	 	font-weight: bold;
+	 	border-radius: 10px;
+	 }
+
+	#ban-msg {
+		width: 100%;
+		text-align: center;
+		background-color: #FF333390;
+		color: white;
+		display: none;
+	}
+
+	#ban-msg.active {
+		display: block;
+	}
+
+	#ban-msg span{
+		font-weight: bold;
+	}
+
+	.group-member-dp-wrapper{
+		height: 3.5rem;
+		width: 3.5rem;
+		border-radius: 50%;
+		background-color: #ffffff50;
+		color: white;
+		overflow: hidden;
+	}
+
+	.group-member-dp-wrapper img{
+		height: 3.5rem;
+		width: 3.5rem;
+		border-radius: 50%;
+		object-fit: cover;
+		object-position: center;
+	}
+
+	#member-name {
+		font-size: 0.8em;
+	}
+	
+	#member-phone {
+		font-size: 0.8em;
+	}
+
+	#member-status{
+		font-size: 0.8em;
+	}
+	
+	#member-status.admin-tagged {
+		background: #98fb9880;
+		border-radius: 5px;
+		border: 1px solid #008000;
+		color: #008000;
+		font-size: 0.8em;
+	}
+
+
 </style>
 
 <section class="overflow-hidden">
@@ -172,11 +249,14 @@
 		<div class="col-5 col-md-3 user-dashboard-nav-right-group d-flex align-items-center justify-content-between">
 			<a href="/user/dashboard/user-profile">
 				<div class="d-none d-md-block user-dashboard-nav-profile-pic-wrapper rounded-circle">
-					{{ if .UserDetails.UserAvatarUrl }}
-						<img class="img-fluid" class="profile-img-icon" src="../../assets/db_files/user_dp_img/{{ .UserDetails.UserAvatarUrl }}" alt="User profile picture" style="object-fit: cover; object-position: center;">
-					{{ else }}
-						<img class="profile-img-icon" src="../../assets/images/user.png" alt="No profile picture">
-					{{ end }}
+					<a id="addStoryBt" href="javascript:addStoryImage()">
+						{{ if .UserDetails.UserAvatarUrl }}
+							<img class="img-fluid" class="profile-img-icon" src="../../assets/db_files/user_dp_img/{{ .UserDetails.UserAvatarUrl }}" alt="User profile picture" style="object-fit: cover; object-position: center;">
+						{{ else }}
+							<img class="profile-img-icon" src="../../assets/images/user.png" alt="No profile picture">
+						{{ end }}	
+					</a>
+					<input id="storyUpload" type="file" name="user_photo" placeholder="Photo" required="" capture>
 				</div>	
 			</a>
 			<a href="/user/dashboard/people"><i class='fas fa-user-friends' style='font-size:24px; color: white;'></i></a>
@@ -215,21 +295,41 @@
 						{{ if .IsGroup }}
 							<a href="javascript:startGroupSocketConnection('{{ .Content.Id }}');">
 						{{ else }}
-							<a href="javascript:startPersonalSocketConnection('{{ .Content.Id }}');">
+							{{ if .IsBlocked }}
+								<a href="javascript:bannedUser('{{ .Content.Id }}');">
+							{{ else }}
+								<a href="javascript:startPersonalSocketConnection('{{ .Content.Id }}');">
+							{{ end }}
 						{{ end }}
 							<div class="d-flex align-items-end mb-2 p-3 bg-white recent-chat-card">
 								<div class="recent-chat-dp-wrapper">
-									{{ if .Content.Avatar }}
-										<img class="img-fluid" src="../../assets/db_files/user_dp_img/{{ .Content.Avatar }}" alt="User profile picture" style="object-fit: cover; object-position: center;">
+									{{ if .IsGroup }}
+										{{ if .Content.Avatar }}
+											<img class="img-fluid" src="../../assets/db_files/group_dp_img/{{ .Content.Avatar }}" alt="User profile picture" style="object-fit: cover; object-position: center;">
+										{{ else }}
+											<img src="../../assets/images/group.png" alt="user profile picture">
+										{{ end }}
 									{{ else }}
-										<img src="../../assets/images/user.png" alt="user profile picture">
+										{{ if .Content.Avatar }}
+											<img class="img-fluid" src="../../assets/db_files/user_dp_img/{{ .Content.Avatar }}" alt="User profile picture" style="object-fit: cover; object-position: center;">
+										{{ else }}
+											<img src="../../assets/images/user.png" alt="user profile picture">
+										{{ end }}
 									{{ end }}
 								</div>
-								<div class="w-100 d-flex flex-column px-3">
-									<label><strong>{{ .Content.Name }}</strong></label>
-									<label>{{ .Content.LastMsg }}</label>
-								</div>
-								<label class="recent-chat-time-text">{{ .Content.LastMsgTime }}</label>
+								{{ if .IsBlocked }}
+									<div class="w-100 d-flex flex-column px-3">
+										<label><strong>{{ .Content.Name }}</strong></label>
+										<label><i style="color:#00000070;">Tap to unblock this user</i></label>
+									</div>
+								{{ else }}
+									<div class="w-100 d-flex flex-column px-3">
+										<label><strong>{{ .Content.Name }}</strong></label>
+										<label>{{ .Content.LastMsg }}</label>
+									</div>
+									<label class="recent-chat-time-text">{{ .Content.LastMsgTime }}</label>
+								{{ end }}
+									
 							</div>
 						</a>
 					{{ end }}
@@ -248,11 +348,11 @@
 </section>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.0/jquery.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.0/jquery.validate.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script type="text/javascript" src="../../assets/js/user_dashboard_functions.js"></script>
 <script type="text/javascript">
 	//
 	function openUserDetailsSec() {
-
 		userDetailsHeader = document.getElementById("dashboard-user-details-header");
 		userDetailsBody = document.getElementById("dashboard-user-details-body");
 
@@ -299,6 +399,105 @@
 			}
 		}
 	}
+
+	function openGroupDetailsSec() {
+		userDetailsHeader = document.getElementById("dashboard-group-details-header");
+		userDetailsBody = document.getElementById("dashboard-group-details-body");
+
+		userChatHead = document.getElementById("dashboard-chat-part-header");
+		userChatBody = document.getElementById("dashboard-chat-part-body");
+
+		if(userDetailsHeader.classList.contains('d-none')) {
+			if(userChatBody.classList.contains('d-flex')) {
+				userChatHead.classList.remove('d-flex');
+				userChatHead.classList.add('d-none');
+
+				userChatBody.classList.remove('d-flex');
+				userChatBody.classList.add('d-none');
+
+				userDetailsHeader.classList.remove('d-none');
+				userDetailsHeader.classList.add('d-flex');
+
+				userDetailsBody.classList.remove('d-none');
+				userDetailsBody.classList.add('d-flex');
+			}
+		}
+	}
+
+	function closeGroupDetailsSec() {
+		userDetailsHeader = document.getElementById("dashboard-group-details-header");
+		userDetailsBody = document.getElementById("dashboard-group-details-body");
+
+		userChatHead = document.getElementById("dashboard-chat-part-header");
+		userChatBody = document.getElementById("dashboard-chat-part-body");
+
+		if(userDetailsHeader.classList.contains('d-flex')) {
+			if(userChatBody.classList.contains('d-none')) {
+				userChatHead.classList.remove('d-none');
+				userChatHead.classList.add('d-flex');
+
+				userChatBody.classList.remove('d-none');
+				userChatBody.classList.add('d-flex');
+
+				userDetailsHeader.classList.remove('d-flex');
+				userDetailsHeader.classList.add('d-none');
+
+				userDetailsBody.classList.remove('d-flex');
+				userDetailsBody.classList.add('d-none');
+			}
+		}
+	}
+
+	function bannedUser(id) {
+		const swalWithBootstrapButtons = Swal.mixin({
+		  customClass: {
+		    confirmButton: 'btn btn-success',
+		    cancelButton: 'btn btn-danger'
+		  },
+		  buttonsStyling: false
+		})
+
+		swalWithBootstrapButtons.fire({
+		  title: 'Are you sure?',
+		  text: "Do you want to unblock this user ?",
+		  icon: 'warning',
+		  showCancelButton: true,
+		  confirmButtonText: 'Yes, unblock this user!',
+		  cancelButtonText: 'No, cancel!',
+		  reverseButtons: true
+		}).then((result) => {
+		  if (result.isConfirmed) {
+		  	window.location.href = "/user/dashboard/user-unblock-user/"+id;
+		    swalWithBootstrapButtons.fire(
+		      'Unblocked!',
+		      'The user has been unblocked!',
+		      'success'
+		    )
+		  } else if (
+		    /* Read more about handling dismissals below */
+		    result.dismiss === Swal.DismissReason.cancel
+		  ) {
+		    swalWithBootstrapButtons.fire(
+		      'Cancelled',
+		      '',
+		      'error'
+		    )
+		  }
+		})
+	}
+
+	function addStoryImage() {
+		$("#addStoryBt").click(function(e) {
+		    $("#storyUpload").click();
+		});
+
+		// Add this to the story section
+
+		// Send image using ajax
+
+		// 
+	}
+
 </script>
 
 {{ template "websocketJs" . }}

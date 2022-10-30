@@ -9,10 +9,11 @@ type RecentMessages struct {
 }
 
 type RecentChatModel struct {
-	Content RecentMessages
-	Sender  string
-	IsGroup bool
-	Order   float64
+	Content   RecentMessages
+	Sender    string
+	IsGroup   bool
+	Order     float64
+	IsBlocked bool
 }
 
 type StoryModel struct {

@@ -272,13 +272,11 @@ func (info *InformationHelper) UserDashboardHandler(w http.ResponseWriter, r *ht
 		panic(err.Error())
 	}
 
-	fmt.Println("Recent data == ", data)
-
 	info.errorStr = ""
 	err2 := template.Tpl.ExecuteTemplate(w, "user_dashboard.gohtml", data)
 	if err2 != nil {
-		log.Println("Error rendering dashboard.")
-		panic("Not yet")
+		log.Println(err2)
+		panic("Not yet in dashboard page")
 	}
 }
 
@@ -372,7 +370,6 @@ func (info *InformationHelper) UserProfileUpdateHandler(w http.ResponseWriter, r
 			panic(pathError.Error())
 		}
 		imageName = out.Name()
-		fmt.Println("Name of the file, ", imageName)
 
 		defer out.Close()
 
@@ -621,7 +618,6 @@ func (info *InformationHelper) UserGroupCreationHandler(w http.ResponseWriter, r
 }
 
 func (info *InformationHelper) UserNewChatSelectedHandler(w http.ResponseWriter, r *http.Request) {
-
 	defer func() {
 		if e := recover(); e != nil {
 			fmt.Println(e)
@@ -677,9 +673,16 @@ func (info *InformationHelper) UserNewChatSelectedHandler(w http.ResponseWriter,
 
 	// If everything goes well...
 	s, _ := json.Marshal(xData)
-	fmt.Println(xData)
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(s)
+}
+
+func (info *InformationHelper) UserAddsStoryHandler(w http.ResponseWriter, r *http.Request) {
+	// Get story image
+
+	// name it as the user id
+
+	// Store it in the db
 }
 
 func (info *InformationHelper) UserGroupChatSelectedHandler(w http.ResponseWriter, r *http.Request) {
@@ -710,6 +713,9 @@ func (info *InformationHelper) UserGroupChatSelectedHandler(w http.ResponseWrite
 		panic(err)
 	}
 
+	// Get all group members details
+	uDatas := info.groupRepo.GetAllGroupMembersData(target.Data)
+
 	// Get all group data using the group_id (target)
 	// - group_id, group_name, avatar, messages.
 	data, err := info.groupRepo.GetGroupDetailsLogic(target.Data)
@@ -719,13 +725,16 @@ func (info *InformationHelper) UserGroupChatSelectedHandler(w http.ResponseWrite
 
 	// make struct and parse data to json format and send
 	xData := struct {
-		Name         string                `json:"name"`
-		Avatar       string                `json:"avatar"`
-		About        string                `json:"about"`
-		Owner        string                `json:"owner"`
-		Created      string                `json:"created"`
-		TotalMembers int                   `json:"total_members"`
-		Val          []models.MessageModel `json:"data"`
+		Name         string                     `json:"name"`
+		Avatar       string                     `json:"avatar"`
+		About        string                     `json:"about"`
+		Owner        string                     `json:"owner"`
+		Created      string                     `json:"created"`
+		TotalMembers int                        `json:"total_members"`
+		IsBanned     bool                       `json:"is_banned"`
+		BanTime      string                     `json:"ban_time"`
+		Members      []models.GroupMembersModel `json:"members_list"`
+		Val          []models.MessageModel      `json:"data"`
 	}{
 		Name:         data.Name,
 		Avatar:       data.Image,
@@ -733,14 +742,109 @@ func (info *InformationHelper) UserGroupChatSelectedHandler(w http.ResponseWrite
 		Owner:        data.Owner,
 		Created:      data.CreatedDate,
 		TotalMembers: data.NoOfMembers,
+		IsBanned:     data.IsBanned,
+		BanTime:      data.BanTime,
+		Members:      uDatas,
 		Val:          messages,
 	}
 
 	// If everything goes well...
 	s, _ := json.Marshal(xData)
-	fmt.Println(xData)
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(s)
+}
+
+func (info *InformationHelper) GroupUnblockHandler(w http.ResponseWriter, r *http.Request) {
+	defer func() {
+		if e := recover(); e != nil {
+			fmt.Println(e)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(e)
+		}
+	}()
+
+	type targetID struct {
+		Data string `json:"target"`
+	}
+
+	var target targetID
+
+	a, _ := io.ReadAll(r.Body)
+	err := json.Unmarshal(a, &target)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	err = info.userRepo.GroupUnblockLogic(target.Data)
+	if err != nil {
+		panic(err)
+	}
+
+	s, _ := json.Marshal(true)
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(s)
+}
+
+func (info *InformationHelper) UserBlocksHandler(w http.ResponseWriter, r *http.Request) {
+	defer func() {
+		if e := recover(); e != nil {
+			log.Println(e)
+			http.Redirect(w, r, "/user/dashboard", http.StatusSeeOther)
+		}
+	}()
+
+	vars := mux.Vars(r)
+	target := vars["target"]
+
+	c, err1 := r.Cookie("userToken")
+	if err1 != nil {
+		if err1 == http.ErrNoCookie {
+			panic("Cookie not found!")
+		}
+		panic("Unknown error occurred!")
+	}
+
+	claim := jwtPkg.GetValueFromJwt(c)
+
+	err := info.userRepo.UserBlockUserLogic(claim.User.UserPhone, target)
+	if err != nil {
+		panic(err)
+	}
+
+	http.Redirect(w, r, "/user/dashboard", http.StatusFound)
+}
+
+func (info *InformationHelper) UserUnblocksHandler(w http.ResponseWriter, r *http.Request) {
+	defer func() {
+		if e := recover(); e != nil {
+			log.Println(e)
+			http.Redirect(w, r, "/user/dashboard", http.StatusSeeOther)
+		}
+	}()
+
+	vars := mux.Vars(r)
+	target := vars["target"]
+
+	c, err1 := r.Cookie("userToken")
+	if err1 != nil {
+		if err1 == http.ErrNoCookie {
+			panic("Cookie not found!")
+		}
+		panic("Unknown error occurred!")
+	}
+
+	claim := jwtPkg.GetValueFromJwt(c)
+
+	fmt.Println("Target = ", target)
+	fmt.Println("Yours = ", claim.User.UserPhone)
+
+	err := info.userRepo.UserUnblockUserLogic(claim.User.UserPhone, target)
+	if err != nil {
+		panic(err)
+	}
+
+	http.Redirect(w, r, "/user/dashboard", http.StatusFound)
 }
 
 func (info *InformationHelper) UserLogoutHandler(w http.ResponseWriter, r *http.Request) {

@@ -56,9 +56,11 @@ func (h *Hub) delete(c *GClient) {
 
 // Broadcast message to all connected clients.
 func (h *Hub) broadcast(m *WSMessage) {
+
 	if clients, ok := h.Clients[m.Payload.Room]; ok {
+		var g logic.GroupDataLogicModel
+
 		if m.Type == "message" {
-			var g logic.GroupDataLogicModel
 			data := models.GroupMessageModel{
 				GroupId:  m.Payload.Room,
 				SenderId: m.Payload.By,

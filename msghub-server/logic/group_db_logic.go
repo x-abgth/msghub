@@ -12,6 +12,7 @@ import (
 )
 
 type GroupDataLogicModel struct {
+	users             repository.User
 	groupTb           repository.Group
 	userGroupRelation repository.UserGroupRelation
 	messageGroupTb    repository.GroupMessage
@@ -130,6 +131,40 @@ func (group GroupDataLogicModel) GetAllGroupMessagesLogic(groupID string) ([]mod
 	})
 
 	return data, nil
+}
+
+func (group GroupDataLogicModel) GetAllGroupMembersData(id string) []models.GroupMembersModel {
+	// First get all the members id
+	data := group.userGroupRelation.GetAllTheGroupMembersRepo(id)
+
+	// Secondly get details of the members like - avatar, name, number
+	var res []models.GroupMembersModel
+	for i := range data {
+		isAdmin := false
+		if i == 0 {
+			isAdmin = true
+		} else {
+			isAdmin = false
+		}
+
+		uData, err := group.users.GetUserData(data[i])
+		if err != nil {
+			return res
+		}
+		val := models.GroupMembersModel{
+			MAvatar:  uData.UserAvatarUrl,
+			MName:    uData.UserName,
+			MPhone:   data[i],
+			MIsAdmin: isAdmin,
+		}
+
+		res = append(res, val)
+	}
+	return res
+}
+
+func (group GroupDataLogicModel) CheckGroupBlocked(id string) bool {
+	return group.CheckGroupBlocked(id)
 }
 
 func (group GroupDataLogicModel) GetGroupDetailsLogic(gId string) (models.GroupModel, error) {

@@ -71,15 +71,16 @@ VALUES($1, $2, $3, $4, $5, $6);`,
 func (m Message) GetAllPersonalMessages(from, to string) ([]models.MessageModel, error) {
 
 	var (
-		fromID, msg, time string
-		res               []models.MessageModel
+		fromID, msg, time, status string
+		res                       []models.MessageModel
 	)
 
 	rows, err := models.SqlDb.Query(
 		`SELECT 
     	from_user_id, 
     	content,
-    	sent_time
+    	sent_time,
+    	status
 	FROM messages
 	WHERE from_user_id = $1 AND to_user_id = $2;`, from, to)
 	if err != nil {
@@ -92,7 +93,8 @@ func (m Message) GetAllPersonalMessages(from, to string) ([]models.MessageModel,
 		if err1 := rows.Scan(
 			&fromID,
 			&msg,
-			&time); err1 != nil {
+			&time,
+			&status); err1 != nil {
 			return res, err1
 		}
 
@@ -100,6 +102,7 @@ func (m Message) GetAllPersonalMessages(from, to string) ([]models.MessageModel,
 			From:    fromID,
 			Content: msg,
 			Time:    time,
+			Status:  status,
 		}
 		res = append(res, data)
 	}

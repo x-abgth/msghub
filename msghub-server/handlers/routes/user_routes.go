@@ -34,6 +34,7 @@ func userRoutes(theMux *mux.Router, s *socket.WsServer) {
 	theMux.HandleFunc("/login/otp/getotp", handlerInfo.UserOtpPageHandler).Methods("GET")
 	theMux.HandleFunc("/login/otp/getotp", handlerInfo.UserVerifyLoginOtpHandler).Methods("POST")
 	theMux.HandleFunc("/user/dashboard", middlewares.UserAuthorizationAfterLogin(handlerInfo.UserDashboardHandler)).Methods("GET")
+	theMux.HandleFunc("/user/dashboard/add-story", middlewares.UserAuthorizationAfterLogin(handlerInfo.UserAddsStoryHandler)).Methods("POST")
 	theMux.HandleFunc("/user/dashboard/people", middlewares.UserAuthorizationAfterLogin(handlerInfo.UserShowPeopleHandler)).Methods("GET")
 	theMux.HandleFunc("/user/dashboard/new-chat-started/{target}", middlewares.UserAuthorizationAfterLogin(handlerInfo.UserNewChatStartedHandler)).Methods("GET")
 	theMux.HandleFunc("/user/dashboard/user-profile", handlerInfo.UserProfilePageHandler).Methods("GET")
@@ -43,6 +44,9 @@ func userRoutes(theMux *mux.Router, s *socket.WsServer) {
 	theMux.HandleFunc("/user/dashboard/group-created-finally", handlerInfo.UserGroupCreationHandler).Methods("POST")
 	theMux.HandleFunc("/user/dashboard/chat-selected", handlerInfo.UserNewChatSelectedHandler).Methods("POST")
 	theMux.HandleFunc("/user/dashboard/group-chat-selected", handlerInfo.UserGroupChatSelectedHandler).Methods("POST")
+	theMux.HandleFunc("/user/dashboard/group-got-unblocked", handlerInfo.GroupUnblockHandler).Methods("POST")
+	theMux.HandleFunc("/user/dashboard/user-block-user/{target}", handlerInfo.UserBlocksHandler).Methods("GET")
+	theMux.HandleFunc("/user/dashboard/user-unblock-user/{target}", handlerInfo.UserUnblocksHandler).Methods("GET")
 
 	theMux.HandleFunc("/user/logout", handlerInfo.UserLogoutHandler).Methods("GET")
 
@@ -50,8 +54,6 @@ func userRoutes(theMux *mux.Router, s *socket.WsServer) {
 
 	// For personal messaging
 	theMux.HandleFunc("/ws/{target}", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("--------- IN /WS/TARGET HANDLER FUNCTION ------------")
-
 		defer func() {
 			if e := recover(); e != nil {
 				log.Println(e)

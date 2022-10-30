@@ -8,6 +8,34 @@
 			const messages = document.querySelector("#log");
 			const send = document.querySelector("#sendMsg");
 
+			// Setting every to default
+			if(document.querySelector(".chat-bubble") != null) {
+				for (const element of document.querySelectorAll(".chat-bubble")) {
+				  element.remove()
+				}
+			}
+
+			if(document.querySelector(".user-chat-msg-field") != null) {
+				for (const element of document.querySelectorAll(".user-chat-msg-field")) {
+				  element.remove()
+				}
+			}
+
+			if(document.querySelector(".chat-msg-field") != null) {
+				for (const element of document.querySelectorAll(".chat-msg-field")) {
+				  element.remove()
+				}
+			}
+
+			input.removeAttribute('disabled');
+			document.getElementById("detail-bt").setAttribute("href", "javascript:openGroupDetailsSec()");
+			send.disabled = false;	        			
+			document.getElementById("file-chat-bt").disabled = false;
+			document.getElementById("smileyBt").setAttribute("style", "pointer-events:auto;");
+
+			document.getElementById("ban-msg").classList.remove('active');
+
+
 			console.log(val);
 			$(document).ready(function () {
 		        $.ajax({
@@ -22,11 +50,149 @@
 		        			return
 		        		}
 
+		        		let banMsgBar = document.getElementById("ban-msg");
+		        		let banTimer = document.getElementById("ban-msg-timer");
+
+		        		if(response.is_banned) {
+		        			banMsgBar.classList.add('active');
+							input.setAttribute("disabled", "true");	
+							send.disabled = true;	        			
+							document.getElementById("smileyBt").setAttribute("style", "pointer-events:none;");
+							document.getElementById("file-chat-bt").disabled = true;
+
+		        			if(response.ban_time != "permanent") {
+		        				let dest = new Date(response.ban_time).getTime();
+
+
+			        			let x = setInterval(function() {
+			        				let now = new Date().getTime();
+				        			let diff = dest - now;
+
+				        			let days = Math.floor(diff / (1000* 60*60*24));
+				        			let hours =  Math.floor((diff % (1000*60*60*24)) / (1000*60*60));
+				        			let minutes =  Math.floor((diff % (1000*60*60)) / (1000*60));
+				        			let seconds = Math.floor((diff % (1000*60)) / 1000)
+
+				        			if(days < 0 && hours < 0 && minutes < 0 && seconds < 1) {
+				        				banMsgBar.classList.remove('active');
+				        				$.ajax({
+								            type: "POST",
+								            url: "/user/dashboard/group-got-unblocked",
+								            data: JSON.stringify({
+								            	target: val,
+								            }),
+								            success: function (response) { 
+								        		console.log(response);
+
+								        		if(response == true) {
+								        			banMsgBar.classList.remove('active');
+													input.removeAttribute('disabled');	
+													send.disabled = false;	        			
+													document.getElementById("file-chat-bt").disabled = false;
+													document.getElementById("smileyBt").setAttribute("style", "pointer-events:auto;");
+								        		}
+								        	},
+								        	error: function(error) {
+								        		console.log("ERROR of ajax " + error)
+								        	}
+								        });
+				        			}
+
+			        				banTimer.innerText = days + "d, " + hours + "h " + minutes + "m " + seconds + "s ";
+
+			        			}, 1000);
+		        			}
+		        		} else {
+		        			banMsgBar.classList.remove('active');
+		        		}
+
 		        		document.getElementById("chat-user-name").innerText = response.name;
 	                	if(response.avatar === "") {
 		                	document.getElementById("dashboard-chat-part-header-image").setAttribute("src", "../../assets/images/group.png");
 	                	} else {
 	                		document.getElementById("dashboard-chat-part-header-image").setAttribute("src", "../../assets/db_files/group_dp_img/" + response.avatar);
+	                	}
+
+	                	document.getElementById("group-about-shown").innerText = response.about;
+	                	document.getElementById("group-name-shown").innerText = response.name;
+	                	document.getElementById("group-date-shown").innerText = "created date - " + response.created;
+	                	if(response.owner == {{ .UserPhone }}) {
+	                		document.getElementById("leaveGroupBt").classList.add("d-none");
+	                	} else {
+	                		document.getElementById("leaveGroupBt").addEventListener("click", function() {
+		                		window.location.href="";
+		                	});
+	                	}
+	                	
+	                	if(response.avatar === "") {
+	                		document.getElementById("group-img-shown").setAttribute("src", "../../assets/images/group.png");
+	                	} else {
+	                		document.getElementById("group-img-shown").setAttribute("src", "../../assets/db_files/group_dp_img/" + response.avatar);
+	                	}
+	                	document.getElementById("member-count").innerText = response.total_members;
+
+	                	membersCardWapper = document.getElementById("group-members-shown");
+	                	memberCard = document.getElementById("member-card");
+
+	                	if(membersCardWapper.childNodes.length < 2) {
+	                		for(let i = 0; i < response.members_list.length; i ++) {
+		                		let memberCard = document.createElement('div');
+		                		let groupMemberDpWrapper = document.createElement('div');
+		                		let groupMemberDpImgTag = document.createElement('img');
+
+		                		memberCard.setAttribute("id", "member-card");
+		                		memberCard.classList.add("d-flex", "align-items-end", "mb-2", "p-3", "bg-white", "recent-chat-card");
+		                		groupMemberDpWrapper.classList.add("group-member-dp-wrapper");
+		                		groupMemberDpImgTag.setAttribute("id", "member-dp");
+		                		groupMemberDpImgTag.setAttribute("alt", "user profile picture");
+		                		if (response.members_list[i].avatar == "") {
+		                			groupMemberDpImgTag.setAttribute("src", "../../assets/images/user.png");
+		                		} else {
+		                			groupMemberDpImgTag.setAttribute("src", "../../assets/db_files/user_dp_img/" + response.members_list[i].avatar);
+		                		}
+
+		                		groupMemberDpWrapper.appendChild(groupMemberDpImgTag);
+		                		memberCard.appendChild(groupMemberDpWrapper);
+
+		                		let memberAboutRowDiv = document.createElement('div');
+		                		let memberNameLabelTag = document.createElement('label');
+		                		let memberNameStrongTag = document.createElement('strong');
+
+		                		memberAboutRowDiv.classList.add("w-100", "d-flex", "flex-column", "px-3")
+
+		                		memberNameStrongTag.setAttribute("id", "member-name");
+		                		if(response.members_list[i].phone == {{ .UserPhone }}) {
+		                			memberNameStrongTag.innerText = "You";
+		                		} else {
+		                			memberNameStrongTag.innerText = response.members_list[i].name;
+		                		}
+
+		                		memberNameLabelTag.appendChild(memberNameStrongTag);
+		                		memberAboutRowDiv.appendChild(memberNameLabelTag);
+
+		                		let memberPhoneLabelTag = document.createElement('label');
+		                		memberPhoneLabelTag.setAttribute("id", "member-phone");
+		                		memberPhoneLabelTag.innerText = "+91 " + response.members_list[i].phone;
+	 
+		                		memberAboutRowDiv.appendChild(memberPhoneLabelTag);
+		                		memberCard.appendChild(memberAboutRowDiv);
+
+		                		let memberStatus = document.createElement('span');
+		                		memberStatus.setAttribute("id", "member-status");
+		                		memberStatus.classList.add("p-2");
+
+		                		if(response.members_list[i].is_admin) {
+		                			memberStatus.innerText = "admin";
+		                			memberStatus.classList.add("p-2", "admin-tagged");
+		                		} else {
+		                			memberStatus.innerText = "member";
+		                			memberStatus.classList.add("p-2");
+		                		}
+
+		                		memberCard.appendChild(memberStatus);
+
+		                		membersCardWapper.appendChild(memberCard)
+		                	}
 	                	}
 
 		        		if(response.data != null) {
@@ -39,19 +205,10 @@
 							    let recipient = document.createElement("i");      
 
 								if(response.data[i].from  === "admin") {
-							    	let msgDetails = document.createElement('div');
-							        item.classList.add("admin-chat-msg-field", "d-flex", "flex-column", "mb-2", "ms-auto");
-							    	item.classList.add("admin-chat-msg-field", "d-flex", "flex-column", "mb-2");
-							    	msgDetails.classList.add("d-flex", "align-items-center");
+			        				innerItem.classList.add("chat-bubble", "ms-auto", "admin-chat-bubble", "py-2", "px-3", "mb-5");
 
-							        recipient.classList.add("fas", "fa-check-double");
-
-							        msgDetails.appendChild(recipient);
-
-							        innerItem.innerText = msgobj.message;
-							        item.appendChild(innerItem);
-							        item.appendChild(msgDetails);
-							        appendLog(item);
+							        innerItem.innerText = response.data[i].message;
+							        appendLog(innerItem);
 							    } else if(response.data[i].from == {{ .UserPhone }}) {
 									let msgDetails = document.createElement('div');
 							        item.classList.add("user-chat-msg-field", "d-flex", "flex-column", "mb-2");
@@ -112,17 +269,8 @@
 			}
 
 			// Make it as like for the group 
-			let url;
-			if(url == undefined) {
-				url = "ws://" + window.location.host + "/ws/group/" + val; 
-				console.log(url);
-			} else {
-				array = url.split("/ws/group/");
-				url = array[0]+"/ws/group/";
-				url = url + val; 
-
-				console.log(url);
-			}		
+			url = "ws://" + window.location.host + "/ws/group/" + val; 
+			console.log(url);
 
 			const ws = new WebSocket(url);
 
@@ -141,7 +289,7 @@
 			}
 
 			ws.onmessage = function(msg) {
-				console.log("The message is ", msg.data);
+				console.log("The message is ", msg.data.payload.body);
 				if (msg.data.type == "message") {
 					const msgObj = {
 						from : msg.data.payload.by,
@@ -219,6 +367,8 @@
 						time : dateTime,
 					}
 
+					console.log(message.body);
+
 				  	insertMessage(msgObj)
 				}
 
@@ -267,19 +417,10 @@
 			    let recipient = document.createElement("i");      
 
 			   	if(msgobj.from === "admin") {
-			    	let msgDetails = document.createElement('div');
-			        item.classList.add("admin-chat-msg-field", "d-flex", "flex-column", "mb-2", "ms-auto");
-			    	item.classList.add("admin-chat-msg-field", "d-flex", "flex-column", "mb-2");
-			    	msgDetails.classList.add("d-flex", "align-items-center");
-
-			        recipient.classList.add("fas", "fa-check-double");
-
-			        msgDetails.appendChild(recipient);
+			    	innerItem.classList.add("chat-bubble", "ms-auto", "admin-chat-bubble", "py-2", "px-3", "mb-5");
 
 			        innerItem.innerText = msgobj.message;
-			        item.appendChild(innerItem);
-			        item.appendChild(msgDetails);
-			        appendLog(item);
+			        appendLog(innerItem);
 			    } else if(msgobj.from == {{ .UserPhone }}) {
 			        let msgDetails = document.createElement('div');
 			    	item.classList.add("user-chat-msg-field", "d-flex", "flex-column", "mb-2");
@@ -294,7 +435,7 @@
 			        msgDetails.appendChild(itemTime);
 			        msgDetails.appendChild(recipient);
 
-			        innerItem.innerText = msgobj.message;
+			        innerItem.innerHTML = msgobj.message;
 			        item.appendChild(innerItem);
 			        item.appendChild(msgDetails);
 			        appendLog(item);
@@ -317,6 +458,36 @@
 
 		// This function only works for personal messaging
 		function startPersonalSocketConnection(val) {
+			const input = document.querySelector("#msgInp");
+			const messages = document.querySelector("#log");
+			const send = document.querySelector("#sendMsg");
+
+			if(document.querySelector(".chat-bubble") != null) {
+				for (const element of document.querySelectorAll(".chat-bubble")) {
+				  element.remove()
+				}
+			}
+
+			if(document.querySelector(".user-chat-msg-field") != null) {
+				for (const element of document.querySelectorAll(".user-chat-msg-field")) {
+				  element.remove()
+				}
+			}
+
+			if(document.querySelector(".chat-msg-field") != null) {
+				for (const element of document.querySelectorAll(".chat-msg-field")) {
+				  element.remove()
+				}
+			}
+
+			document.getElementById("detail-bt").setAttribute("href", "javascript:openUserDetailsSec()");
+			input.removeAttribute('disabled');
+			send.disabled = false;	        			
+			document.getElementById("file-chat-bt").disabled = false;
+			document.getElementById("smileyBt").setAttribute("style", "pointer-events:auto;");
+
+			document.getElementById("ban-msg").classList.remove('active');
+
 			$(document).ready(function () {
 		        $.ajax({
 		            type: "POST",
@@ -342,20 +513,11 @@
 								    let itemTime = document.createElement("label");   
 								    let recipient = document.createElement("i");      
 
-									if(msgobj.status === "ADMIN") {
-								    	let msgDetails = document.createElement('div');
-								        item.classList.add("admin-chat-msg-field", "d-flex", "flex-column", "mb-2", "ms-auto");
-								    	item.classList.add("admin-chat-msg-field", "d-flex", "flex-column", "mb-2");
-								    	msgDetails.classList.add("d-flex", "align-items-center");
+									if(response.data[i].status == "ADMIN") {
+								    	innerItem.classList.add("chat-bubble", "ms-auto", "admin-chat-bubble", "py-2", "px-3", "mb-5");
 
-								        recipient.classList.add("fas", "fa-check-double");
-
-								        msgDetails.appendChild(recipient);
-
-								        innerItem.innerText = msgobj.message;
-								        item.appendChild(innerItem);
-								        item.appendChild(msgDetails);
-								        appendLog(item);
+								        innerItem.innerText = response.data[i].message;
+								        appendLog(innerItem);
 								    } else if(response.data[i].from == {{ .UserPhone }}) {
 										let msgDetails = document.createElement('div');
 								        item.classList.add("user-chat-msg-field", "d-flex", "flex-column", "mb-2");
@@ -396,6 +558,9 @@
 		                	document.getElementById("phone-number-shown").innerText = val;
 		                	document.getElementById("user-name-shown").innerText = response.name;
 		                	document.getElementById("user-about-shown").innerText = response.about;
+		                	document.getElementById("userBlocksUserBt").addEventListener("click", function() {
+		                		window.location.href="/user/dashboard/user-block-user/"+val;
+		                	});
 		                	if(response.avatar === "") {
 		                		document.getElementById("user-img-shown").setAttribute("src", "../../assets/images/user.png");
 		                	} else {
@@ -427,21 +592,9 @@
 					chatPartBody.classList.add('d-flex');
 				}
 			}
-
-			const input = document.querySelector("#msgInp");
-			const messages = document.querySelector("#log");
-			const send = document.querySelector("#sendMsg");
-			let url
-			if(url == undefined) {
-				url = "ws://" + window.location.host + "/ws/" + val; 
-				console.log(url);
-			} else {
-				array = url.split("/ws/");
-				url = array[0]+"/ws/";
-				url = url + val; 
-
-				console.log(url);
-			}		
+			
+			url = "ws://" + window.location.host + "/ws/" + val; 
+			console.log(url);
 
 			const ws = new WebSocket(url);
 
@@ -452,7 +605,6 @@
 		            messages.scrollTop = messages.scrollHeight - messages.clientHeight;
 		        }
 		    }
-
 
 			if(!window["WebSocket"]) {
 				var item = document.createElement("div");
@@ -510,23 +662,14 @@
 			    let recipient = document.createElement("i");      
 
 			    if(msgobj.status === "ADMIN") {
-			    	let msgDetails = document.createElement('div');
-			        item.classList.add("admin-chat-msg-field", "d-flex", "flex-column", "mb-2", "ms-auto");
-			    	item.classList.add("admin-chat-msg-field", "d-flex", "flex-column", "mb-2");
-			    	msgDetails.classList.add("d-flex", "align-items-center");
-
-			        recipient.classList.add("fas", "fa-check-double");
-
-			        msgDetails.appendChild(recipient);
+			    	innerItem.classList.add("chat-bubble", "ms-auto", "admin-chat-bubble", "py-2", "px-3", "mb-5");
 
 			        innerItem.innerText = msgobj.message;
-			        item.appendChild(innerItem);
-			        item.appendChild(msgDetails);
-			        appendLog(item);
+			        appendLog(innerItem);
 			    } else if(msgobj.from == {{ .UserPhone }}) {
 					let msgDetails = document.createElement('div');
-			        item.classList.add("user-chat-msg-field", "d-flex", "flex-column", "mb-2", "ms-auto");
-			        innerItem.classList.add("chat-bubble", "user-chat-bubble", "px-3", "py-2", "text-wrap", "word-wrap", "text-break", "ms-auto");
+			        item.classList.add("user-chat-msg-field", "d-flex", "flex-column", "mb-2");
+			        innerItem.classList.add("chat-bubble", "user-chat-bubble", "px-3", "py-2", "text-wrap", "word-wrap", "text-break");
 			        msgDetails.classList.add("d-flex", "align-items-center");
 			        itemTime.classList.add("chat-time","mt-1", "mx-2");
 			        let time = msgobj.time.split(" ");

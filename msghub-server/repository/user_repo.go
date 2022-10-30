@@ -2,6 +2,7 @@ package repository
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"msghub-server/models"
 	"strconv"
@@ -15,6 +16,7 @@ type User struct {
 	UserPassword    string  `gorm:"not null" json:"user_password"`
 	IsBlocked       bool    `gorm:"not null" json:"is_blocked"`
 	BlockedDuration *string `json:"block_duration"`
+	BlockList       *string `json:"block_list"`
 }
 
 func (user User) GetUserDataUsingPhone(formPhone string) (int, models.UserModel, error) {
@@ -203,6 +205,9 @@ func (user User) GetRecentChatList(ph string) ([]models.MessageModel, error) {
 		res = append(res, data)
 	}
 
+	fmt.Println("In repo --- ")
+	fmt.Println(res)
+
 	return res, nil
 }
 
@@ -292,6 +297,54 @@ func (user User) UpdateUserData(model models.UserModel) error {
 
 func (user User) UndoAdminBlockRepo(id string) error {
 	_, err1 := models.SqlDb.Exec(`UPDATE users SET is_blocked = false, block_duration = '' WHERE user_ph_no = $1;`, id)
+	if err1 != nil {
+		log.Println(err1)
+		return errors.New("sorry, An unknown error occurred. Please try again")
+	}
+
+	return nil
+}
+
+func (user User) UnblockGroupRepo(id string) error {
+	_, err1 := models.SqlDb.Exec(`UPDATE groups SET is_banned = false, banned_time = '' WHERE group_id = $1;`, id)
+	if err1 != nil {
+		log.Println(err1)
+		return errors.New("sorry, An unknown error occurred. Please try again")
+	}
+
+	return nil
+}
+
+func (user User) GetUserBlockList(id string) (string, error) {
+	var blockList *string
+	rows, err := models.SqlDb.Query(
+		`SELECT 
+    	block_list
+	FROM users
+	WHERE user_ph_no = $1;`, id)
+	if err != nil {
+		return "", err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		if err1 := rows.Scan(
+			&blockList); err1 != nil {
+			return "", err1
+		}
+	}
+
+	null := ""
+	if blockList == nil {
+		blockList = &null
+	}
+
+	return *blockList, nil
+}
+
+func (user User) UpdateUserBlockList(id, val string) error {
+	_, err1 := models.SqlDb.Exec(`UPDATE users SET block_list = $1 WHERE user_ph_no = $2;`, val, id)
 	if err1 != nil {
 		log.Println(err1)
 		return errors.New("sorry, An unknown error occurred. Please try again")

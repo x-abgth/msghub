@@ -57,3 +57,9 @@ func (admin AdminDb) BlockThisUserLogic(id, condition string) error {
 
 	return err
 }
+
+func (admin AdminDb) BlockThisGroupLogic(id, condition string) error {
+	err := admin.repo.AdminBlockThisGroupRepo(id, condition)
+
+	return err
+}
