@@ -72,9 +72,6 @@ func (server *WsServer) broadcastToClients(message []byte) {
 		}
 	}()
 
-	//for client := range server.clients {
-	//	client.send <- message
-	//}
 	var msgModel logic.MessageDb
 
 	user := server.findClientByID(models.ClientID)

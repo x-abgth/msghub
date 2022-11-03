@@ -42,7 +42,7 @@ func (u *UserDb) UserLoginLogic(phone, password string) (bool, error) {
 		if userData.BlockDur == "permanent" {
 			return false, errors.New("you have been permanently blocked from this website")
 		} else {
-			t, err := time.Parse("02-01-2006 3:04:05 PM", userData.BlockDur)
+			t, err := time.Parse("2-1-2006 3:04:05 PM", userData.BlockDur)
 			if err != nil {
 				log.Println(err)
 				return false, errors.New("an unknown error occurred, but you're blocked")
@@ -53,7 +53,6 @@ func (u *UserDb) UserLoginLogic(phone, password string) (bool, error) {
 				if err != nil {
 					return false, errors.New("an unknown error occurred")
 				}
-				log.Println("Time diff = ", t.Sub(time.Now()))
 				return true, nil
 			}
 
@@ -64,7 +63,6 @@ func (u *UserDb) UserLoginLogic(phone, password string) (bool, error) {
 		return false, errors.New("you don't have an account, Please register")
 	} else if count > 1 {
 		return false, errors.New("something went wrong. Try login again")
-		// SHOULD DELETE EXTRA REGISTERED NUMBER!
 	} else {
 		if utils.CheckPasswordMatch(password, userData.UserPass) {
 
@@ -229,7 +227,7 @@ func (u *UserDb) GetDataForDashboardLogic(phone string) (models.UserDashboardMod
 		for i := range personalMessages {
 			var recentData models.RecentChatModel
 
-			msgSentTime, err := time.Parse("02 Jan 2006 3:04:05 PM", personalMessages[i].Time)
+			msgSentTime, err := time.Parse("2 Jan 2006 3:04:05 PM", personalMessages[i].Time)
 			if err != nil {
 				log.Println(err)
 				break
@@ -323,7 +321,7 @@ func (u *UserDb) GetDataForDashboardLogic(phone string) (models.UserDashboardMod
 
 	if len(groupMessages) > 0 {
 		for i := range groupMessages {
-			groupSentTime, err := time.Parse("02 Jan 2006 3:04:05 PM", groupMessages[i].Time)
+			groupSentTime, err := time.Parse("2 Jan 2006 3:04:05 PM", groupMessages[i].Time)
 			if err != nil {
 				log.Println(err)
 				break
@@ -406,6 +404,10 @@ func (u *UserDb) GetAllUsersLogic(ph string) ([]models.UserModel, error) {
 			}
 		}
 	}
+
+	sort.Slice(res, func(i, j int) bool {
+		return res[i].UserName < res[j].UserName
+	})
 
 	return res, nil
 }

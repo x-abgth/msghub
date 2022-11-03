@@ -62,6 +62,9 @@ type GClient struct {
 	// websocket connection
 	Conn *websocket.Conn
 
+	// Weather user is joined in group or not
+	IsJoined bool
+
 	// send channel
 	Send chan *WSMessage
 
@@ -70,9 +73,6 @@ type GClient struct {
 
 	// Room name
 	Room string
-
-	// username
-	Username string
 }
 
 func newClient(conn *websocket.Conn, wsServer *WsServer, phone string) *Client {
@@ -249,6 +249,30 @@ func (c *GClient) GroupReadPump() {
 		}
 		log.Println(message)
 		switch message.Type {
+		case "join":
+			c.IsJoined = true
+			var m *WSMessage = &WSMessage{
+				Type: message.Type,
+				Payload: GMessage{
+					By:   message.Payload.By,
+					Room: message.Payload.Room,
+				},
+			}
+			log.Println("The client has joined")
+			c.Hub.Broadcast <- m
+
+		case "left":
+			c.IsJoined = false
+			var m *WSMessage = &WSMessage{
+				Type: message.Type,
+				Payload: GMessage{
+					By:   message.Payload.By,
+					Room: message.Payload.Room,
+				},
+			}
+			log.Println("The client has left")
+			c.Hub.Broadcast <- m
+
 		case "message":
 			var m *WSMessage = &WSMessage{
 				Type: "message",
@@ -262,11 +286,24 @@ func (c *GClient) GroupReadPump() {
 			fmt.Println("Read Message ---------------------- ", m.Payload.Room)
 			c.Hub.Broadcast <- m
 
+		case "image":
+			var m *WSMessage = &WSMessage{
+				Type: "message",
+				Payload: GMessage{
+					Body: message.Payload.Body,
+					Time: message.Payload.Time,
+					By:   message.Payload.By,
+					Room: message.Payload.Room,
+				},
+			}
+			fmt.Println("Image Message ---------------------- ", m.Payload.Room)
+			c.Hub.Broadcast <- m
+
 		case "typing":
 			var m *WSMessage = &WSMessage{
 				Type: message.Type,
 				Payload: GMessage{
-					By:   c.Username,
+					By:   message.Payload.By,
 					Room: message.Payload.Room,
 				},
 			}
@@ -277,7 +314,7 @@ func (c *GClient) GroupReadPump() {
 			var m *WSMessage = &WSMessage{
 				Type: message.Type,
 				Payload: GMessage{
-					By:   c.Username,
+					By:   message.Payload.By,
 					Room: message.Payload.Room,
 				},
 			}
@@ -319,156 +356,6 @@ func (c *GClient) GroupWritePump() {
 		}
 	}
 }
-
-//	fmt.Println("At write Pump")
-//
-//	ticker := time.NewTicker(pingPeriod)
-//	defer func() {
-//		ticker.Stop()
-//		client.conn.Close()
-//	}()
-//
-//	for {
-//		select {
-//		case message, ok := <-client.send:
-//			client.conn.SetWriteDeadline(time.Now().Add(writeWait))
-//			if !ok {
-//				log.Println("Not okay")
-//				client.conn.WriteMessage(websocket.CloseMessage, []byte{})
-//				return
-//			}
-//
-//			w, err := client.conn.NextWriter(websocket.TextMessage)
-//			if err != nil {
-//				log.Println(err.Error())
-//				return
-//			}
-//			fmt.Println("Writing -- ", string(message))
-//
-//			w.Write(message)
-//
-//			n := len(client.send)
-//			for i := 0; i < n; i++ {
-//				w.Write(newline)
-//				w.Write(<-client.send)
-//			}
-//
-//			if err := w.Close(); err != nil {
-//				return
-//			}
-//
-//		case <-ticker.C:
-//			client.conn.SetWriteDeadline(time.Now().Add(writeWait))
-//			if err := client.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
-//				return
-//			}
-//		}
-//	}
-
-//func (client *Client) handleNewMessage(jsonMessage []byte) {
-//
-//	var message Message
-//	if err := json.Unmarshal(jsonMessage, &message); err != nil {
-//		log.Printf("Error on unmarshal JSON message %s", err)
-//		return
-//	}
-//
-//	message.Sender = client
-//
-//	switch message.Action {
-//	case SendMessageAction:
-//		// This will send messages to a specific room
-//		roomID := message.Target.GetId()
-//		if room := client.wsServer.findRoomByName(roomID); room != nil {
-//			room.broadcast <- &message
-//		}
-//	case JoinRoomAction:
-//		client.handleJoinRoomMessage(message)
-//	case LeaveRoomAction:
-//		client.handleLeaveRoomMessage(message)
-//	case JoinRoomPrivateAction:
-//		client.handleJoinRoomMessage(message)
-//	}
-//}
-
-//func (client *Client) handleJoinRoomMessage(message Message) {
-//	roomName := message.Message
-//
-//	client.joinRoom(roomName, nil)
-//roomName := message.Message
-//
-//// for private message or something
-//client.joinRoom(roomName, nil)
-//room := client.wsServer.findRoomByName(roomName)
-//if room == nil {
-//	room = client.wsServer.createRoom(roomName)
-//}
-//
-//client.rooms[room] = true
-//room.register <- client
-//}
-
-//func (client *Client) handleLeaveRoomMessage(message Message) {
-//	room := client.wsServer.findRoomByID(message.Message)
-//	if room == nil {
-//		return
-//	}
-//	if _, ok := client.rooms[room]; ok {
-//		delete(client.rooms, room)
-//	}
-//
-//	room.unregister <- client
-//}
-//
-//// When joining a private room we will combine the IDs of the users
-//// Then we will both join the client and the target.
-//func (client *Client) handleJoinRoomPrivateMessage(message Message) {
-//	target := client.wsServer.findClientByID(message.Message)
-//	if target == nil {
-//		return
-//	}
-//
-//	// create unique room name combined to the two IDs
-//	roomName := message.Message + client.ID
-//
-//	client.joinRoom(roomName, target)
-//	target.joinRoom(roomName, client)
-//}
-//
-//func (client *Client) joinRoom(roomName string, sender *Client) {
-//	room := client.wsServer.findRoomByName(roomName)
-//	if room == nil {
-//		room = client.wsServer.createRoom(roomName, sender != nil)
-//	}
-//
-//	if sender == nil && room.Private {
-//		return
-//	}
-//
-//	if !client.isInRoom(room) {
-//		client.rooms[room] = true
-//		room.register <- client
-//		client.notifyRoomJoined(room, sender)
-//	}
-//}
-//
-//// check if the client is not yet in the room
-//func (client *Client) isInRoom(room *Room) bool {
-//	if _, ok := client.rooms[room]; ok {
-//		return true
-//	}
-//	return false
-//}
-//
-//// Notify the client of the new room he joined
-//func (client *Client) notifyRoomJoined(room *Room, sender *Client) {
-//	message := Message{
-//		Action: RoomJoinedAction,
-//		Target: room,
-//		Sender: sender,
-//	}
-//	client.send <- message.encode()
-//}
 
 func (client *Client) disconnect() {
 	client.wsServer.unregister <- client

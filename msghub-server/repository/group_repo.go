@@ -31,6 +31,8 @@ type GroupMessage struct {
 	GroupId        int    `gorm:"not null" json:"group_id"`
 	SenderId       string `gorm:"not null" json:"sender_id"`
 	MessageContent string `gorm:"not null" json:"message_content"`
+	ContentType    string `json:"content_type"`
+	Status         string `gorm:"not null" json:"status"`
 	SentTime       string `gorm:"not null" json:"sent_time"`
 	IsRecent       bool   `gorm:"not null" json:"is_recent"`
 }
@@ -99,9 +101,9 @@ func (gm GroupMessage) InsertGroupMessagesRepo(message GroupMessage) error {
 	}
 
 	_, err1 := models.SqlDb.Exec(`INSERT INTO group_messages(
-	                 group_id, sender_id, message_content, sent_time, is_recent)
-	VALUES($1, $2, $3, $4, $5);`,
-		message.GroupId, message.SenderId, message.MessageContent, message.SentTime, true)
+	                 group_id, sender_id, message_content, content_type, status, sent_time, is_recent)
+	VALUES($1, $2, $3, $4, $5, $6, $7);`,
+		message.GroupId, message.SenderId, message.MessageContent, message.ContentType, message.Status, message.SentTime, true)
 	if err1 != nil {
 		log.Println(err1.Error())
 		return errors.New("sorry, An unknown error occurred. Please try again")

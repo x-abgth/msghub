@@ -45,10 +45,6 @@ function closeCreateGroup() {
 	createGroupBody.classList.add("d-none");
 }
 
-function chatThis(target) {
-	console.log("Endhada??");
-}
-
 // Upload image to the create group 
 $("#profileImage").click(function(e) {
     $("#imageUpload").click();

@@ -18,6 +18,8 @@ type GroupMessageModel struct {
 	GroupId  string
 	SenderId string
 	Content  string
+	Type     string
+	Status   string
 	Time     string
 }
 

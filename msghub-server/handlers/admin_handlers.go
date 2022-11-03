@@ -154,13 +154,13 @@ func (admin *AdminHandlerStruct) AdminBlocksUserHandler(w http.ResponseWriter, r
 
 	switch condition {
 	case "day":
-		t = time.Now().Add(time.Hour * 24).Format("02-01-2006 3:04:05 PM")
+		t = time.Now().Add(time.Hour * 24).Format("2-01-2006 3:04:05 PM")
 		fmt.Println(t)
 	case "week":
-		t = time.Now().Add(time.Hour * 168).Format("02-01-2006 3:04:05 PM")
+		t = time.Now().Add(time.Hour * 168).Format("2-01-2006 3:04:05 PM")
 		fmt.Println(t)
 	case "month":
-		t = time.Now().Add(time.Hour * 720).Format("02-01-2006 3:04:05 PM")
+		t = time.Now().Add(time.Hour * 720).Format("2-01-2006 3:04:05 PM")
 		fmt.Println(t)
 	case "permanent":
 		t = "permanent"
@@ -197,13 +197,13 @@ func (admin *AdminHandlerStruct) AdminBlocksGroupHandler(w http.ResponseWriter, 
 	var t string
 	switch condition {
 	case "day":
-		t = time.Now().Add(time.Hour * 24).Format("Jan 02, 2006 03:04:05 PM")
+		t = time.Now().Add(time.Hour * 24).Format("Jan 2, 2006 03:04:05 PM")
 		fmt.Println(t)
 	case "week":
-		t = time.Now().Add(time.Hour * 168).Format("Jan 02, 2006 03:04:05 PM")
+		t = time.Now().Add(time.Hour * 168).Format("Jan 2, 2006 03:04:05 PM")
 		fmt.Println(t)
 	case "month":
-		t = time.Now().Add(time.Hour * 720).Format("Jan 02, 2006 03:04:05 PM")
+		t = time.Now().Add(time.Hour * 720).Format("Jan 2, 2006 03:04:05 PM")
 		fmt.Println(t)
 	case "permanent":
 		t = "permanent"

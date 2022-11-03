@@ -46,7 +46,6 @@ func (h *Hub) delete(c *GClient) {
 		Type: "left",
 		Payload: GMessage{
 			Body: strconv.Itoa(len(h.Clients[c.Room])),
-			By:   c.Username,
 			Room: c.Room,
 		},
 	}
@@ -65,6 +64,21 @@ func (h *Hub) broadcast(m *WSMessage) {
 				GroupId:  m.Payload.Room,
 				SenderId: m.Payload.By,
 				Content:  m.Payload.Body,
+				Type:     logic.TEXT,
+				Status:   logic.IS_SENT,
+				Time:     m.Payload.Time,
+			}
+			err := g.InsertMessagesToGroup(data)
+			if err != nil {
+				log.Fatal("Error happened when inserting elements - ", err)
+			}
+		} else if m.Type == "image" {
+			data := models.GroupMessageModel{
+				GroupId:  m.Payload.Room,
+				SenderId: m.Payload.By,
+				Content:  m.Payload.Body,
+				Type:     logic.IMAGE,
+				Status:   logic.IS_SENT,
 				Time:     m.Payload.Time,
 			}
 			err := g.InsertMessagesToGroup(data)

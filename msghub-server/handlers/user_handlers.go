@@ -90,13 +90,28 @@ func (info *InformationHelper) UserLoginCredentialsHandler(w http.ResponseWriter
 
 // This handler displays the page to enter the phone number
 func (info *InformationHelper) UserLoginWithOtpPhonePageHandler(w http.ResponseWriter, r *http.Request) {
+	defer func() {
+		if e := recover(); e != nil {
+			log.Println(e)
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+		}
+	}()
+
 	data := models.ReturnOtpErrorModel()
 	err := template.Tpl.ExecuteTemplate(w, "login_with_otp.gohtml", data)
-	utils.PrintError(err, "")
+	if err != nil {
+		panic(err)
+	}
 }
 
 // This handler process the phone number given and check weather is valid or not
 func (info *InformationHelper) UserLoginOtpPhoneValidateHandler(w http.ResponseWriter, r *http.Request) {
+	defer func() {
+		if e := recover(); e != nil {
+			log.Println(e)
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+		}
+	}()
 	r.ParseForm()
 
 	ph := r.PostFormValue("phone")
@@ -134,7 +149,6 @@ func (info *InformationHelper) UserVerifyLoginOtpHandler(w http.ResponseWriter, 
 	status := info.userRepo.UserValidateOtpLogic(ph, otp)
 
 	if status {
-		// TODO: Need more data for user
 		userData := models.UserModel{UserPhone: ph}
 		claims := &jwtPkg.UserJwtClaim{
 			User:            userData,
@@ -444,7 +458,7 @@ func (info *InformationHelper) UserNewChatStartedHandler(w http.ResponseWriter, 
 		Content: message,
 		From:    claim.User.UserPhone,
 		To:      target,
-		Time:    time.Now().Format("02 Jan 2006 3:04:05 PM"),
+		Time:    time.Now().Format("2 Jan 2006 3:04:05 PM"),
 		Status:  "ADMIN",
 	}
 

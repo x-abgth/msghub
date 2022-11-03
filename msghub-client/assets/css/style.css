@@ -323,10 +323,6 @@ div.dashboard-content-wrapper div.recent-chat-bg a{
 	z-index: 5;
 }
 
-div.dashboard-content-wrapper div.recent-chat-bg a: hover{
-	color: black;
-}
-
 .recent-chat-dp-wrapper{
 	overflow: hidden;
 	height: 50px;
@@ -361,15 +357,18 @@ div.user-dashboard-top-sec{
 }
 
 div.story-sec div.user-story-sec-image-wrapper{
+	position: relative;
+	height: 2.7rem;
+	width: 2.7rem;
 	overflow: hidden;
 	background-color: white;
-	height: 50px;
-	width: 50px;
 	border-radius: 50% !important;
 }
 
 div.story-sec div.user-story-sec-image-wrapper img {
-	height: 50px;
+	height: 2.7rem;
+	width: 2.7rem;
+	border-radius: 50%;
 	object-fit: cover;
 	object-position: center;
 }
@@ -428,7 +427,7 @@ div.user-chat-sec {
 	word-wrap: break-word;
 	background-color: #D9D9D9;
 	border-radius: 15px;
-	word-break: break-word
+	word-break: break-word;
 }
 
 .message-area .chat-bubble.user-chat-bubble {
