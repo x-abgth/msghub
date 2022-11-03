@@ -89,15 +89,3 @@ func run() error {
 
 	return nil
 }
-
-func initBlob(ctx context.Context) error {
-	var err error
-	filesBucket, err = blob.OpenBucket(
-		ctx, "s3://"+bucketName+"?"+
-			"endpoint=127.0.0.1:9000&"+
-			"region="+location+"&"+
-			"disableSSL=true&"+
-			"s3ForcePathStyle=true",
-	)
-	return err
-}

@@ -10,12 +10,16 @@ The application is in development stage.
 
 ### 🎯 TODOS:
 - [x] Add private messaging feature
-- [ ] Create room for online users
-- [ ] Create room for group messaging
-- [ ] Add group messaging feature
+- [x] Create room for group messaging
+- [x] Add group messaging feature
 - [ ] Add story feature
+- [ ] Add online user status
+- [ ] Add typing status
+- [ ] Add read receipts
+- [ ] User can delete the account
+- [ ] User can leave the group
+- [ ] User could clear the chats
 - [ ] Add smileys and image sharing
-- [ ] Create admin section
 
 > Any UI based contributions are highly encouraged.
 
