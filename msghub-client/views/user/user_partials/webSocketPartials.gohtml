@@ -4,6 +4,7 @@
 
 		// This function only works for group messaging
 		function startGroupSocketConnection(val) {
+			const colorCodes = ["#E21717","#B9345A","#207398","#2827CC","#E07C24","#120E43","#02B290","#F4BE2C","#00D84A", "#E03B8B", "#242B2E"];
 			const input = document.querySelector("#msgInp");
 			const messages = document.querySelector("#log");
 			const send = document.querySelector("#sendMsg");
@@ -109,24 +110,26 @@
 						if(response.avatar === "") {
 							document.getElementById("dashboard-chat-part-header-image").setAttribute("src", "../../assets/images/group.png");
 						} else {
-							document.getElementById("dashboard-chat-part-header-image").setAttribute("src", "../../assets/db_files/group_dp_img/" + response.avatar);
+							document.getElementById("dashboard-chat-part-header-image").setAttribute("src", response.avatar);
 						}
 
 						document.getElementById("group-about-shown").innerText = response.about;
 						document.getElementById("group-name-shown").innerText = response.name;
 						document.getElementById("group-date-shown").innerText = "created date - " + response.created;
 						if(response.owner == {{ .UserPhone }}) {
+							document.getElementById("manageGroupMembersBt").setAttribute("href", "/user/dashboard/group-manage-members/"+val)
 							document.getElementById("leaveGroupBt").classList.add("d-none");
 						} else {
-							document.getElementById("leaveGroupBt").addEventListener("click", function() {
-								window.location.href="";
+							document.getElementById("manageGroupMembersBt").classList.add("d-none");
+							document.getElementById("leaveGroupBt").addEventListener("click", function(e) {
+								window.location.href="/user/dashboard/group-left/" + val;
 							});
 						}
 
 						if(response.avatar === "") {
 							document.getElementById("group-img-shown").setAttribute("src", "../../assets/images/group.png");
 						} else {
-							document.getElementById("group-img-shown").setAttribute("src", "../../assets/db_files/group_dp_img/" + response.avatar);
+							document.getElementById("group-img-shown").setAttribute("src", response.avatar);
 						}
 						document.getElementById("member-count").innerText = response.total_members;
 
@@ -147,7 +150,7 @@
 								if (response.members_list[i].avatar == "") {
 									groupMemberDpImgTag.setAttribute("src", "../../assets/images/user.png");
 								} else {
-									groupMemberDpImgTag.setAttribute("src", "../../assets/db_files/user_dp_img/" + response.members_list[i].avatar);
+									groupMemberDpImgTag.setAttribute("src", response.members_list[i].avatar);
 								}
 
 								groupMemberDpWrapper.appendChild(groupMemberDpImgTag);
@@ -224,12 +227,18 @@
 									item.appendChild(msgDetails);
 									appendLog(item);
 								} else {
+									let userID = document.createElement('span');
+									let ranCol = Math.floor(Math.random() * 9);
+									userID.style.color = colorCodes[ranCol];
+									userID.classList.add("group-second-user-id", "ms-2");
+									userID.innerText = "+91 " + response.data[i].from;
 									item.classList.add("chat-msg-field", "d-flex", "flex-column", "mb-2");
 									innerItem.classList.add("chat-bubble", "px-3", "py-2", "text-wrap", "word-wrap", "text-break");
 									itemTime.classList.add("chat-time","mt-1", "ms-2");
 									itemTime.innerText = response.data[i].time;
 
 									innerItem.innerText = response.data[i].message;
+									item.appendChild(userID);
 									item.appendChild(innerItem);
 									item.appendChild(itemTime);
 									appendLog(item);
@@ -264,7 +273,7 @@ if(chatPartBody.classList.contains('d-none')) {
 }
 
 			// Make it as like for the group 
-			url = "ws://" + window.location.host + "/ws/group/" + val; 
+			let url = "ws://" + window.location.host + "/ws/group/" + val; 
 			console.log(url);
 
 			const ws = new WebSocket(url);
@@ -298,57 +307,53 @@ if(chatPartBody.classList.contains('d-none')) {
 				}
 			};
 
-			$("#imageChatInp").change(function(){
-				if(this.files && this.files[0]) {
+			// $("#imageChatInp").change(function(){
+			// 	if(this.files && this.files[0]) {
 
-					file = this.files[0];
-					const reader = new FileReader();
+			// 		file = this.files[0];
+			// 		const reader = new FileReader();
 
-					let base64Img;
-					reader.addEventListener("load", () => {
-						console.log(reader.result);
+			// 		let base64Img;
+			// 		reader.addEventListener("load", () => {
+			// 			console.log(reader.result.length);
 
-						var byteString;
-						if (reader.result.split(',')[0].indexOf('base64') >= 0)
-						  byteString = atob(reader.result.split(',')[1]);
-						else
-						  byteString = unescape(reader.result.split(',')[1]);
+			// 			var byteString;
+			// 			if (reader.result.split(',')[0].indexOf('base64') >= 0)
+			// 				byteString = atob(reader.result.split(',')[1]);
+			// 			else
+			// 				byteString = unescape(reader.result.split(',')[1]);
 
-						// separate out the mime component
-						var mimeString = reader.result.split(',')[0].split(':')[1].split(';')[0];
+			// 			// separate out the mime component
+			// 			var mimeString = reader.result.split(',')[0].split(':')[1].split(';')[0];
 
-						// write the bytes of the string to a typed array
-						var ia = new Uint8Array(byteString.length);
-						for (var i = 0; i < byteString.length; i++) {
-						  ia[i] = byteString.charCodeAt(i);
-						}
+			// 			// write the bytes of the string to a typed array
+			// 			var ia = new Uint8Array(byteString.length);
+			// 			for (var i = 0; i < byteString.length; i++) {
+			// 				ia[i] = byteString.charCodeAt(i);
+			// 			}
 
-						console.log(byteString);
-						console.log(ia);
-						console.log(new Blob([ia], {type:mimeString}));
+			// 			let blobObj = new Blob([ia], {type:mimeString});
+			// 			console.log(blobObj);
 
-						// return new Blob([ia], {type:mimeString})
-					})
+			// 			let current = new Date();
+			// 			let cDate = current.getDate() + ' ' + monthAsWord[(current.getMonth())] + ' ' + current.getFullYear();
+			// 			let cTime =  current.toLocaleString('en-US', { hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: true });
+			// 			let dateTime = cDate + ' ' + cTime;
 
-					reader.readAsDataURL(file);
-
-					// let current = new Date();
-					// let cDate = current.getDate() + ' ' + monthAsWord[(current.getMonth())] + ' ' + current.getFullYear();
-					// let cTime =  current.toLocaleString('en-US', { hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: true });
-					// let dateTime = cDate + ' ' + cTime;
-
-					// const m = {
-					// 	type : "image",
-					// 	payload: {
-					// 		from : {{ .UserPhone }},
-					// 		message : this.files[0],
-					// 		time : dateTime,
-					// 		room: val
-					// 	}
-					// }
-					// ws.send(JSON.stringify(m))
-				}
-			});
+			// 			const m = {
+			// 				type : "image",
+			// 				payload: {
+			// 					from : {{ .UserPhone }},
+			// 					body : blobObj,
+			// 					time : dateTime,
+			// 					room: val
+			// 				}
+			// 			}
+			// 			ws.send(JSON.stringify(m));
+			// 		})
+			// 		reader.readAsDataURL(file);
+			// 	}
+			// });
 
 			ws.onerror = function(evt) {
 				console.log("Webscket error - " + evt);
@@ -373,7 +378,7 @@ if(chatPartBody.classList.contains('d-none')) {
 						room: val
 					}
 				}
-				ws.send(JSON.stringify(m))
+				// ws.send(JSON.stringify(m))
 			});
 
 			const messageInput = document.querySelector("#msgInp")
@@ -391,7 +396,7 @@ if(chatPartBody.classList.contains('d-none')) {
 					add(data.payload)
 					break
 					case "image":
-					add(data.payload)
+					addImg(data.payload)
 					break
 					case "left":
 					left(data.payload)
@@ -544,19 +549,25 @@ if(chatPartBody.classList.contains('d-none')) {
 						item.appendChild(msgDetails);
 						appendLog(item);
 					} else {
+						let userID = document.createElement('span');
+						let ranCol = Math.floor(Math.random() * 9);
+						userID.style.color = colorCodes[ranCol];
+						userID.classList.add("group-second-user-id", "ms-2");
+						userID.innerText = "+91 " + response.data[i].from;
 						item.classList.add("chat-msg-field", "d-flex", "flex-column", "mb-2");
 						innerItem.classList.add("chat-bubble", "px-3", "py-2", "text-wrap", "word-wrap", "text-break");
 						itemTime.classList.add("chat-time","mt-1", "ms-2");
 						itemTime.innerText = msgobj.time;
 
 						if (msgobj.type == "image") {
-								let imageChatTag = document.createElement('img');
-								imageChatTag.setAttribute("id", "imageChatTag");
-								imageChatTag.setAttribute("src", window.URL.createObjectURL(msgobj.message));
-								innerItem.appendChild(imageChatTag);
+							let imageChatTag = document.createElement('img');
+							imageChatTag.setAttribute("id", "imageChatTag");
+							imageChatTag.setAttribute("src", window.URL.createObjectURL(msgobj.message));
+							innerItem.appendChild(imageChatTag);
 						} else {
 							innerItem.innerHTML = msgobj.message;
 						}
+						item.appendChild(userID);
 						item.appendChild(innerItem);
 						item.appendChild(itemTime);
 						appendLog(item);
@@ -610,7 +621,7 @@ if(chatPartBody.classList.contains('d-none')) {
 							if(response.avatar === "") {
 								document.getElementById("dashboard-chat-part-header-image").setAttribute("src", "../../assets/images/user.png");
 							} else {
-								document.getElementById("dashboard-chat-part-header-image").setAttribute("src", "../../assets/db_files/user_dp_img/" + response.avatar);
+								document.getElementById("dashboard-chat-part-header-image").setAttribute("src", response.avatar);
 							}
 
 							if(response.data != null) {
@@ -671,7 +682,7 @@ if(chatPartBody.classList.contains('d-none')) {
 			                if(response.avatar === "") {
 			                	document.getElementById("user-img-shown").setAttribute("src", "../../assets/images/user.png");
 			                } else {
-			                	document.getElementById("user-img-shown").setAttribute("src", "../../assets/db_files/user_dp_img/" + response.avatar);
+			                	document.getElementById("user-img-shown").setAttribute("src",response.avatar);
 			                }
 			            }
 			        },
@@ -700,7 +711,7 @@ if(chatPartBody.classList.contains('d-none')) {
 				}
 			}
 			
-			url = "ws://" + window.location.host + "/ws/" + val; 
+			let url = "ws://" + window.location.host + "/ws/" + val; 
 			console.log(url);
 
 			const ws = new WebSocket(url);

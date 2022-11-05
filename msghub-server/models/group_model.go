@@ -29,3 +29,11 @@ type GroupMembersModel struct {
 	MAvatar  string `json:"avatar"`
 	MIsAdmin bool   `json:"is_admin"`
 }
+
+type ManageGroupMember struct {
+	UserAvatarUrl string `json:"avatar"`
+	UserName      string `json:"name"`
+	UserPhone     string `json:"phone"`
+	UserAbout     string `json:"about"`
+	IsMember      bool   `json:"is_member"`
+}

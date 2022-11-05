@@ -435,6 +435,42 @@ func (u *UserDb) UpdateUserProfileDataLogic(name, about, image, phone string) er
 	return nil
 }
 
+func (u *UserDb) NonGroupMembersLogic(gid, uid string) []models.UserModel {
+	// get all the users in the database
+	uData, err := u.GetAllUsersLogic(uid)
+	if err != nil {
+		return nil
+	}
+
+	// get all the members in the group
+	var gm GroupDataLogicModel
+	gData := gm.GetAllGroupMembersData(gid)
+
+	// filter them and get a slice of non-members
+	var res []models.UserModel
+	for i := range uData {
+		flag := false
+		for j := range gData {
+			if uData[i].UserPhone == gData[j].MPhone {
+				flag = !flag
+			}
+		}
+
+		if flag == false {
+			data := models.UserModel{
+				UserAvatarUrl: uData[i].UserAvatarUrl,
+				UserName:      uData[i].UserName,
+				UserPhone:     uData[i].UserPhone,
+				UserAbout:     uData[i].UserAbout,
+			}
+
+			res = append(res, data)
+		}
+	}
+
+	return res
+}
+
 func (u *UserDb) GroupUnblockLogic(id string) error {
 	err := u.userData.UnblockGroupRepo(id)
 

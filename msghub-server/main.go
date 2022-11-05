@@ -10,7 +10,8 @@ import (
 	"msghub-server/repository"
 	"msghub-server/socket"
 	"msghub-server/template"
-	utils "msghub-server/utils/jwt"
+	"msghub-server/utils"
+	utilJwt "msghub-server/utils/jwt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -22,7 +23,7 @@ import (
 func init() {
 	var err error
 
-	utils.InitJwtKey()
+	utilJwt.InitJwtKey()
 	template.Tpl, err = template.Tpl.ParseGlob("../msghub-client/views/*.gohtml")
 	template.Tpl.New("partials").ParseGlob("../msghub-client/views/base_partials/*.gohtml")
 	template.Tpl.New("user").ParseGlob("../msghub-client/views/user/*.gohtml")
@@ -57,6 +58,8 @@ func run() error {
 	// serving other files like css, and assets using only http package
 	fileServe := http.FileServer(http.Dir("../msghub-client/assets/"))
 	newMux.PathPrefix("/assets/").Handler(http.StripPrefix("/assets/", fileServe))
+
+	utils.InitBlobBucket()
 
 	// creates a new WsServer
 	wsServer := socket.NewWebSocketServer()

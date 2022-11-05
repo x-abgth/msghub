@@ -127,7 +127,7 @@ func (user User) GetUserData(ph string) (models.UserModel, error) {
     	user_about,
     	is_blocked
 	FROM users
-	WHERE user_ph_no = $1 AND is_blocked = $2;`, ph, false)
+	WHERE user_ph_no = $1;`, ph)
 	if err != nil {
 		return data, err
 	}

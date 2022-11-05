@@ -89,11 +89,13 @@ func (m MessageDb) GetMessageDataLogic(target, from string) ([]models.MessageMod
 	}
 
 	sort.Slice(this, func(i, j int) bool {
-		return this[i].Order < this[i].Order
+		return this[i].Order > this[j].Order
 	})
 
 	return this, nil
 }
 
-func (m MessageDb) StoreFileMessagesLogic(message models.MessageModel) {
+func (m MessageDb) FileChatsLogic(message string) string {
+
+	return ""
 }

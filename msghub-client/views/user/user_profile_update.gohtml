@@ -95,7 +95,7 @@
 	<section class="h-100 d-flex flex-row">
 		<div id="user-profile-section" class="h-100 d-flex justify-content-center align-items-center">
 			{{ if .Image }}
-				<image id="profileImage" src="../../assets/db_files/user_dp_img/{{ .Image }}"/>
+				<image id="profileImage" src="{{ .Image }}"/>
 			{{ else }}
 				<image id="profileImage" src="../../assets/images/user.png"/>
 			{{ end }}

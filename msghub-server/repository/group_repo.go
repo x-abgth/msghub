@@ -289,7 +289,7 @@ func (relation UserGroupRelation) GetAllTheGroupMembersRepo(id string) []string 
 	var uid, role, admin string
 	var res []string
 	rows, err := models.SqlDb.Query(
-		`SELECT user_id, user_role FROM user_group_relations WHERE group_id = $1;`, id)
+		`SELECT user_id, user_role FROM user_group_relations WHERE group_id = $1 AND user_role != $2;`, id, "nil")
 	if err != nil {
 		return res
 	}
@@ -313,4 +313,78 @@ func (relation UserGroupRelation) GetAllTheGroupMembersRepo(id string) []string 
 	}
 
 	return res
+}
+
+func (relation UserGroupRelation) IsUserGroupAdminRepo(gid, uid string) string {
+	var role string
+	rows, err := models.SqlDb.Query(
+		`SELECT user_role FROM user_group_relations WHERE group_id = $1 AND user_id = $2;`, gid, uid)
+	if err != nil {
+		return ""
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		if e := rows.Scan(&role); e != nil {
+			return ""
+		}
+	}
+
+	return role
+}
+
+func (relation UserGroupRelation) IsUserInGroupRepo(gid, uid string) int {
+	var role string
+	rows, err := models.SqlDb.Query(
+		`SELECT user_role FROM user_group_relations WHERE group_id = $1 AND user_id = $2;`, gid, uid)
+	if err != nil {
+		return 0
+	}
+
+	defer rows.Close()
+
+	count := 0
+	for rows.Next() {
+		count++
+		if e := rows.Scan(&role); e != nil {
+			return 0
+		}
+
+		if role == "nil" {
+			count--
+		}
+	}
+
+	return count
+}
+
+func (relation UserGroupRelation) UserLeftGroupRepo(gid, uid string) error {
+	_, err1 := models.SqlDb.Exec(`UPDATE user_group_relations
+		SET user_role = 'nil'
+		WHERE group_id = $1 AND user_id = $2;`, gid, uid)
+	if err1 != nil {
+		log.Println(err1)
+		return errors.New("sorry, An unknown error occurred. Please try again")
+	}
+	return nil
+}
+
+func (relation UserGroupRelation) IsUserLeftGroupRepo(gid, uid string) string {
+	var val string
+	rows, err := models.SqlDb.Query(
+		`SELECT user_role FROM user_group_relations WHERE group_id = $1 AND user_id = $2;`, gid, uid)
+	if err != nil {
+		return ""
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		if e := rows.Scan(&val); e != nil {
+			return ""
+		}
+	}
+
+	return val
 }

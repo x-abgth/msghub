@@ -247,6 +247,18 @@
 		object-fit: cover;
 		object-position: center;
 	}
+
+	.group-second-user-id{
+		font-size: 0.9em;
+	}
+
+	#manageGroupMembersBt{
+		background: blue;
+		border-radius: 10px;
+		color: white;
+		text-decoration: none;
+		font-weight: bold;
+	}
 </style>
 
 <section class="overflow-hidden">
@@ -259,7 +271,7 @@
 			<a href="/user/dashboard/user-profile">
 				<div class="d-none d-md-block user-dashboard-nav-profile-pic-wrapper rounded-circle">
 					{{ if .UserDetails.UserAvatarUrl }}
-					<img class="img-fluid" class="profile-img-icon" src="../../assets/db_files/user_dp_img/{{ .UserDetails.UserAvatarUrl }}" alt="User profile picture" style="object-fit: cover; object-position: center;">
+					<img class="img-fluid" class="profile-img-icon" src="{{ .UserDetails.UserAvatarUrl }}" alt="User profile picture" style="object-fit: cover; object-position: center;">
 					{{ else }}
 					<img class="profile-img-icon" src="../../assets/images/user.png" alt="No profile picture">
 					{{ end }}	
@@ -288,7 +300,7 @@
 					<!-- Modal button -->
 
 					{{ if .UserDetails.UserAvatarUrl }}
-					<img src="../../assets/db_files/user_dp_img/{{ .UserDetails.UserAvatarUrl }}" alt="User profile picture" style="object-fit: cover; object-position: center;">
+					<img src="{{ .UserDetails.UserAvatarUrl }}" alt="User profile picture" style="object-fit: cover; object-position: center;">
 					{{ else }}
 					<img src="../../assets/images/user.png" alt="user profile picture">
 					{{ end }}
@@ -312,13 +324,13 @@
 								<div class="recent-chat-dp-wrapper">
 									{{ if .IsGroup }}
 									{{ if .Content.Avatar }}
-									<img class="img-fluid" src="../../assets/db_files/group_dp_img/{{ .Content.Avatar }}" alt="User profile picture" style="object-fit: cover; object-position: center;">
+									<img class="img-fluid" src="{{ .Content.Avatar }}" alt="User profile picture" style="object-fit: cover; object-position: center;">
 									{{ else }}
 									<img src="../../assets/images/group.png" alt="user profile picture">
 									{{ end }}
 									{{ else }}
 									{{ if .Content.Avatar }}
-									<img class="img-fluid" src="../../assets/db_files/user_dp_img/{{ .Content.Avatar }}" alt="User profile picture" style="object-fit: cover; object-position: center;">
+									<img class="img-fluid" src="{{ .Content.Avatar }}" alt="User profile picture" style="object-fit: cover; object-position: center;">
 									{{ else }}
 									<img src="../../assets/images/user.png" alt="user profile picture">
 									{{ end }}

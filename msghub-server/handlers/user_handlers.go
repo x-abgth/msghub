@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -10,7 +11,6 @@ import (
 	"msghub-server/template"
 	"msghub-server/utils"
 	jwtPkg "msghub-server/utils/jwt"
-	"os"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -371,40 +371,23 @@ func (info *InformationHelper) UserProfileUpdateHandler(w http.ResponseWriter, r
 
 	claim := jwtPkg.GetValueFromJwt(c)
 
-	var imageName, imageNameA string
+	var imageNameA string
 	if file != nil {
-		defer file.Close()
 
 		// Check weather the string is same as in db
-		imageName = fmt.Sprintf("../msghub-client/assets/db_files/user_dp_img/%s.png", claim.User.UserPhone)
-		imageNameA = fmt.Sprintf("%s.png", claim.User.UserPhone)
-		out, pathError := os.Create(imageName)
-		if pathError != nil {
-			log.Println("Error creating a file for writing", pathError)
-			panic(pathError.Error())
-		}
-		imageName = out.Name()
-
-		defer out.Close()
-
-		_, copyError := io.Copy(out, file)
-		if copyError != nil {
-			panic(copyError.Error())
-		}
+		imageNameA = utils.StoreThisFileInBucket("user_dp_images/", claim.User.UserPhone, file)
+		defer file.Close()
 	}
 
-	var userImage string
-	if file == nil {
-		userImage = ""
+	if imageNameA != "" {
+		err2 := info.userRepo.UpdateUserProfileDataLogic(userName, userAbout, imageNameA, claim.User.UserPhone)
+		if err2 != nil {
+			panic(err2.Error())
+		}
 	} else {
-		userImage = imageNameA
+		log.Println("The image url is nil or empty")
 	}
-
 	// Update data to the database
-	err2 := info.userRepo.UpdateUserProfileDataLogic(userName, userAbout, userImage, claim.User.UserPhone)
-	if err2 != nil {
-		panic(err2.Error())
-	}
 
 	http.Redirect(w, r, "/user/dashboard", http.StatusFound)
 }
@@ -471,6 +454,7 @@ func (info *InformationHelper) UserCreateGroup(w http.ResponseWriter, r *http.Re
 
 	defer func() {
 		if e := recover(); e != nil {
+			log.Println(e)
 			http.Redirect(w, r, "/user/dashboard", http.StatusSeeOther)
 		}
 	}()
@@ -478,6 +462,7 @@ func (info *InformationHelper) UserCreateGroup(w http.ResponseWriter, r *http.Re
 	// Parse form to get data
 	err := r.ParseMultipartForm(10 << 24)
 	if err != nil {
+		log.Println("File is empty ", err)
 		http.Redirect(w, r, "/user/dashboard", http.StatusSeeOther)
 	}
 
@@ -496,36 +481,16 @@ func (info *InformationHelper) UserCreateGroup(w http.ResponseWriter, r *http.Re
 
 	claim := jwtPkg.GetValueFromJwt(c)
 
-	var imageName, imageNameA string
+	var imageNameA string
 	if file != nil {
-		defer file.Close()
 
 		// Check weather the string is same as in db
-		imageName = fmt.Sprintf("../msghub-client/assets/db_files/user_dp_img/%s%s.png", groupName, claim.User.UserPhone)
-		imageNameA = fmt.Sprintf("%s%s.png", groupName, claim.User.UserPhone)
-		out, pathError := os.Create(imageName)
-		if pathError != nil {
-			log.Println("Error creating a file for writing", pathError)
-			return
-		}
-
-		defer out.Close()
-
-		_, copyError := io.Copy(out, file)
-		if copyError != nil {
-			log.Println("Error copying", copyError)
-		}
-	}
-
-	var groupImage string
-	if file == nil {
-		groupImage = ""
-	} else {
-		groupImage = imageNameA
+		imageNameA = utils.StoreThisFileInBucket("group_dp_images/", groupName+claim.User.UserPhone, file)
+		defer file.Close()
 	}
 
 	data := models.GroupModel{
-		Image: groupImage,
+		Image: imageNameA,
 		Name:  groupName,
 		About: groupAbout,
 	}
@@ -737,6 +702,18 @@ func (info *InformationHelper) UserGroupChatSelectedHandler(w http.ResponseWrite
 		panic(err)
 	}
 
+	uc, err2 := r.Cookie("userToken")
+	if err2 != nil {
+		if err2 == http.ErrNoCookie {
+			panic("Cookie not found!")
+		}
+		panic("Unknown error occurred!")
+	}
+
+	userClaim := jwtPkg.GetValueFromJwt(uc)
+
+	isLeft := info.groupRepo.CheckUserLeftTheGroup(target.Data, userClaim.User.UserPhone)
+
 	// make struct and parse data to json format and send
 	xData := struct {
 		Name         string                     `json:"name"`
@@ -746,6 +723,7 @@ func (info *InformationHelper) UserGroupChatSelectedHandler(w http.ResponseWrite
 		Created      string                     `json:"created"`
 		TotalMembers int                        `json:"total_members"`
 		IsBanned     bool                       `json:"is_banned"`
+		IsLeft       bool                       `json:"is_left"`
 		BanTime      string                     `json:"ban_time"`
 		Members      []models.GroupMembersModel `json:"members_list"`
 		Val          []models.MessageModel      `json:"data"`
@@ -757,6 +735,7 @@ func (info *InformationHelper) UserGroupChatSelectedHandler(w http.ResponseWrite
 		Created:      data.CreatedDate,
 		TotalMembers: data.NoOfMembers,
 		IsBanned:     data.IsBanned,
+		IsLeft:       isLeft,
 		BanTime:      data.BanTime,
 		Members:      uDatas,
 		Val:          messages,
@@ -793,6 +772,112 @@ func (info *InformationHelper) GroupUnblockHandler(w http.ResponseWriter, r *htt
 	err = info.userRepo.GroupUnblockLogic(target.Data)
 	if err != nil {
 		panic(err)
+	}
+
+	s, _ := json.Marshal(true)
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(s)
+}
+
+func (info *InformationHelper) UserLeftGroupHandler(w http.ResponseWriter, r *http.Request) {
+	defer func() {
+		if e := recover(); e != nil {
+			log.Println("Oh ohh, Theres an error - ", e)
+			http.Redirect(w, r, "/user/dashboard", http.StatusSeeOther)
+		}
+	}()
+	vars := mux.Vars(r)
+	target := vars["target"]
+
+	c, err1 := r.Cookie("userToken")
+	if err1 != nil {
+		if err1 == http.ErrNoCookie {
+			panic("Cookie not found!")
+		}
+		panic("Unknown error occurred!")
+	}
+
+	claim := jwtPkg.GetValueFromJwt(c)
+
+	err := info.groupRepo.UserLeftTheGroupLogic(target, claim.User.UserPhone)
+	if err != nil {
+		panic(err)
+	}
+
+	http.Redirect(w, r, "/user/dashboard", http.StatusFound)
+}
+
+func (info *InformationHelper) UserGroupManagePageHandler(w http.ResponseWriter, r *http.Request) {
+	defer func() {
+		if e := recover(); e != nil {
+			log.Println(e)
+			http.Redirect(w, r, "/user/dashboard", http.StatusSeeOther)
+		}
+	}()
+
+	vars := mux.Vars(r)
+	target := vars["target"]
+
+	c, err1 := r.Cookie("userToken")
+	if err1 != nil {
+		if err1 == http.ErrNoCookie {
+			panic("Cookie not found!")
+		}
+		panic("Unknown error occurred!")
+	}
+
+	claim := jwtPkg.GetValueFromJwt(c)
+
+	if !info.groupRepo.CheckUserIsAdmin(target, claim.User.UserPhone) {
+		panic("User Is not an admin")
+	}
+
+	data := info.userRepo.NonGroupMembersLogic(target, claim.User.UserPhone)
+
+	if data == nil {
+		panic(errors.New("some error occurred while accessing non group members"))
+	}
+	xData := struct {
+		GroupId string
+		Data    []models.UserModel
+	}{
+		GroupId: target,
+		Data:    data,
+	}
+	err := template.Tpl.ExecuteTemplate(w, "manage_group_members.gohtml", xData)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (info *InformationHelper) UserGroupAddMembersHandler(w http.ResponseWriter, r *http.Request) {
+	// Getting slice of user ids
+	type groupMembers struct {
+		Data []string `json:"data"`
+	}
+	var val groupMembers
+
+	a, _ := io.ReadAll(r.Body)
+	err := json.Unmarshal(a, &val)
+
+	// Getting group id from url
+	vars := mux.Vars(r)
+	target := vars["target"]
+
+	if err != nil {
+		log.Println("ERROR happened -- ", err.Error())
+		cookie := &http.Cookie{Name: "userGroupDetails", MaxAge: -1, HttpOnly: true, Path: "/user/dashboard/"}
+		http.SetCookie(w, cookie)
+		http.Redirect(w, r, "/user/dashboard", http.StatusSeeOther)
+	}
+
+	// redirect to dashboard
+	err = info.groupRepo.AddGroupMembers(target, val.Data)
+	if err != nil {
+		log.Println("ERROR happened -- ", err.Error())
+		cookie := &http.Cookie{Name: "userGroupDetails", MaxAge: -1, HttpOnly: true, Path: "/user/dashboard/"}
+		http.SetCookie(w, cookie)
+		http.Redirect(w, r, "/user/dashboard", http.StatusSeeOther)
 	}
 
 	s, _ := json.Marshal(true)

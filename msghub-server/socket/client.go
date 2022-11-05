@@ -139,6 +139,7 @@ func (client *Client) readPump() {
 
 	// start endless read loop, waiting for messages from client.
 	for {
+
 		_, jsonMessage, err := client.conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
@@ -241,13 +242,35 @@ func (c *GClient) GroupReadPump() {
 
 	for {
 		var message WSMessage
-		//_, msg, err := c.Conn.ReadMessage()
+		//var imageMessage WSImageMessage
+
 		err := c.Conn.ReadJSON(&message)
 		if err != nil {
-			log.Println("Error while reading websocket message: ", err)
+			fmt.Println("Error while reading websocket message: ", err)
 			return
+			// Not working
+			//func() {
+			//	err := c.Conn.ReadJSON(&imageMessage)
+			//	if err != nil {
+			//		fmt.Println(err)
+			//		os.Exit(1)
+			//	}
+			//	fmt.Println("Endhane lemon tea oke choyichenu ketu?")
+			//	f := bytes.NewReader(imageMessage.Payload.Body)
+			//	str := utils.StoreThisFileInBucket("group_chat_file/", uuid.New().String(), f)
+			//	fmt.Println("Endhane lemon tea oke choyichenu ketu?")
+			//	var m *WSMessage = &WSMessage{
+			//		Type: "image",
+			//		Payload: GMessage{
+			//			Body: str,
+			//			Time: imageMessage.Payload.Time,
+			//			By:   imageMessage.Payload.By,
+			//			Room: imageMessage.Payload.Room,
+			//		},
+			//	}
+			//	c.Hub.Broadcast <- m
+			//}()
 		}
-		log.Println(message)
 		switch message.Type {
 		case "join":
 			c.IsJoined = true
@@ -284,19 +307,6 @@ func (c *GClient) GroupReadPump() {
 				},
 			}
 			fmt.Println("Read Message ---------------------- ", m.Payload.Room)
-			c.Hub.Broadcast <- m
-
-		case "image":
-			var m *WSMessage = &WSMessage{
-				Type: "message",
-				Payload: GMessage{
-					Body: message.Payload.Body,
-					Time: message.Payload.Time,
-					By:   message.Payload.By,
-					Room: message.Payload.Room,
-				},
-			}
-			fmt.Println("Image Message ---------------------- ", m.Payload.Room)
 			c.Hub.Broadcast <- m
 
 		case "typing":

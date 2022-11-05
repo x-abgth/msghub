@@ -6,6 +6,7 @@ import (
 	"log"
 	"msghub-server/handlers"
 	"msghub-server/handlers/middlewares"
+	"msghub-server/logic"
 	"msghub-server/socket"
 	jwtPkg "msghub-server/utils/jwt"
 	"net/http"
@@ -44,7 +45,10 @@ func userRoutes(theMux *mux.Router, s *socket.WsServer) {
 	theMux.HandleFunc("/user/dashboard/group-created-finally", handlerInfo.UserGroupCreationHandler).Methods("POST")
 	theMux.HandleFunc("/user/dashboard/chat-selected", handlerInfo.UserNewChatSelectedHandler).Methods("POST")
 	theMux.HandleFunc("/user/dashboard/group-chat-selected", handlerInfo.UserGroupChatSelectedHandler).Methods("POST")
+	theMux.HandleFunc("/user/dashboard/group-manage-members/{target}", handlerInfo.UserGroupManagePageHandler).Methods("GET")
+	theMux.HandleFunc("/user/dashboard/group-members-added/{target}", handlerInfo.UserGroupAddMembersHandler).Methods("POST")
 	theMux.HandleFunc("/user/dashboard/group-got-unblocked", handlerInfo.GroupUnblockHandler).Methods("POST")
+	theMux.HandleFunc("/user/dashboard/group-left/{target}", handlerInfo.UserLeftGroupHandler).Methods("GET")
 	theMux.HandleFunc("/user/dashboard/user-block-user/{target}", handlerInfo.UserBlocksHandler).Methods("GET")
 	theMux.HandleFunc("/user/dashboard/user-unblock-user/{target}", handlerInfo.UserUnblocksHandler).Methods("GET")
 
@@ -96,6 +100,19 @@ func userRoutes(theMux *mux.Router, s *socket.WsServer) {
 		vars := mux.Vars(r)
 		target := vars["id"]
 
-		socket.ServeGroupWs(hub, target, w, r)
+		c, err1 := r.Cookie("userToken")
+		if err1 != nil {
+			if err1 == http.ErrNoCookie {
+				panic("No cookie found - " + err1.Error())
+			}
+			panic(err1.Error())
+		}
+
+		claim := jwtPkg.GetValueFromJwt(c) // error
+
+		var gm logic.GroupDataLogicModel
+		if !gm.CheckUserLeftTheGroup(claim.User.UserPhone, target) {
+			socket.ServeGroupWs(hub, target, w, r)
+		}
 	})
 }

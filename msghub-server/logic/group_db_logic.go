@@ -82,6 +82,21 @@ func (group GroupDataLogicModel) CreateGroupAndInsertDataLogic(groupData models.
 	return true, nil
 }
 
+func (group GroupDataLogicModel) AddGroupMembers(gid string, members []string) error {
+	id, err := strconv.Atoi(gid)
+	if err != nil {
+		return err
+	}
+	for i := range members {
+		err := group.userGroupRelation.CreateUserGroupRelation(id, members[i], "member")
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (group GroupDataLogicModel) InsertMessagesToGroup(message models.GroupMessageModel) error {
 	var (
 		err error
@@ -165,8 +180,13 @@ func (group GroupDataLogicModel) GetAllGroupMembersData(id string) []models.Grou
 	return res
 }
 
-func (group GroupDataLogicModel) CheckGroupBlocked(id string) bool {
-	return group.CheckGroupBlocked(id)
+func (group GroupDataLogicModel) CheckUserLeftTheGroup(uid, gid string) bool {
+	val := group.userGroupRelation.IsUserLeftGroupRepo(gid, uid)
+	if val == "" || val == "nil" {
+		return true
+	}
+
+	return false
 }
 
 func (group GroupDataLogicModel) GetGroupDetailsLogic(gId string) (models.GroupModel, error) {
@@ -177,4 +197,41 @@ func (group GroupDataLogicModel) GetGroupDetailsLogic(gId string) (models.GroupM
 
 	data, err := group.groupTb.GetGroupDetailsRepo(id)
 	return data, err
+}
+
+func (group GroupDataLogicModel) CheckUserIsInGroup(gId, uId string) bool {
+	count := group.userGroupRelation.IsUserInGroupRepo(gId, uId)
+	if count == 1 {
+		return true
+	}
+	return false
+}
+
+func (group GroupDataLogicModel) CheckUserIsAdmin(gId, uId string) bool {
+	role := group.userGroupRelation.IsUserGroupAdminRepo(gId, uId)
+	if role == "admin" {
+		return true
+	}
+	return false
+}
+
+func (group GroupDataLogicModel) UserLeftTheGroupLogic(groupId, userId string) error {
+	err := group.userGroupRelation.UserLeftGroupRepo(groupId, userId)
+	if err != nil {
+		return err
+	}
+	data := models.GroupMessageModel{
+		GroupId:  groupId,
+		SenderId: "admin",
+		Content:  userId + " has left the group.",
+		Type:     "TEXT",
+		Status:   "SENT",
+		Time:     time.Now().Format("2 Jan 2006 3:04:05 PM"),
+	}
+	err = group.InsertMessagesToGroup(data)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
