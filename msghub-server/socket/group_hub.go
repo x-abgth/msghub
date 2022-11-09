@@ -74,7 +74,6 @@ func (h *Hub) broadcast(m *WSMessage) {
 			}
 		} else if m.Type == "image" {
 			// Convert base64 image string to image format
-			fmt.Println("The image base64 string is  - ", m.Payload.Body)
 			// copy image to the folder
 
 			// take image name and store it in the database

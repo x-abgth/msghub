@@ -24,12 +24,12 @@ func init() {
 	var err error
 
 	utilJwt.InitJwtKey()
-	template.Tpl, err = template.Tpl.ParseGlob("../msghub-client/views/*.gohtml")
-	template.Tpl.New("partials").ParseGlob("../msghub-client/views/base_partials/*.gohtml")
-	template.Tpl.New("user").ParseGlob("../msghub-client/views/user/*.gohtml")
-	template.Tpl.New("user_partials").ParseGlob("../msghub-client/views/user/user_partials/*.gohtml")
-	template.Tpl.New("admin").ParseGlob("../msghub-client/views/admin/*.gohtml")
-	template.Tpl.New("admin_partials").ParseGlob("../msghub-client/views/admin/admin_partials/*.gohtml")
+	template.Tpl, err = template.Tpl.ParseGlob("../msghub-client/views/*.html")
+	template.Tpl.New("partials").ParseGlob("../msghub-client/views/base_partials/*.html")
+	template.Tpl.New("user").ParseGlob("../msghub-client/views/user/*.html")
+	template.Tpl.New("user_partials").ParseGlob("../msghub-client/views/user/user_partials/*.html")
+	template.Tpl.New("admin").ParseGlob("../msghub-client/views/admin/*.html")
+	template.Tpl.New("admin_partials").ParseGlob("../msghub-client/views/admin/admin_partials/*.html")
 
 	if err != nil {
 		log.Fatal(err.Error())

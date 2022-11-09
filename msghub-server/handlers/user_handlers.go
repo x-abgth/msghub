@@ -51,7 +51,7 @@ func (info *InformationHelper) UserLoginHandler(w http.ResponseWriter, r *http.R
 	}{
 		ErrorStr: info.errorStr,
 	}
-	err1 := template.Tpl.ExecuteTemplate(w, "index.gohtml", alm)
+	err1 := template.Tpl.ExecuteTemplate(w, "index.html", alm)
 	if err1 != nil {
 		fmt.Println("Error : ", err1.Error())
 	}
@@ -98,7 +98,7 @@ func (info *InformationHelper) UserLoginWithOtpPhonePageHandler(w http.ResponseW
 	}()
 
 	data := models.ReturnOtpErrorModel()
-	err := template.Tpl.ExecuteTemplate(w, "login_with_otp.gohtml", data)
+	err := template.Tpl.ExecuteTemplate(w, "login_with_otp.html", data)
 	if err != nil {
 		panic(err)
 	}
@@ -136,7 +136,7 @@ func (info *InformationHelper) UserLoginOtpPhoneValidateHandler(w http.ResponseW
 
 func (info *InformationHelper) UserOtpPageHandler(w http.ResponseWriter, r *http.Request) {
 	data := models.ReturnOtpErrorModel()
-	err := template.Tpl.ExecuteTemplate(w, "user_otp_validation.gohtml", data)
+	err := template.Tpl.ExecuteTemplate(w, "user_otp_validation.html", data)
 	utils.PrintError(err, "")
 }
 
@@ -246,6 +246,12 @@ func (info *InformationHelper) UserDashboardHandler(w http.ResponseWriter, r *ht
 		}
 	}()
 
+	// Creates table for user stories
+	storyErr := info.userRepo.MigrateStoriesDb(models.GormDb)
+	if storyErr != nil {
+		panic(storyErr.Error())
+	}
+
 	// Creates table for user's personal messages
 	migrateErr := info.messagesRepo.MigrateMessagesDb(models.GormDb)
 	if migrateErr != nil {
@@ -287,14 +293,42 @@ func (info *InformationHelper) UserDashboardHandler(w http.ResponseWriter, r *ht
 	}
 
 	info.errorStr = ""
-	err2 := template.Tpl.ExecuteTemplate(w, "user_dashboard.gohtml", data)
+	err2 := template.Tpl.ExecuteTemplate(w, "user_dashboard.html", data)
 	if err2 != nil {
 		log.Println(err2)
 		panic("Not yet in dashboard page")
 	}
 }
 
-//
+func (info *InformationHelper) UserAddStoryHandler(w http.ResponseWriter, r *http.Request) {
+	defer func() {
+		if e := recover(); e != nil {
+			log.Println(e)
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+		}
+	}()
+
+	vars := mux.Vars(r)
+	target := vars["target"]
+
+	file, _, _ := r.FormFile("story_photo")
+
+	var imageNameA string
+	if file != nil {
+		// Check weather the string is same as in db
+		imageNameA = utils.StoreThisFileInBucket("stories/", target+"-story", file)
+		defer file.Close()
+	}
+
+	// Update data to the database (first create the table for the story)
+	err := info.userRepo.AddNewStoryLogic(target, imageNameA)
+	if err != nil {
+		panic(err)
+	}
+
+	// redirect to the dashboard
+	http.Redirect(w, r, "/user/dashboard", http.StatusFound)
+}
 
 func (info *InformationHelper) UserProfilePageHandler(w http.ResponseWriter, r *http.Request) {
 	defer func() {
@@ -335,7 +369,7 @@ func (info *InformationHelper) UserProfilePageHandler(w http.ResponseWriter, r *
 		Image: userInfo.UserAvatarUrl,
 	}
 
-	err := template.Tpl.ExecuteTemplate(w, "user_profile_update.gohtml", data)
+	err := template.Tpl.ExecuteTemplate(w, "user_profile_update.html", data)
 	if err != nil {
 		log.Println(err.Error())
 		http.Redirect(w, r, "/user/dashboard", http.StatusSeeOther)
@@ -415,7 +449,7 @@ func (info *InformationHelper) UserShowPeopleHandler(w http.ResponseWriter, r *h
 		panic(err1.Error())
 	}
 
-	err := template.Tpl.ExecuteTemplate(w, "user_show_people.gohtml", data)
+	err := template.Tpl.ExecuteTemplate(w, "user_show_people.html", data)
 	if err != nil {
 		fmt.Println(err.Error())
 		http.Redirect(w, r, "/user/dashboard", http.StatusSeeOther)
@@ -530,7 +564,7 @@ func (info *InformationHelper) UserAddGroupMembers(w http.ResponseWriter, r *htt
 		panic(err.Error())
 	}
 
-	err2 := template.Tpl.ExecuteTemplate(w, "add_group_members.gohtml", data)
+	err2 := template.Tpl.ExecuteTemplate(w, "add_group_members.html", data)
 	if err2 != nil {
 		log.Println(err2.Error())
 		cookie := &http.Cookie{Name: "userGroupDetails", MaxAge: -1, HttpOnly: true, Path: "/user/dashboard/"}
@@ -712,7 +746,7 @@ func (info *InformationHelper) UserGroupChatSelectedHandler(w http.ResponseWrite
 
 	userClaim := jwtPkg.GetValueFromJwt(uc)
 
-	isLeft := info.groupRepo.CheckUserLeftTheGroup(target.Data, userClaim.User.UserPhone)
+	isLeft := info.groupRepo.CheckUserLeftTheGroup(userClaim.User.UserPhone, target.Data)
 
 	// make struct and parse data to json format and send
 	xData := struct {
@@ -799,7 +833,30 @@ func (info *InformationHelper) UserLeftGroupHandler(w http.ResponseWriter, r *ht
 
 	claim := jwtPkg.GetValueFromJwt(c)
 
-	err := info.groupRepo.UserLeftTheGroupLogic(target, claim.User.UserPhone)
+	msg := claim.User.UserPhone + " has left the group."
+
+	err := info.groupRepo.UserLeftTheGroupLogic(target, claim.User.UserPhone, msg)
+	if err != nil {
+		panic(err)
+	}
+
+	http.Redirect(w, r, "/user/dashboard", http.StatusFound)
+}
+
+func (info *InformationHelper) UserKickedOutHandler(w http.ResponseWriter, r *http.Request) {
+	defer func() {
+		if e := recover(); e != nil {
+			log.Println("Oh ohh, Theres an error - ", e)
+			http.Redirect(w, r, "/user/dashboard", http.StatusSeeOther)
+		}
+	}()
+	vars := mux.Vars(r)
+	groupID := vars["group"]
+	userID := vars["user"]
+
+	msg := "+91 " + userID + " has been kicked out from the group."
+
+	err := info.groupRepo.UserLeftTheGroupLogic(groupID, userID, msg)
 	if err != nil {
 		panic(err)
 	}
@@ -844,7 +901,7 @@ func (info *InformationHelper) UserGroupManagePageHandler(w http.ResponseWriter,
 		GroupId: target,
 		Data:    data,
 	}
-	err := template.Tpl.ExecuteTemplate(w, "manage_group_members.gohtml", xData)
+	err := template.Tpl.ExecuteTemplate(w, "manage_group_members.html", xData)
 	if err != nil {
 		panic(err)
 	}

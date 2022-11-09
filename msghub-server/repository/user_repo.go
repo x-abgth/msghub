@@ -2,7 +2,6 @@ package repository
 
 import (
 	"errors"
-	"fmt"
 	"log"
 	"msghub-server/models"
 	"strconv"
@@ -17,6 +16,14 @@ type User struct {
 	IsBlocked       bool    `gorm:"not null" json:"is_blocked"`
 	BlockedDuration *string `json:"block_duration"`
 	BlockList       *string `json:"block_list"`
+}
+
+type Storie struct {
+	UserId          string `gorm:"primary key;not null;autoIncrement:false" json:"user_id"`
+	StoryUrl        string `gorm:"not null" json:"story_url"`
+	StoryUpdateTime string `gorm:"not null" json:"story_update_time"`
+	Viewers         string `gorm:"not null" json:"viewers"`
+	IsActive        bool   `gorm:"not null" json:"is_active"`
 }
 
 func (user User) GetUserDataUsingPhone(formPhone string) (int, models.UserModel, error) {
@@ -204,10 +211,6 @@ func (user User) GetRecentChatList(ph string) ([]models.MessageModel, error) {
 
 		res = append(res, data)
 	}
-
-	fmt.Println("In repo --- ")
-	fmt.Println(res)
-
 	return res, nil
 }
 
@@ -283,6 +286,88 @@ func (user User) GetGroupForUser(userId string) ([]int, error) {
 		res = append(res, n)
 	}
 	return res, nil
+}
+
+func (user User) AddStoryRepo(model Storie) error {
+	_, err1 := models.SqlDb.Exec(`INSERT INTO stories(user_id, story_url, story_update_time, viewers, is_active) 
+VALUES($1, $2, $3, $4, $5);`, model.UserId, model.StoryUrl, model.StoryUpdateTime, model.Viewers, model.IsActive)
+	if err1 != nil {
+		log.Println(err1)
+		return errors.New("sorry, An unknown error occurred. Please try again")
+	}
+
+	return nil
+}
+
+func (user User) CheckUserStory(userId string) (bool, int) {
+	var (
+		status bool
+		count  int
+	)
+	rows, err := models.SqlDb.Query(
+		`SELECT 
+    	is_active
+	FROM stories
+	WHERE user_id = $1;`, userId)
+	if err != nil {
+		return false, 0
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		count++
+		if err1 := rows.Scan(
+			&status); err1 != nil {
+			return false, 0
+		}
+	}
+
+	return status, count
+}
+
+func (user User) UpdateStoryStatusRepo(url, time, uid string) error {
+	_, err1 := models.SqlDb.Exec(`UPDATE stories SET story_url = $1, story_update_time = $2, is_active = $3 WHERE user_id = $4;`, url, time, true, uid)
+	if err1 != nil {
+		return errors.New("couldn't execute the sql query")
+	}
+
+	return nil
+}
+
+func (user User) GetAllUserStories() []Storie {
+	var (
+		res                    []Storie
+		id, url, time, viewers string
+	)
+
+	rows, err := models.SqlDb.Query(
+		`SELECT 
+    	user_id, story_url, story_update_time, viewers 
+	FROM stories
+	WHERE is_active = $1;`, true)
+	if err != nil {
+		return nil
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		if err1 := rows.Scan(&id, &url, &time, &viewers); err1 != nil {
+			return nil
+		}
+
+		data := Storie{
+			UserId:          id,
+			StoryUrl:        url,
+			StoryUpdateTime: time,
+			Viewers:         viewers,
+		}
+
+		res = append(res, data)
+	}
+
+	return res
 }
 
 func (user User) UpdateUserData(model models.UserModel) error {

@@ -40,6 +40,7 @@ func userRoutes(theMux *mux.Router, s *socket.WsServer) {
 	theMux.HandleFunc("/user/dashboard/new-chat-started/{target}", middlewares.UserAuthorizationAfterLogin(handlerInfo.UserNewChatStartedHandler)).Methods("GET")
 	theMux.HandleFunc("/user/dashboard/user-profile", handlerInfo.UserProfilePageHandler).Methods("GET")
 	theMux.HandleFunc("/user/dashboard/user-profile", handlerInfo.UserProfileUpdateHandler).Methods("POST")
+	theMux.HandleFunc("/user/dashboard/add-story/{target}", handlerInfo.UserAddStoryHandler).Methods("POST")
 	theMux.HandleFunc("/user/dashboard/create-group", handlerInfo.UserCreateGroup).Methods("POST")
 	theMux.HandleFunc("/user/dashboard/add-group-members", handlerInfo.UserAddGroupMembers).Methods("GET")
 	theMux.HandleFunc("/user/dashboard/group-created-finally", handlerInfo.UserGroupCreationHandler).Methods("POST")
@@ -49,6 +50,7 @@ func userRoutes(theMux *mux.Router, s *socket.WsServer) {
 	theMux.HandleFunc("/user/dashboard/group-members-added/{target}", handlerInfo.UserGroupAddMembersHandler).Methods("POST")
 	theMux.HandleFunc("/user/dashboard/group-got-unblocked", handlerInfo.GroupUnblockHandler).Methods("POST")
 	theMux.HandleFunc("/user/dashboard/group-left/{target}", handlerInfo.UserLeftGroupHandler).Methods("GET")
+	theMux.HandleFunc("/user/dashboard/group-kicked-out/{group}/{user}", handlerInfo.UserKickedOutHandler).Methods("GET")
 	theMux.HandleFunc("/user/dashboard/user-block-user/{target}", handlerInfo.UserBlocksHandler).Methods("GET")
 	theMux.HandleFunc("/user/dashboard/user-unblock-user/{target}", handlerInfo.UserUnblocksHandler).Methods("GET")
 

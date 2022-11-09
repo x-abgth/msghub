@@ -1,10 +1,18 @@
 package socket
 
 import (
+	"bytes"
+	"encoding/base64"
 	"fmt"
+	"github.com/google/uuid"
+	"image"
+	"image/png"
 	"log"
 	"msghub-server/models"
 	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -33,14 +41,14 @@ const (
 	pingPeriod = (pongWait * 9) / 10
 
 	// Maximum message size allowed from peer.
-	maxMessageSize = 10000
+	maxMessageSize = 10485760
 )
 
 var (
 	newline  = []byte{'\n'}
 	upgrader = websocket.Upgrader{
-		ReadBufferSize:  4096,
-		WriteBufferSize: 4096,
+		ReadBufferSize:  5242880,
+		WriteBufferSize: 5242880,
 	}
 )
 
@@ -227,6 +235,20 @@ func ServeGroupWs(hub *Hub, room string, w http.ResponseWriter, r *http.Request)
 	go client.GroupWritePump()
 }
 
+var allowedContentTypes = []string{"application/pdf", "image/png", "image/jpeg"}
+
+func isValidData(data []byte) (string, bool) {
+	contentType := http.DetectContentType(data)
+	log.Printf("Detected content type: %s", contentType)
+
+	for _, act := range allowedContentTypes {
+		if contentType == act {
+			return contentType, true
+		}
+	}
+	return "", false
+}
+
 func (c *GClient) GroupReadPump() {
 	defer func() {
 		// unregister client
@@ -242,34 +264,11 @@ func (c *GClient) GroupReadPump() {
 
 	for {
 		var message WSMessage
-		//var imageMessage WSImageMessage
 
 		err := c.Conn.ReadJSON(&message)
 		if err != nil {
 			fmt.Println("Error while reading websocket message: ", err)
 			return
-			// Not working
-			//func() {
-			//	err := c.Conn.ReadJSON(&imageMessage)
-			//	if err != nil {
-			//		fmt.Println(err)
-			//		os.Exit(1)
-			//	}
-			//	fmt.Println("Endhane lemon tea oke choyichenu ketu?")
-			//	f := bytes.NewReader(imageMessage.Payload.Body)
-			//	str := utils.StoreThisFileInBucket("group_chat_file/", uuid.New().String(), f)
-			//	fmt.Println("Endhane lemon tea oke choyichenu ketu?")
-			//	var m *WSMessage = &WSMessage{
-			//		Type: "image",
-			//		Payload: GMessage{
-			//			Body: str,
-			//			Time: imageMessage.Payload.Time,
-			//			By:   imageMessage.Payload.By,
-			//			Room: imageMessage.Payload.Room,
-			//		},
-			//	}
-			//	c.Hub.Broadcast <- m
-			//}()
 		}
 		switch message.Type {
 		case "join":
@@ -308,6 +307,64 @@ func (c *GClient) GroupReadPump() {
 			}
 			fmt.Println("Read Message ---------------------- ", m.Payload.Room)
 			c.Hub.Broadcast <- m
+
+		case "image":
+			idx := strings.Index(message.Payload.File, ";base64,")
+			if idx < 0 {
+				panic("Error1")
+			}
+
+			// This is not working as expected.
+			// TODO: Error happening
+			unbased, _ := base64.StdEncoding.DecodeString(string(message.Payload.File))
+			res := bytes.NewReader(unbased)
+			path, _ := os.Getwd()
+
+			newPath := filepath.Join(path + "/storage")
+			os.MkdirAll(newPath, os.ModePerm)
+			uid := uuid.New()
+
+			pngI, errPng := png.Decode(res)
+			if errPng == nil {
+				f, _ := os.OpenFile(newPath+"/"+uid.String()+".png", os.O_WRONLY|os.O_CREATE, 0777)
+				png.Encode(f, pngI)
+				fmt.Println("Png generated")
+			} else {
+				// TODO: Error is happening here
+				fmt.Println(errPng.Error())
+			}
+
+			reader := base64.NewDecoder(base64.StdEncoding, strings.NewReader(message.Payload.File[idx+8:]))
+			buff := bytes.Buffer{}
+			_, err := buff.ReadFrom(reader)
+			if err != nil {
+				log.Println(err)
+				os.Exit(1)
+			}
+
+			_, fm, err := image.DecodeConfig(bytes.NewReader(buff.Bytes()))
+			if err != nil {
+				log.Println(err)
+				os.Exit(1)
+			}
+
+			fileName := uuid.New().String() + "." + fm
+			err = os.WriteFile(fileName, buff.Bytes(), 0644)
+			if err != nil {
+				log.Println(err)
+				os.Exit(1)
+			}
+
+			//var m *WSMessage = &WSMessage{
+			//	Type: "image",
+			//	Payload: GMessage{
+			//		File: message.Payload.File,
+			//		Time: message.Payload.Time,
+			//		By:   message.Payload.By,
+			//		Room: message.Payload.Room,
+			//	},
+			//}
+			//c.Hub.Broadcast <- m
 
 		case "typing":
 			var m *WSMessage = &WSMessage{

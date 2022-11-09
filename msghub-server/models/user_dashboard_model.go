@@ -21,11 +21,14 @@ type StoryModel struct {
 	UserPhone  string
 	UserAvatar string
 	StoryImg   string
+	Viewers    []string
+	Expiration string
 }
 
 type UserDashboardModel struct {
 	UserPhone      string
 	UserDetails    UserModel
+	UserStory      StoryModel
 	RecentChatList []RecentChatModel
 	StoryList      []StoryModel
 }

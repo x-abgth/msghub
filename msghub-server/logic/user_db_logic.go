@@ -26,6 +26,11 @@ func (u *UserDb) MigrateUserDb(db *gorm.DB) error {
 	return err
 }
 
+func (u *UserDb) MigrateStoriesDb(db *gorm.DB) error {
+	err := db.AutoMigrate(&repository.Storie{})
+	return err
+}
+
 func (u *UserDb) UserLoginLogic(phone, password string) (bool, error) {
 
 	var (
@@ -189,7 +194,6 @@ func (u *UserDb) CheckUserRegisterOtpLogic(otp, name, phone, pass string) (bool,
 }
 
 func (u *UserDb) GetDataForDashboardLogic(phone string) (models.UserDashboardModel, error) {
-
 	defer func() {
 		if e := recover(); e != nil {
 
@@ -244,13 +248,10 @@ func (u *UserDb) GetDataForDashboardLogic(phone string) (models.UserDashboardMod
 				}
 
 				var isBlocked bool
-
-				for i := range blockArr {
-					for j := range personalMessages {
-						if blockArr[i] == personalMessages[j].To {
-							isBlocked = true
-							break
-						}
+				for j := range blockArr {
+					if blockArr[j] == personalMessages[i].To {
+						isBlocked = true
+						break
 					}
 				}
 
@@ -276,12 +277,10 @@ func (u *UserDb) GetDataForDashboardLogic(phone string) (models.UserDashboardMod
 				}
 
 				var isBlocked bool
-				for i := range blockArr {
-					for j := range personalMessages {
-						if blockArr[i] == personalMessages[j].From {
-							isBlocked = true
-							break
-						}
+				for j := range blockArr {
+					if blockArr[j] == personalMessages[i].From {
+						isBlocked = true
+						break
 					}
 				}
 
@@ -343,12 +342,41 @@ func (u *UserDb) GetDataForDashboardLogic(phone string) (models.UserDashboardMod
 		}
 	}
 
-	// join personal message array and group message array
-
 	// sort the resultant array
 	sort.Slice(recents, func(i, j int) bool {
 		return recents[i].Order < recents[j].Order
 	})
+
+	// Get All stories
+	data := u.userData.GetAllUserStories()
+
+	var (
+		storyModel []models.StoryModel
+		userStory  models.StoryModel
+	)
+
+	// Get each user's name, avatar
+	for i := range data {
+		dataX, err := u.GetUserDataLogic(data[i].UserId)
+		if err != nil {
+			log.Println(err)
+			return models.UserDashboardModel{}, err
+		}
+
+		x := models.StoryModel{
+			UserName:   dataX.UserName,
+			UserPhone:  dataX.UserPhone,
+			UserAvatar: dataX.UserAvatarUrl,
+			StoryImg:   data[i].StoryUrl,
+			Expiration: data[i].StoryUpdateTime,
+		}
+
+		if x.UserPhone == phone {
+			userStory = x
+		} else {
+			storyModel = append(storyModel, x)
+		}
+	}
 
 	// get user details
 	userDetails, err1 := u.userData.GetUserData(phone)
@@ -357,14 +385,48 @@ func (u *UserDb) GetDataForDashboardLogic(phone string) (models.UserDashboardMod
 		return models.UserDashboardModel{}, err1
 	}
 
-	returnData := models.UserDashboardModel{
-		UserPhone:      phone,
-		UserDetails:    userDetails,
-		RecentChatList: recents,
-		StoryList:      nil,
+	if userStory.StoryImg == "" {
+		return models.UserDashboardModel{
+			UserPhone:      phone,
+			UserDetails:    userDetails,
+			RecentChatList: recents,
+			StoryList:      storyModel,
+		}, nil
+	} else {
+		return models.UserDashboardModel{
+			UserPhone:      phone,
+			UserDetails:    userDetails,
+			UserStory:      userStory,
+			RecentChatList: recents,
+			StoryList:      storyModel,
+		}, nil
+	}
+}
+
+func (u *UserDb) AddNewStoryLogic(userId, story string) error {
+	// Check if the user story exists in the database, if exists update the data
+	status, count := u.userData.CheckUserStory(userId)
+	if count == 1 && !status {
+		// Update user story status
+		err := u.userData.UpdateStoryStatusRepo(story, time.Now().Format("2 Jan 2006 3:04:05 PM"), userId)
+		if err != nil {
+			return err
+		}
 	}
 
-	return returnData, nil
+	// If the user story do not exist in the db
+	data := repository.Storie{
+		UserId:          userId,
+		StoryUrl:        story,
+		StoryUpdateTime: time.Now().Format("2 Jan 2006 3:04:05 PM"),
+		Viewers:         "",
+		IsActive:        true,
+	}
+	err := u.userData.AddStoryRepo(data)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (u *UserDb) GetAllUsersLogic(ph string) ([]models.UserModel, error) {

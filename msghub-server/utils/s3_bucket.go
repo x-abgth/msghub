@@ -37,7 +37,6 @@ func StoreThisFileInBucket(folderName, filename string, file io.Reader) string {
 	}
 
 	uploader := s3manager.NewUploader(sess)
-	fmt.Println("We here")
 
 	res, err := uploader.Upload(&s3manager.UploadInput{
 		Bucket: aws.String(AWS_S3_BUCKET),         // Bucket to be used

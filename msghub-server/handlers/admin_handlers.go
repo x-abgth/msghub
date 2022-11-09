@@ -39,7 +39,7 @@ func (admin *AdminHandlerStruct) AdminLoginPageHandler(w http.ResponseWriter, r 
 			}
 		}
 
-		err := template.Tpl.ExecuteTemplate(w, "admin_login.gohtml", data)
+		err := template.Tpl.ExecuteTemplate(w, "admin_login.html", data)
 		if err != nil {
 			log.Println(err)
 			os.Exit(1)
@@ -132,7 +132,7 @@ func (admin *AdminHandlerStruct) AdminDashboardHandler(w http.ResponseWriter, r 
 		GroupTbContent: c,
 	}
 
-	err = template.Tpl.ExecuteTemplate(w, "admin_dashboard.gohtml", data)
+	err = template.Tpl.ExecuteTemplate(w, "admin_dashboard.html", data)
 	if err != nil {
 		panic(err)
 	}

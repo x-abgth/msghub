@@ -352,22 +352,22 @@ div.recent-chat-card .recent-chat-time-text{
 
 div.user-dashboard-top-sec{
 	width: 100%;
-	height: 70px;
+	height: 90px;
 	background-color: white;
 }
 
 div.story-sec div.user-story-sec-image-wrapper{
 	position: relative;
-	height: 2.7rem;
-	width: 2.7rem;
+	height: 4.2rem;
+	width: 4.2rem;
 	overflow: hidden;
 	background-color: white;
 	border-radius: 50% !important;
 }
 
 div.story-sec div.user-story-sec-image-wrapper img {
-	height: 2.7rem;
-	width: 2.7rem;
+	height: 4.2rem;
+	width: 4.2rem;
 	border-radius: 50%;
 	object-fit: cover;
 	object-position: center;

@@ -29,6 +29,8 @@
 			}
 
 			input.removeAttribute('disabled');
+			document.getElementById("detail-bt").classList.remove("d-none");
+			document.getElementById("detail-bt").classList.add("d-block");
 			document.getElementById("detail-bt").setAttribute("href", "javascript:openGroupDetailsSec()");
 			send.disabled = false;	        			
 			document.getElementById("file-chat-bt").disabled = false;
@@ -113,6 +115,11 @@
 							document.getElementById("dashboard-chat-part-header-image").setAttribute("src", response.avatar);
 						}
 
+						if (response.is_left) {
+							document.getElementById("detail-bt").classList.remove("d-block");
+							document.getElementById("detail-bt").classList.add("d-none");
+						}
+
 						document.getElementById("group-about-shown").innerText = response.about;
 						document.getElementById("group-name-shown").innerText = response.name;
 						document.getElementById("group-date-shown").innerText = "created date - " + response.created;
@@ -181,17 +188,35 @@
 
 								let memberStatus = document.createElement('span');
 								memberStatus.setAttribute("id", "member-status");
-								memberStatus.classList.add("p-2");
 
 								if(response.members_list[i].is_admin) {
 									memberStatus.innerText = "admin";
 									memberStatus.classList.add("p-2", "admin-tagged");
+									memberCard.appendChild(memberStatus);
+									membersCardWapper.appendChild(memberCard)
 								} else {
-									memberStatus.innerText = "member";
-									memberStatus.classList.add("p-2");
+									if(response.owner == {{ .UserPhone }}) {
+										let dropDownDiv = document.createElement('div');
+										dropDownDiv.classList.add("dropdown");
+										console.log("Hello " + val);
+										let kickOutEndPont = "/user/dashboard/group-kicked-out/"+val +"/" + response.members_list[i].phone;
+										let memberRemoveBt = `<a class="btn btn-danger dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown" aria-expanded="false">
+																   Member
+																  </a>
+
+																  <ul class="dropdown-menu" aria-labelledby="dropdownMenuLink">
+																    <li><a class="dropdown-item" href=${kickOutEndPont}>Remove</a></li>
+																  </ul>`
+										
+										dropDownDiv.innerHTML = memberRemoveBt;
+										memberCard.appendChild(dropDownDiv);
+									} else {
+										memberStatus.innerText = "Member";
+										memberStatus.classList.add("p-2");
+										memberCard.appendChild(memberStatus);
+									}
+									membersCardWapper.appendChild(memberCard)
 								}
-								memberCard.appendChild(memberStatus);
-								membersCardWapper.appendChild(memberCard)
 							}
 						}
 
@@ -307,53 +332,35 @@ if(chatPartBody.classList.contains('d-none')) {
 				}
 			};
 
-			// $("#imageChatInp").change(function(){
-			// 	if(this.files && this.files[0]) {
+			$("#imageChatInp").change(function(){
+				if(this.files && this.files[0]) {
+					file = this.files[0];
+					const reader = new FileReader();
+					let rawData = new ArrayBuffer();
+					reader.readAsDataURL(file)
+					reader.onload = function() {
+						console.log(reader.result.length)
+						console.log(reader.result)
 
-			// 		file = this.files[0];
-			// 		const reader = new FileReader();
+						let current = new Date();
+						let cDate = current.getDate() + ' ' + monthAsWord[(current.getMonth())] + ' ' + current.getFullYear();
+						let cTime =  current.toLocaleString('en-US', { hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: true });
+						let dateTime = cDate + ' ' + cTime;
 
-			// 		let base64Img;
-			// 		reader.addEventListener("load", () => {
-			// 			console.log(reader.result.length);
+						const m = {
+							type : "image",
+							payload: {
+								from : {{ .UserPhone }},
+								file : reader.result,
+								time : dateTime,
+								room: val
+							}
+						}
 
-			// 			var byteString;
-			// 			if (reader.result.split(',')[0].indexOf('base64') >= 0)
-			// 				byteString = atob(reader.result.split(',')[1]);
-			// 			else
-			// 				byteString = unescape(reader.result.split(',')[1]);
-
-			// 			// separate out the mime component
-			// 			var mimeString = reader.result.split(',')[0].split(':')[1].split(';')[0];
-
-			// 			// write the bytes of the string to a typed array
-			// 			var ia = new Uint8Array(byteString.length);
-			// 			for (var i = 0; i < byteString.length; i++) {
-			// 				ia[i] = byteString.charCodeAt(i);
-			// 			}
-
-			// 			let blobObj = new Blob([ia], {type:mimeString});
-			// 			console.log(blobObj);
-
-			// 			let current = new Date();
-			// 			let cDate = current.getDate() + ' ' + monthAsWord[(current.getMonth())] + ' ' + current.getFullYear();
-			// 			let cTime =  current.toLocaleString('en-US', { hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: true });
-			// 			let dateTime = cDate + ' ' + cTime;
-
-			// 			const m = {
-			// 				type : "image",
-			// 				payload: {
-			// 					from : {{ .UserPhone }},
-			// 					body : blobObj,
-			// 					time : dateTime,
-			// 					room: val
-			// 				}
-			// 			}
-			// 			ws.send(JSON.stringify(m));
-			// 		})
-			// 		reader.readAsDataURL(file);
-			// 	}
-			// });
+						ws.send(JSON.stringify(m));
+					}
+				}
+			});
 
 			ws.onerror = function(evt) {
 				console.log("Webscket error - " + evt);
@@ -553,7 +560,7 @@ if(chatPartBody.classList.contains('d-none')) {
 						let ranCol = Math.floor(Math.random() * 9);
 						userID.style.color = colorCodes[ranCol];
 						userID.classList.add("group-second-user-id", "ms-2");
-						userID.innerText = "+91 " + response.data[i].from;
+						userID.innerText = "+91 " + msgobj.from;
 						item.classList.add("chat-msg-field", "d-flex", "flex-column", "mb-2");
 						innerItem.classList.add("chat-bubble", "px-3", "py-2", "text-wrap", "word-wrap", "text-break");
 						itemTime.classList.add("chat-time","mt-1", "ms-2");
@@ -600,6 +607,8 @@ if(chatPartBody.classList.contains('d-none')) {
 				}
 			}
 
+			document.getElementById("detail-bt").classList.remove("d-none");
+			document.getElementById("detail-bt").classList.add("d-block");
 			document.getElementById("detail-bt").setAttribute("href", "javascript:openUserDetailsSec()");
 			input.removeAttribute('disabled');
 			send.disabled = false;	        			

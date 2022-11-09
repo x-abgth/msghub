@@ -23,7 +23,7 @@ func noPageHandler(w http.ResponseWriter, r *http.Request) {
 		Title: "404 Error Page",
 	}
 
-	err := template.Tpl.ExecuteTemplate(w, "error_page.gohtml", data)
+	err := template.Tpl.ExecuteTemplate(w, "error_page.html", data)
 	if err != nil {
 		log.Fatal("Couldn't render the error page handler!")
 	}

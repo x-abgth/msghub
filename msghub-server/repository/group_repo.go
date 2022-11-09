@@ -49,6 +49,40 @@ VALUES($1, $2, $3, $4, $5, $6, $7) RETURNING group_id`, data.GroupName, data.Gro
 	return id, nil
 }
 
+func (group Group) GetGroupMemberCount(id string) string {
+	var total string
+	rows, err := models.SqlDb.Query(
+		`SELECT 
+    	group_total_members
+	FROM groups
+	WHERE group_id = $1`, id)
+	if err != nil {
+		return ""
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		if err1 := rows.Scan(
+			&total); err1 != nil {
+			return ""
+		}
+	}
+
+	return total
+}
+
+func (group Group) UpdateGroupMemberCount(num int, id string) error {
+	_, err1 := models.SqlDb.Exec(`UPDATE groups
+		SET group_total_members = $1
+		WHERE group_id = $2`, num, id)
+	if err1 != nil {
+		log.Println(err1)
+		return errors.New("sorry, An unknown error occurred. Please try again")
+	}
+	return nil
+}
+
 func (relation UserGroupRelation) CreateUserGroupRelation(groupId int, userId, role string) error {
 	_, err1 := models.SqlDb.Exec(`INSERT INTO user_group_relations(
 	                 group_id, user_id, user_role)
@@ -334,29 +368,34 @@ func (relation UserGroupRelation) IsUserGroupAdminRepo(gid, uid string) string {
 	return role
 }
 
-func (relation UserGroupRelation) IsUserInGroupRepo(gid, uid string) int {
+func (relation UserGroupRelation) IsUserInGroupRepo(gid, uid string) string {
 	var role string
 	rows, err := models.SqlDb.Query(
 		`SELECT user_role FROM user_group_relations WHERE group_id = $1 AND user_id = $2;`, gid, uid)
 	if err != nil {
-		return 0
+		return ""
 	}
 
 	defer rows.Close()
 
-	count := 0
 	for rows.Next() {
-		count++
 		if e := rows.Scan(&role); e != nil {
-			return 0
-		}
-
-		if role == "nil" {
-			count--
+			return ""
 		}
 	}
 
-	return count
+	return role
+}
+
+func (relation UserGroupRelation) UserGroupStatusUpdateRepo(gid, uid string) error {
+	_, err1 := models.SqlDb.Exec(`UPDATE user_group_relations
+		SET user_role = 'member'
+		WHERE group_id = $1 AND user_id = $2;`, gid, uid)
+	if err1 != nil {
+		log.Println(err1)
+		return errors.New("sorry, An unknown error occurred. Please try again")
+	}
+	return nil
 }
 
 func (relation UserGroupRelation) UserLeftGroupRepo(gid, uid string) error {
@@ -368,23 +407,4 @@ func (relation UserGroupRelation) UserLeftGroupRepo(gid, uid string) error {
 		return errors.New("sorry, An unknown error occurred. Please try again")
 	}
 	return nil
-}
-
-func (relation UserGroupRelation) IsUserLeftGroupRepo(gid, uid string) string {
-	var val string
-	rows, err := models.SqlDb.Query(
-		`SELECT user_role FROM user_group_relations WHERE group_id = $1 AND user_id = $2;`, gid, uid)
-	if err != nil {
-		return ""
-	}
-
-	defer rows.Close()
-
-	for rows.Next() {
-		if e := rows.Scan(&val); e != nil {
-			return ""
-		}
-	}
-
-	return val
 }
