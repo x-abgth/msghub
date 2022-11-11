@@ -326,13 +326,25 @@ func (u *UserDb) GetDataForDashboardLogic(phone string) (models.UserDashboardMod
 				break
 			}
 			diff := time.Now().Sub(groupSentTime)
+
+			var msg string
+			var isImage bool
+			if groupMessages[i].ContentType == "IMAGE" {
+				msg = "Image"
+				isImage = true
+			} else {
+				msg = groupMessages[i].Message
+				isImage = false
+			}
+
 			recentData := models.RecentChatModel{
 				Content: models.RecentMessages{
 					Id:          groupMessages[i].Id,
 					Name:        groupMessages[i].Name,
 					Avatar:      groupMessages[i].Avatar,
-					LastMsg:     groupMessages[i].Message,
+					LastMsg:     msg,
 					LastMsgTime: groupMessages[i].Time,
+					IsImage:     isImage,
 				},
 				Sender:  groupMessages[i].Sender,
 				IsGroup: true,
@@ -357,24 +369,72 @@ func (u *UserDb) GetDataForDashboardLogic(phone string) (models.UserDashboardMod
 
 	// Get each user's name, avatar
 	for i := range data {
-		dataX, err := u.GetUserDataLogic(data[i].UserId)
+		msgSentTime, err := time.Parse("2 Jan 2006 3:04:05 PM", data[i].StoryUpdateTime)
 		if err != nil {
 			log.Println(err)
-			return models.UserDashboardModel{}, err
+			break
 		}
+		msgSentTime = msgSentTime.Add(time.Hour * 24)
+		diff := float64(time.Now().Sub(msgSentTime))
 
-		x := models.StoryModel{
-			UserName:   dataX.UserName,
-			UserPhone:  dataX.UserPhone,
-			UserAvatar: dataX.UserAvatarUrl,
-			StoryImg:   data[i].StoryUrl,
-			Expiration: data[i].StoryUpdateTime,
-		}
+		if diff <= 0 {
+			dataX, err := u.GetUserDataLogic(data[i].UserId)
+			if err != nil {
+				log.Println(err)
+				return models.UserDashboardModel{}, err
+			}
 
-		if x.UserPhone == phone {
-			userStory = x
+			if dataX.UserPhone == phone {
+				viwerStr := u.userData.GetStoryViewersRepo(phone)
+
+				viewerArr := strings.Split(viwerStr, " ")
+
+				for i := range viewerArr {
+					if len(viewerArr[i]) != 10 {
+						viewerArr = append(viewerArr[:i], viewerArr[i+1:]...)
+					}
+				}
+
+				y := models.StoryModel{
+					UserName:   dataX.UserName,
+					UserPhone:  dataX.UserPhone,
+					UserAvatar: dataX.UserAvatarUrl,
+					StoryImg:   data[i].StoryUrl,
+					Expiration: data[i].StoryUpdateTime,
+					Viewers:    viewerArr,
+				}
+				userStory = y
+			} else {
+				viwerStr := u.userData.GetStoryViewersRepo(dataX.UserPhone)
+
+				viewerArr := strings.Split(viwerStr, " ")
+
+				var isViewed bool
+				for i := range viewerArr {
+					if viewerArr[i] == phone {
+						isViewed = true
+						break
+					}
+				}
+
+				x := models.StoryModel{
+					UserName:   dataX.UserName,
+					UserPhone:  dataX.UserPhone,
+					UserAvatar: dataX.UserAvatarUrl,
+					StoryImg:   data[i].StoryUrl,
+					Expiration: data[i].StoryUpdateTime,
+					IsViewed:   isViewed,
+				}
+				storyModel = append(storyModel, x)
+			}
 		} else {
-			storyModel = append(storyModel, x)
+			// TODO: make story inactive
+			err := u.userData.DeleteStoryRepo(data[i].UserId)
+			if err != nil {
+				log.Println(err)
+				return models.UserDashboardModel{}, err
+			}
+			storyModel = nil
 		}
 	}
 
@@ -412,6 +472,8 @@ func (u *UserDb) AddNewStoryLogic(userId, story string) error {
 		if err != nil {
 			return err
 		}
+
+		return nil
 	}
 
 	// If the user story do not exist in the db
@@ -427,6 +489,38 @@ func (u *UserDb) AddNewStoryLogic(userId, story string) error {
 		return err
 	}
 	return nil
+}
+
+func (u *UserDb) StorySeenLogic(viewer, storyId string) error {
+	// Get all viewers of the story
+	sList := u.userData.GetStoryViewersRepo(storyId)
+
+	var viewerList string
+
+	if sList == "" {
+		viewerList = viewer + " "
+	} else {
+		list := strings.Split(sList, " ")
+		for i := range list {
+			if len(list[i]) == 10 {
+				viewerList = viewerList + list[i] + " "
+			}
+		}
+		viewerList = viewerList + viewer + " "
+	}
+
+	err := u.userData.UpdateStoryViewersRepo(viewerList, storyId)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (u *UserDb) DeleteUserStoryLogic(userId string) error {
+	err := u.userData.DeleteStoryRepo(userId)
+
+	return err
 }
 
 func (u *UserDb) GetAllUsersLogic(ph string) ([]models.UserModel, error) {

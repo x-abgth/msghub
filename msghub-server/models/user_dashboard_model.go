@@ -6,6 +6,7 @@ type RecentMessages struct {
 	Avatar      string
 	LastMsg     string
 	LastMsgTime string
+	IsImage     bool
 }
 
 type RecentChatModel struct {
@@ -23,6 +24,7 @@ type StoryModel struct {
 	StoryImg   string
 	Viewers    []string
 	Expiration string
+	IsViewed   bool
 }
 
 type UserDashboardModel struct {

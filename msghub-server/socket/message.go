@@ -24,7 +24,6 @@ type Message struct {
 }
 
 type GMessage struct {
-	File string `json:"file"`
 	Body string `json:"body"`
 	Time string `json:"time"`
 	By   string `json:"by"`

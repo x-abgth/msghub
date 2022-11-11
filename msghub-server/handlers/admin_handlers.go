@@ -53,6 +53,7 @@ func (admin *AdminHandlerStruct) AdminLoginPageHandler(w http.ResponseWriter, r 
 }
 
 func (admin *AdminHandlerStruct) AdminAuthenticateHandler(w http.ResponseWriter, r *http.Request) {
+
 	r.ParseForm()
 
 	name := r.PostFormValue("signinName")

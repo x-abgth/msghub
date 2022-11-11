@@ -247,7 +247,15 @@
 									msgDetails.appendChild(itemTime);
 									msgDetails.appendChild(recipient);
 
-									innerItem.innerText = response.data[i].message;
+									if (response.data[i].type == "image") {
+										let imageChatTag = document.createElement('img');
+										imageChatTag.setAttribute("id", "imageChatTag");
+										imageChatTag.setAttribute("src", response.data[i].message);
+										innerItem.appendChild(imageChatTag);
+									} else {
+										innerItem.innerHTML = response.data[i].message;
+									}
+
 									item.appendChild(innerItem);
 									item.appendChild(msgDetails);
 									appendLog(item);
@@ -262,7 +270,15 @@
 									itemTime.classList.add("chat-time","mt-1", "ms-2");
 									itemTime.innerText = response.data[i].time;
 
-									innerItem.innerText = response.data[i].message;
+									if (response.data[i].type == "image") {
+										let imageChatTag = document.createElement('img');
+										imageChatTag.setAttribute("id", "imageChatTag");
+										imageChatTag.setAttribute("src", response.data[i].message);
+										innerItem.appendChild(imageChatTag);
+									} else {
+										innerItem.innerHTML = response.data[i].message;
+									}
+
 									item.appendChild(userID);
 									item.appendChild(innerItem);
 									item.appendChild(itemTime);
@@ -320,7 +336,7 @@ if(chatPartBody.classList.contains('d-none')) {
 			ws.onmessage = function(msg) {
 				console.log(msg.data.type);
 				if (msg.data.type == "message") {
-					console.log("The message is ", msg.data.payload.body);
+					console.log("The message is ", msg.data.payload.by);
 					const msgObj = {
 						type : "message",
 						from : msg.data.payload.by,
@@ -328,6 +344,15 @@ if(chatPartBody.classList.contains('d-none')) {
 						time : msg.data.payload.time,
 					}
 
+					insertMessage(msgObj)
+				} else if(msg.data.type == "image") {
+					console.log("The message is ", msg.data.payload.by);
+					const msgObj = {
+						type : "image",
+						from : msg.data.payload.by,
+						message : msg.data.payload.body,
+						time : msg.data.payload.time,
+					}
 					insertMessage(msgObj)
 				}
 			};
@@ -350,8 +375,8 @@ if(chatPartBody.classList.contains('d-none')) {
 						const m = {
 							type : "image",
 							payload: {
-								from : {{ .UserPhone }},
-								file : reader.result,
+								by : {{ .UserPhone }},
+								body : reader.result,
 								time : dateTime,
 								room: val
 							}
@@ -547,7 +572,7 @@ if(chatPartBody.classList.contains('d-none')) {
 						if (msgobj.type == "image") {
 							let imageChatTag = document.createElement('img');
 							imageChatTag.setAttribute("id", "imageChatTag");
-							imageChatTag.setAttribute("src", window.URL.createObjectURL(msgobj.message));
+							imageChatTag.setAttribute("src", msgobj.message);
 							innerItem.appendChild(imageChatTag);
 						} else {
 							innerItem.innerHTML = msgobj.message;
@@ -569,7 +594,7 @@ if(chatPartBody.classList.contains('d-none')) {
 						if (msgobj.type == "image") {
 							let imageChatTag = document.createElement('img');
 							imageChatTag.setAttribute("id", "imageChatTag");
-							imageChatTag.setAttribute("src", window.URL.createObjectURL(msgobj.message));
+							imageChatTag.setAttribute("src", msgobj.message);
 							innerItem.appendChild(imageChatTag);
 						} else {
 							innerItem.innerHTML = msgobj.message;

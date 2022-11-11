@@ -299,6 +299,48 @@ VALUES($1, $2, $3, $4, $5);`, model.UserId, model.StoryUrl, model.StoryUpdateTim
 	return nil
 }
 
+func (user User) GetStoryViewersRepo(storyID string) string {
+	var storyList string
+	rows, err := models.SqlDb.Query(
+		`SELECT 
+    	viewers
+	FROM stories
+	WHERE user_id = $1;`, storyID)
+	if err != nil {
+		return ""
+	}
+
+	defer rows.Close()
+	for rows.Next() {
+		if err1 := rows.Scan(&storyList); err1 != nil {
+			return ""
+		}
+	}
+
+	return storyList
+}
+
+func (user User) UpdateStoryViewersRepo(viewers, storyID string) error {
+	_, err1 := models.SqlDb.Exec(`UPDATE stories SET viewers = $1 WHERE user_id = $2`, viewers, storyID)
+	if err1 != nil {
+		log.Println(err1)
+
+		return errors.New("sorry, An unknown error occurred. Please try again")
+	}
+
+	return nil
+}
+
+func (user User) DeleteStoryRepo(id string) error {
+	_, err1 := models.SqlDb.Exec(`UPDATE stories SET is_active = false WHERE user_id = $1`, id)
+	if err1 != nil {
+		log.Println(err1)
+		return errors.New("sorry, An unknown error occurred. Please try again")
+	}
+
+	return nil
+}
+
 func (user User) CheckUserStory(userId string) (bool, int) {
 	var (
 		status bool
@@ -327,7 +369,7 @@ func (user User) CheckUserStory(userId string) (bool, int) {
 }
 
 func (user User) UpdateStoryStatusRepo(url, time, uid string) error {
-	_, err1 := models.SqlDb.Exec(`UPDATE stories SET story_url = $1, story_update_time = $2, is_active = $3 WHERE user_id = $4;`, url, time, true, uid)
+	_, err1 := models.SqlDb.Exec(`UPDATE stories SET story_url = $1, story_update_time = $2, viewers = "", is_active = $3 WHERE user_id = $4;`, url, time, true, uid)
 	if err1 != nil {
 		return errors.New("couldn't execute the sql query")
 	}

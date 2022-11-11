@@ -330,6 +330,75 @@ func (info *InformationHelper) UserAddStoryHandler(w http.ResponseWriter, r *htt
 	http.Redirect(w, r, "/user/dashboard", http.StatusFound)
 }
 
+func (info *InformationHelper) UserStorySeenHandler(w http.ResponseWriter, r *http.Request) {
+	defer func() {
+		if e := recover(); e != nil {
+			log.Println(e)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(e)
+		}
+	}()
+
+	vars := mux.Vars(r)
+	target := vars["target"]
+
+	c, err1 := r.Cookie("userToken")
+	if err1 != nil {
+		log.Println("NO cookie")
+		if err1 == http.ErrNoCookie {
+			panic("Cookie not found!")
+		}
+		panic("Unknown error occurred!")
+	}
+
+	claim := jwtPkg.GetValueFromJwt(c)
+
+	// Add story viewers
+	err := info.userRepo.StorySeenLogic(claim.User.UserPhone, target)
+	if err != nil {
+		panic(err)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(nil)
+}
+
+func (info *InformationHelper) UserDeleteStoryHandler(w http.ResponseWriter, r *http.Request) {
+	defer func() {
+		if e := recover(); e != nil {
+			log.Println(e)
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+		}
+	}()
+
+	vars := mux.Vars(r)
+	target := vars["target"]
+
+	c, err1 := r.Cookie("userToken")
+	if err1 != nil {
+		log.Println("No cookie")
+		if err1 == http.ErrNoCookie {
+			panic("Cookie not found!")
+		}
+		panic("Unknown error occurred!")
+	}
+
+	claim := jwtPkg.GetValueFromJwt(c)
+
+	if target != claim.User.UserPhone {
+		panic("Invalid access to delete story")
+	}
+
+	// Delete story
+	err := info.userRepo.DeleteUserStoryLogic(target)
+	if err != nil {
+		panic(err)
+	}
+
+	http.Redirect(w, r, "/user/dashboard", http.StatusFound)
+}
+
 func (info *InformationHelper) UserProfilePageHandler(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		// recovers panic
@@ -413,14 +482,11 @@ func (info *InformationHelper) UserProfileUpdateHandler(w http.ResponseWriter, r
 		defer file.Close()
 	}
 
-	if imageNameA != "" {
-		err2 := info.userRepo.UpdateUserProfileDataLogic(userName, userAbout, imageNameA, claim.User.UserPhone)
-		if err2 != nil {
-			panic(err2.Error())
-		}
-	} else {
-		log.Println("The image url is nil or empty")
+	err2 := info.userRepo.UpdateUserProfileDataLogic(userName, userAbout, imageNameA, claim.User.UserPhone)
+	if err2 != nil {
+		panic(err2.Error())
 	}
+
 	// Update data to the database
 
 	http.Redirect(w, r, "/user/dashboard", http.StatusFound)
@@ -688,14 +754,6 @@ func (info *InformationHelper) UserNewChatSelectedHandler(w http.ResponseWriter,
 	s, _ := json.Marshal(xData)
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(s)
-}
-
-func (info *InformationHelper) UserAddsStoryHandler(w http.ResponseWriter, r *http.Request) {
-	// Get story image
-
-	// name it as the user id
-
-	// Store it in the db
 }
 
 func (info *InformationHelper) UserGroupChatSelectedHandler(w http.ResponseWriter, r *http.Request) {

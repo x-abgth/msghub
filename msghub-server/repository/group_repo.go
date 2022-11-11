@@ -5,6 +5,7 @@ import (
 	"log"
 	"msghub-server/models"
 	"strconv"
+	"strings"
 )
 
 type Group struct {
@@ -175,11 +176,12 @@ func (relation UserGroupRelation) GetAllGroupsForAUser(ph string) ([]int, error)
 func (gm GroupMessage) GetRecentGroupMessages(id int) (models.GrpMsgModel, error) {
 	var (
 		groupID, name, avtr, sender, content, time string
+		cType                                      *string
 		res                                        models.GrpMsgModel
 	)
 
 	rows, err := models.SqlDb.Query(
-		`SELECT groups.group_id, groups.group_name, groups.group_avatar, group_messages.sender_id, group_messages.message_content, group_messages.sent_time 
+		`SELECT groups.group_id, groups.group_name, groups.group_avatar, group_messages.sender_id, group_messages.message_content, group_messages.sent_time, group_messages.content_type 
 FROM groups 
     INNER JOIN group_messages 
         ON groups.group_id = group_messages.group_id WHERE groups.group_id = $1 AND group_messages.is_recent = true ORDER BY sent_time;`, id)
@@ -198,18 +200,25 @@ FROM groups
 			&sender,
 			&content,
 			&time,
+			&cType,
 		); err1 != nil {
 			log.Println("The recent msg row from repo is ", err)
 			return res, err1
 		}
 
+		null := ""
+		if cType == nil {
+			cType = &null
+		}
+
 		res = models.GrpMsgModel{
-			Id:      groupID,
-			Name:    name,
-			Avatar:  avtr,
-			Sender:  sender,
-			Message: content,
-			Time:    time,
+			Id:          groupID,
+			Name:        name,
+			Avatar:      avtr,
+			Sender:      sender,
+			Message:     content,
+			ContentType: *cType,
+			Time:        time,
 		}
 	}
 
@@ -218,11 +227,11 @@ FROM groups
 
 func (gm GroupMessage) GetAllMessagesFromGroup(id int) ([]models.MessageModel, error) {
 	var (
-		sender, message, time string
-		res                   []models.MessageModel
+		sender, message, time, cType string
+		res                          []models.MessageModel
 	)
 	rows, err := models.SqlDb.Query(
-		`SELECT sender_id, message_content, sent_time FROM group_messages WHERE group_id = $1;`, id)
+		`SELECT sender_id, message_content, sent_time, content_type FROM group_messages WHERE group_id = $1;`, id)
 	if err != nil {
 		return nil, err
 	}
@@ -234,14 +243,16 @@ func (gm GroupMessage) GetAllMessagesFromGroup(id int) ([]models.MessageModel, e
 			&sender,
 			&message,
 			&time,
+			&cType,
 		); err1 != nil {
 			return nil, err1
 		}
 
 		data := models.MessageModel{
-			From:    sender,
-			Content: message,
-			Time:    time,
+			From:        sender,
+			Content:     message,
+			Time:        time,
+			ContentType: strings.ToLower(cType),
 		}
 
 		res = append(res, data)

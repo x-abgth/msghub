@@ -68,6 +68,8 @@ func (m MessageDb) GetMessageDataLogic(target, from string) ([]models.MessageMod
 		return this, err
 	}
 
+	// Add admin messages also
+
 	data1 = append(data1, data2...)
 
 	for i := range data1 {
@@ -93,9 +95,4 @@ func (m MessageDb) GetMessageDataLogic(target, from string) ([]models.MessageMod
 	})
 
 	return this, nil
-}
-
-func (m MessageDb) FileChatsLogic(message string) string {
-
-	return ""
 }

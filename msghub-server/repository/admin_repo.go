@@ -2,6 +2,7 @@ package repository
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"msghub-server/models"
 	"strconv"
@@ -77,6 +78,57 @@ func (admin Admin) GetAdminsData(uname string) ([]models.AdminModel, error) {
 	}
 
 	return res, nil
+}
+
+func (m Message) InsertAdminMessageDataRepository(data Message) error {
+
+	var (
+		msgID int
+		res   []int
+	)
+
+	fmt.Println("In repo = ", data)
+
+	rows, err := models.SqlDb.Query(
+		`SELECT 
+    	msg_id
+	FROM admin_messages
+	WHERE (is_recent = true) AND `, data.FromUserId, data.ToUserId, data.ToUserId, data.FromUserId)
+	if err != nil {
+		return err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		if err1 := rows.Scan(
+			&msgID); err1 != nil {
+			return err1
+		}
+
+		res = append(res, msgID)
+	}
+
+	for i := range res {
+		_, err1 := models.SqlDb.Exec(`UPDATE messages
+		SET is_recent = false
+		WHERE msg_id = $1`,
+			res[i])
+		if err1 != nil {
+			log.Println(err1)
+			return errors.New("sorry, An unknown error occurred. Please try again")
+		}
+	}
+
+	_, err2 := models.SqlDb.Exec(`INSERT INTO messages(from_user_id, to_user_id, content, sent_time, status, is_recent) 
+VALUES($1, $2, $3, $4, $5, $6);`,
+		data.FromUserId, data.ToUserId, data.Content, data.SentTime, data.Status, true)
+	if err2 != nil {
+		log.Println(err2)
+		return errors.New("sorry, An unknown error occurred. Please try again")
+	}
+
+	return nil
 }
 
 func (admin Admin) GetAllUsersData() ([]models.UserModel, error) {

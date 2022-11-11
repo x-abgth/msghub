@@ -73,26 +73,20 @@ func (h *Hub) broadcast(m *WSMessage) {
 				log.Fatal("Error happened when inserting elements - ", err)
 			}
 		} else if m.Type == "image" {
-			// Convert base64 image string to image format
-			// copy image to the folder
-
-			// take image name and store it in the database
-
-			//data := models.GroupMessageModel{
-			//	GroupId:  m.Payload.Room,
-			//	SenderId: m.Payload.By,
-			//	Content:  m.Payload.Body,
-			//	Type:     logic.IMAGE,
-			//	Status:   logic.IS_SENT,
-			//	Time:     m.Payload.Time,
-			//}
-			//err := g.InsertMessagesToGroup(data)
-			//if err != nil {
-			//	log.Fatal("Error happened when inserting elements - ", err)
-			//}
-		} else {
-			fmt.Println("Maybe typing")
+			data := models.GroupMessageModel{
+				GroupId:  m.Payload.Room,
+				SenderId: m.Payload.By,
+				Content:  m.Payload.Body,
+				Type:     logic.IMAGE,
+				Status:   logic.IS_SENT,
+				Time:     m.Payload.Time,
+			}
+			err := g.InsertMessagesToGroup(data)
+			if err != nil {
+				log.Fatal("Error happened when inserting elements - ", err)
+			}
 		}
+
 		for k := range clients {
 			k.Send <- m
 		}
