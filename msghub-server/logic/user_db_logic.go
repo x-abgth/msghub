@@ -196,7 +196,6 @@ func (u *UserDb) CheckUserRegisterOtpLogic(otp, name, phone, pass string) (bool,
 func (u *UserDb) GetDataForDashboardLogic(phone string) (models.UserDashboardModel, error) {
 	defer func() {
 		if e := recover(); e != nil {
-
 			fmt.Println(e)
 		}
 	}()
@@ -238,6 +237,18 @@ func (u *UserDb) GetDataForDashboardLogic(phone string) (models.UserDashboardMod
 			}
 			diff := time.Now().Sub(msgSentTime)
 
+			var pMsg string
+			var pIsImage bool
+			if personalMessages[i].ContentType == "IMAGE" {
+				pMsg = "Image"
+				pIsImage = true
+			} else {
+				pMsg = personalMessages[i].Content
+				pIsImage = false
+			}
+
+			fmt.Println(personalMessages[i].From)
+
 			if personalMessages[i].From == phone {
 
 				// Get user datas like dp, name
@@ -260,13 +271,29 @@ func (u *UserDb) GetDataForDashboardLogic(phone string) (models.UserDashboardMod
 						Id:          personalMessages[i].To,
 						Name:        usersData.UserName,
 						Avatar:      usersData.UserAvatarUrl,
-						LastMsg:     personalMessages[i].Content,
+						LastMsg:     pMsg,
 						LastMsgTime: personalMessages[i].Time,
+						IsImage:     pIsImage,
 					},
 					Sender:    personalMessages[i].From,
 					IsGroup:   false,
 					Order:     float64(diff),
 					IsBlocked: isBlocked,
+				}
+			} else if personalMessages[i].From == "admin" {
+				recentData = models.RecentChatModel{
+					Content: models.RecentMessages{
+						Id:          personalMessages[i].From,
+						Name:        "🔴 ADMIN 🔴",
+						Avatar:      "",
+						LastMsg:     pMsg,
+						LastMsgTime: personalMessages[i].Time,
+						IsImage:     pIsImage,
+					},
+					Sender:    personalMessages[i].From,
+					IsGroup:   false,
+					Order:     float64(diff),
+					IsBlocked: false,
 				}
 			} else {
 				// Get user datas like dp, name
@@ -289,8 +316,9 @@ func (u *UserDb) GetDataForDashboardLogic(phone string) (models.UserDashboardMod
 						Id:          personalMessages[i].From,
 						Name:        usersData.UserName,
 						Avatar:      usersData.UserAvatarUrl,
-						LastMsg:     personalMessages[i].Content,
+						LastMsg:     pMsg,
 						LastMsgTime: personalMessages[i].Time,
+						IsImage:     pIsImage,
 					},
 					Sender:    personalMessages[i].From,
 					IsGroup:   false,
@@ -298,6 +326,7 @@ func (u *UserDb) GetDataForDashboardLogic(phone string) (models.UserDashboardMod
 					IsBlocked: isBlocked,
 				}
 			}
+
 			recents = append(recents, recentData)
 		}
 	}

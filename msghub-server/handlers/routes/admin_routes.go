@@ -17,6 +17,7 @@ func adminRoutes(theMux *mux.Router) {
 	admin.HandleFunc("/dashboard", middlewares.AdminAuthenticationMiddleware(adminHandlerInfo.AdminDashboardHandler)).Methods("GET")
 	admin.HandleFunc("/user-block/{id}/{condition}", adminHandlerInfo.AdminBlocksUserHandler).Methods("GET")
 	admin.HandleFunc("/group-block/{id}/{condition}", adminHandlerInfo.AdminBlocksGroupHandler).Methods("GET")
+	admin.HandleFunc("/broadcast-message", adminHandlerInfo.AdminBroadcastHandler).Methods("POST")
 	admin.HandleFunc("/logout", adminHandlerInfo.AdminLogoutHandler).Methods("GET")
 
 }

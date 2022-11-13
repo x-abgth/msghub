@@ -47,6 +47,7 @@ func (m MessageDb) StorePersonalMessagesLogic(message models.MessageModel) {
 	data.FromUserId = message.From
 	data.ToUserId = message.To
 	data.SentTime = message.Time
+	data.ContentType = message.ContentType
 	data.Status = message.Status
 
 	err := m.UserData.InsertMessageDataRepository(data)
@@ -69,7 +70,6 @@ func (m MessageDb) GetMessageDataLogic(target, from string) ([]models.MessageMod
 	}
 
 	// Add admin messages also
-
 	data1 = append(data1, data2...)
 
 	for i := range data1 {
@@ -80,11 +80,12 @@ func (m MessageDb) GetMessageDataLogic(target, from string) ([]models.MessageMod
 
 		diff := time.Now().Sub(myTime)
 		d := models.MessageModel{
-			From:    data1[i].From,
-			Content: data1[i].Content,
-			Time:    data1[i].Time,
-			Status:  data1[i].Status,
-			Order:   float64(diff),
+			From:        data1[i].From,
+			Content:     data1[i].Content,
+			Time:        data1[i].Time,
+			Status:      data1[i].Status,
+			ContentType: data1[i].ContentType,
+			Order:       float64(diff),
 		}
 
 		this = append(this, d)

@@ -321,7 +321,6 @@
 					</svg>
 				</button>
 				<ul class="dropdown-menu dropdown-menu-white" style="min-width: 150px !important; transform: translate(-50%, 0) scale(1);">
-					<li><a class="py-2 px-4 dropdown-item" onclick="addStoryImage()">Add Story</a></li>
 					<li><a class="py-2 px-4 dropdown-item" onclick="openCreateGroup()">Create Group</a></li>
 					<li><a class="py-2 px-4 dropdown-item" href="#">Settings</a></li>
 					<li><a class="py-2 px-4 dropdown-item" href="#">About</a></li>
@@ -344,15 +343,17 @@
 				</a>
 				<div id="vertical-separator" class="m-2"></div>
 				{{ else }}
-				<div class="user-story-sec-image-wrapper">
-					{{ if .UserDetails.UserAvatarUrl }}
-					<img src="{{ .UserDetails.UserAvatarUrl }}" alt="User profile picture" style="object-fit: cover; object-position: center;">
-					{{ else }}
-					<img src="../../assets/images/user.png" alt="user profile picture">
-					{{ end }}
-				</div>
+				<a onclick="addStoryImage()">
+					<div class="user-story-sec-image-wrapper">
+						{{ if .UserDetails.UserAvatarUrl }}
+						<img src="{{ .UserDetails.UserAvatarUrl }}" alt="User profile picture" style="object-fit: cover; object-position: center;">
+						{{ else }}
+						<img src="../../assets/images/user.png" alt="user profile picture">
+						{{ end }}
+					</div>
+				</a>
 				<div id="vertical-separator" class="m-2"></div>
-				<i class='fas fa-plus-circle' style="font-size: 1.2rem; color: white; position: relative; bottom: -20%; left: -3%; z-index: 10;"></i>
+				<i class='fas fa-plus-circle' style="font-size: 1.2rem; color: white; position: relative; bottom: -25%; left: -6%; z-index: 10;"></i>
 				{{ end }}
 				{{ range .StoryList }}
 				<a href="javascript:openStory('{{ .UserPhone }}', '{{ .UserName }}', '{{ .Expiration }}', '{{ .StoryImg }}');">

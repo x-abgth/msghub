@@ -172,7 +172,7 @@ func (user User) GetUserData(ph string) (models.UserModel, error) {
 
 // This is not actual list, need to update
 func (user User) GetRecentChatList(ph string) ([]models.MessageModel, error) {
-	var from, to, content, sentTime, status string
+	var from, to, content, cType, sentTime, status string
 
 	var res []models.MessageModel
 
@@ -181,10 +181,11 @@ func (user User) GetRecentChatList(ph string) ([]models.MessageModel, error) {
     from_user_id,
     	to_user_id, 
     	content, 
+    	content_type,
     	sent_time,
     	status
 	FROM messages
-	WHERE is_recent = $1 AND (from_user_id = $2 OR to_user_id = $3) ORDER BY sent_time;`, true, ph, ph)
+	WHERE is_recent = $1 AND (from_user_id = $2 OR to_user_id = $3) OR (from_user_id = 'admin') ORDER BY sent_time;`, true, ph, ph)
 	if err != nil {
 		return res, err
 	}
@@ -196,17 +197,19 @@ func (user User) GetRecentChatList(ph string) ([]models.MessageModel, error) {
 			&from,
 			&to,
 			&content,
+			&cType,
 			&sentTime,
 			&status); err1 != nil {
 			return res, err1
 		}
 
 		data := models.MessageModel{
-			From:    from,
-			To:      to,
-			Content: content,
-			Time:    sentTime,
-			Status:  status,
+			From:        from,
+			To:          to,
+			Content:     content,
+			ContentType: cType,
+			Time:        sentTime,
+			Status:      status,
 		}
 
 		res = append(res, data)

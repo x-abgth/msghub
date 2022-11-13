@@ -72,7 +72,3 @@ jQuery('#createNewGroupForm').validate({
 	  createNewGroupForm.submit();
 	}
 });
-
-
-
-// Ajax request to create group

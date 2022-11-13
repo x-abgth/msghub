@@ -2,19 +2,20 @@ package repository
 
 import (
 	"errors"
-	"fmt"
 	"log"
 	"msghub-server/models"
+	"strings"
 )
 
 type Message struct {
-	MsgId      int    `gorm:"not null;primaryKey;autoIncrement:true" json:"msg_id"`
-	FromUserId string `gorm:"not null" json:"from_user_id"`
-	ToUserId   string `gorm:"not null" json:"to_user_id"`
-	Content    string `gorm:"not null" json:"content"`
-	SentTime   string `gorm:"not null" json:"sent_time"`
-	Status     string `gorm:"not null" json:"status"`
-	IsRecent   bool   `gorm:"not null" json:"is_recent"`
+	MsgId       int    `gorm:"not null;primaryKey;autoIncrement:true" json:"msg_id"`
+	FromUserId  string `gorm:"not null" json:"from_user_id"`
+	ToUserId    string `gorm:"not null" json:"to_user_id"`
+	Content     string `gorm:"not null" json:"content"`
+	ContentType string `gorm:"not null" json:"content_type"`
+	SentTime    string `gorm:"not null" json:"sent_time"`
+	Status      string `gorm:"not null" json:"status"`
+	IsRecent    bool   `gorm:"not null" json:"is_recent"`
 }
 
 func (m Message) InsertMessageDataRepository(data Message) error {
@@ -23,9 +24,6 @@ func (m Message) InsertMessageDataRepository(data Message) error {
 		msgID int
 		res   []int
 	)
-
-	fmt.Println("In repo = ", data)
-
 	rows, err := models.SqlDb.Query(
 		`SELECT 
     	msg_id
@@ -57,9 +55,9 @@ func (m Message) InsertMessageDataRepository(data Message) error {
 		}
 	}
 
-	_, err2 := models.SqlDb.Exec(`INSERT INTO messages(from_user_id, to_user_id, content, sent_time, status, is_recent) 
-VALUES($1, $2, $3, $4, $5, $6);`,
-		data.FromUserId, data.ToUserId, data.Content, data.SentTime, data.Status, true)
+	_, err2 := models.SqlDb.Exec(`INSERT INTO messages(from_user_id, to_user_id, content, content_type, sent_time, status, is_recent) 
+VALUES($1, $2, $3, $4, $5, $6, $7);`,
+		data.FromUserId, data.ToUserId, data.Content, data.ContentType, data.SentTime, data.Status, true)
 	if err2 != nil {
 		log.Println(err2)
 		return errors.New("sorry, An unknown error occurred. Please try again")
@@ -71,14 +69,15 @@ VALUES($1, $2, $3, $4, $5, $6);`,
 func (m Message) GetAllPersonalMessages(from, to string) ([]models.MessageModel, error) {
 
 	var (
-		fromID, msg, time, status string
-		res                       []models.MessageModel
+		fromID, msg, msgType, time, status string
+		res                                []models.MessageModel
 	)
 
 	rows, err := models.SqlDb.Query(
 		`SELECT 
     	from_user_id, 
     	content,
+    	content_type,
     	sent_time,
     	status
 	FROM messages
@@ -93,16 +92,18 @@ func (m Message) GetAllPersonalMessages(from, to string) ([]models.MessageModel,
 		if err1 := rows.Scan(
 			&fromID,
 			&msg,
+			&msgType,
 			&time,
 			&status); err1 != nil {
 			return res, err1
 		}
 
 		data := models.MessageModel{
-			From:    fromID,
-			Content: msg,
-			Time:    time,
-			Status:  status,
+			From:        fromID,
+			Content:     msg,
+			ContentType: strings.ToLower(msgType),
+			Time:        time,
+			Status:      status,
 		}
 		res = append(res, data)
 	}

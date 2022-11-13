@@ -56,16 +56,15 @@ var (
 
 // Client - This represents the websocket client at the server
 type Client struct {
-	ID   string `json:"id"`
-	conn *websocket.Conn
-	Send chan *WSMessage
+	ID       string `json:"id"`
+	conn     *websocket.Conn
+	IsJoined bool
 	// We want to the keep a reference to the WsServer for each client
 	wsServer *WsServer
-	send     chan []byte
+	send     chan *WSMessage
 	Hub      *Hub
 	// To keep track of the rooms this client joins
-	rooms map[*Room]bool
-	Name  string `json:"name"`
+	Name string `json:"name"`
 }
 
 type GClient struct {
@@ -90,9 +89,7 @@ func newClient(conn *websocket.Conn, wsServer *WsServer, phone string) *Client {
 		ID:       phone,
 		conn:     conn,
 		wsServer: wsServer,
-		//Name:     name,
-		send:  make(chan []byte, 256),
-		rooms: make(map[*Room]bool),
+		send:     make(chan *WSMessage, 256),
 	}
 }
 
@@ -103,13 +100,6 @@ func (client *Client) GetName() string {
 // ServeWs handles websocket requests from clients requests.
 // The ServeWs function will be called from routes.go
 func ServeWs(phone, target string, wsServer *WsServer, w http.ResponseWriter, r *http.Request) {
-	//name, ok := r.URL.Query()["name"]
-	//
-	//if !ok || len(name[0]) < 1 {
-	//	log.Println("Url Param 'name' is missing")
-	//	// return
-	//}
-
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println(err)
@@ -150,16 +140,135 @@ func (client *Client) readPump() {
 	// start endless read loop, waiting for messages from client.
 	for {
 
-		_, jsonMessage, err := client.conn.ReadMessage()
+		var message WSMessage
+
+		err := client.conn.ReadJSON(&message)
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				log.Printf("unexpected close error: %v", err.Error())
+				log.Printf("unexpected close error: %v", err)
 			}
 			break
 		}
-		//client.handleNewMessage(jsonMessage)
-		fmt.Println("Reading -- ", string(jsonMessage))
-		client.wsServer.broadcast <- jsonMessage
+
+		if message.Payload.Room == "admin" {
+			break
+		}
+
+		switch message.Type {
+		case "join":
+			client.IsJoined = true
+			var m *WSMessage = &WSMessage{
+				Type: message.Type,
+				Payload: GMessage{
+					By:   message.Payload.By,
+					Room: message.Payload.Room,
+				},
+			}
+			log.Println("The client has joined")
+			client.wsServer.broadcast <- m
+
+		case "left":
+			client.IsJoined = false
+			var m *WSMessage = &WSMessage{
+				Type: message.Type,
+				Payload: GMessage{
+					By:   message.Payload.By,
+					Room: message.Payload.Room,
+				},
+			}
+			log.Println("The client has left")
+			client.wsServer.broadcast <- m
+
+		case "message":
+			var m *WSMessage = &WSMessage{
+				Type: "message",
+				Payload: GMessage{
+					Body: message.Payload.Body,
+					Time: message.Payload.Time,
+					By:   message.Payload.By,
+					Room: message.Payload.Room,
+				},
+			}
+			fmt.Println("Read Message ---------------------- ", m.Payload.Room)
+			client.wsServer.broadcast <- m
+
+		case "image":
+			idx := strings.Index(message.Payload.Body, ";base64,")
+			if idx < 0 {
+				panic("Error1")
+			}
+
+			b64data := message.Payload.Body[strings.IndexByte(message.Payload.Body, ',')+1:]
+
+			// This is not working as expected.
+			unbased, err := base64.StdEncoding.DecodeString(string(b64data))
+			if err != nil {
+				log.Println("ERROR IS HAPPENING IN DECODE STRING")
+				log.Println(err)
+			}
+			res := bytes.NewReader(unbased)
+			path, _ := os.Getwd()
+
+			newPath := filepath.Join(path + "/storage")
+			err = os.MkdirAll(newPath, os.ModePerm)
+			if err != nil {
+				log.Println(err)
+			}
+			uid := uuid.New()
+
+			pngI, _, errPng := image.Decode(res)
+			var fileUrl string
+			if errPng == nil {
+				f, _ := os.OpenFile(newPath+"/"+uid.String()+".png", os.O_WRONLY|os.O_CREATE, 0777)
+				png.Encode(f, pngI)
+
+				file, err := os.Open(newPath + "/" + uid.String() + ".png")
+				if err != nil {
+					panic(err)
+				}
+
+				fileUrl = utils.StoreThisFileInBucket("pm_chat_file/", uid.String(), file)
+
+				file.Close()
+				os.Remove(newPath + "/" + uid.String() + ".png")
+			} else {
+				fmt.Println("Error png is having error")
+				fmt.Println(errPng.Error())
+			}
+
+			var m *WSMessage = &WSMessage{
+				Type: "image",
+				Payload: GMessage{
+					Body: fileUrl,
+					Time: message.Payload.Time,
+					By:   message.Payload.By,
+					Room: message.Payload.Room,
+				},
+			}
+			client.wsServer.broadcast <- m
+
+		case "typing":
+			var m *WSMessage = &WSMessage{
+				Type: message.Type,
+				Payload: GMessage{
+					By:   message.Payload.By,
+					Room: message.Payload.Room,
+				},
+			}
+			log.Println("Typing:", m)
+			client.wsServer.broadcast <- m
+
+		case "stoptyping":
+			var m *WSMessage = &WSMessage{
+				Type: message.Type,
+				Payload: GMessage{
+					By:   message.Payload.By,
+					Room: message.Payload.Room,
+				},
+			}
+			log.Println("StopTyping:", m)
+			client.wsServer.broadcast <- m
+		}
 	}
 }
 
@@ -188,22 +297,9 @@ func (client *Client) writePump() {
 				return
 			}
 
-			w, err := client.conn.NextWriter(websocket.TextMessage)
+			err := client.conn.WriteJSON(message)
 			if err != nil {
-				log.Println(err.Error())
-				return
-			}
-			fmt.Println("Writing -- ", string(message))
-
-			w.Write(message)
-
-			n := len(client.send)
-			for i := 0; i < n; i++ {
-				w.Write(newline)
-				w.Write(<-client.send)
-			}
-
-			if err := w.Close(); err != nil {
+				log.Println("Error while writing message:", err)
 				return
 			}
 
@@ -323,6 +419,7 @@ func (c *GClient) GroupReadPump() {
 			if errPng == nil {
 				f, _ := os.OpenFile(newPath+"/"+uid.String()+".png", os.O_WRONLY|os.O_CREATE, 0777)
 				png.Encode(f, pngI)
+
 				file, err := os.Open(newPath + "/" + uid.String() + ".png")
 				if err != nil {
 					panic(err)
@@ -376,6 +473,7 @@ func (c *GClient) GroupReadPump() {
 func (c *GClient) GroupWritePump() {
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
+		ticker.Stop()
 		c.Conn.Close()
 	}()
 	fmt.Println("Group writing section")
@@ -386,11 +484,7 @@ func (c *GClient) GroupWritePump() {
 				log.Println("Send Channel was closed")
 				return
 			}
-			log.Println("Write message -------------------------------- ", m)
-			//var message *WSMessage = &WSMessage{
-			//	Type:    "message",
-			//	Payload: *m,
-			//}
+
 			err := c.Conn.WriteJSON(m)
 			if err != nil {
 				log.Println("Error while writing message:", err)
@@ -403,12 +497,5 @@ func (c *GClient) GroupWritePump() {
 				return
 			}
 		}
-	}
-}
-
-func (client *Client) disconnect() {
-	client.wsServer.unregister <- client
-	for room := range client.rooms {
-		room.unregister <- client
 	}
 }

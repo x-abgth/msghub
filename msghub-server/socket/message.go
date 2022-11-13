@@ -6,19 +6,11 @@ import (
 	"log"
 )
 
-const SendMessageAction = "send-message"
-const JoinRoomAction = "join-room"
-const LeaveRoomAction = "leave-room"
-const UserJoinedAction = "user-join"
-const UserLeftAction = "user-left"
-const JoinRoomPrivateAction = "join-room-private"
-const RoomJoinedAction = "room-joined"
-
 type Message struct {
 	Action    string  `json:"action"`
 	Message   string  `json:"message"`
 	Time      string  `json:"time"`
-	Target    *Room   `json:"target"`
+	Target    string  `json:"target"`
 	Sender    *Client `json:"sender"`
 	IsPrivate bool    `json:"is_bool"`
 }

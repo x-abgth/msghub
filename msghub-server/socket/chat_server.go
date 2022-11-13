@@ -1,7 +1,6 @@
 package socket
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"msghub-server/logic"
@@ -17,8 +16,7 @@ type WsServer struct {
 	clients    map[*Client]bool
 	register   chan *Client
 	unregister chan *Client
-	broadcast  chan []byte
-	rooms      map[*Room]bool
+	broadcast  chan *WSMessage
 }
 
 // NewWebSocketServer :- First we create this server.
@@ -27,8 +25,7 @@ func NewWebSocketServer() *WsServer {
 		clients:    make(map[*Client]bool),
 		register:   make(chan *Client),
 		unregister: make(chan *Client),
-		broadcast:  make(chan []byte),
-		rooms:      make(map[*Room]bool),
+		broadcast:  make(chan *WSMessage),
 	}
 }
 
@@ -63,7 +60,7 @@ func (server *WsServer) unregisterClient(client *Client) {
 }
 
 // If the client send a message, it broadcasts to all the other users
-func (server *WsServer) broadcastToClients(message []byte) {
+func (server *WsServer) broadcastToClients(m *WSMessage) {
 	defer func() {
 		if e := recover(); e != nil {
 			log.Println("Error happened in sending message")
@@ -78,85 +75,95 @@ func (server *WsServer) broadcastToClients(message []byte) {
 	target := server.findClientByID(models.TargetID)
 
 	if user != nil {
-		fmt.Println("-----------MESSAGE ---------------")
-		fmt.Println(message)
-		var model models.MessageModel
-
-		err := json.Unmarshal(message, &model)
-		if err != nil {
-			panic(err.Error())
+		if m.Type == "message" {
+			data := models.MessageModel{
+				To:          m.Payload.Room,
+				From:        m.Payload.By,
+				Content:     m.Payload.Body,
+				ContentType: logic.TEXT,
+				Status:      logic.IS_SENT,
+				Time:        m.Payload.Time,
+			}
+			msgModel.StorePersonalMessagesLogic(data)
+		} else if m.Type == "image" {
+			data := models.MessageModel{
+				To:          m.Payload.Room,
+				From:        m.Payload.By,
+				Content:     m.Payload.Body,
+				ContentType: logic.IMAGE,
+				Status:      logic.IS_SENT,
+				Time:        m.Payload.Time,
+			}
+			msgModel.StorePersonalMessagesLogic(data)
 		}
 
-		model.Status = logic.IS_SENT
-
-		msgModel.StorePersonalMessagesLogic(model)
-
-		user.send <- message
+		user.send <- m
 		if target != nil {
-			target.send <- message
+			target.send <- m
 		}
 	}
 }
 
-func (server *WsServer) notifyClientJoined(client *Client) {
-	message := &Message{
-		Action: UserJoinedAction,
-		Sender: client,
-	}
+//
+//func (server *WsServer) notifyClientJoined(client *Client) {
+//	message := &Message{
+//		Action: UserJoinedAction,
+//		Sender: client,
+//	}
+//
+//	server.broadcastToClients(message.encode())
+//}
+//
+//func (server *WsServer) notifyClientLeft(client *Client) {
+//	message := &Message{
+//		Action: UserLeftAction,
+//		Sender: client,
+//	}
+//
+//	server.broadcastToClients(message.encode())
+//}
+//
+//func (server *WsServer) listOnlineClients(client *Client) {
+//	fmt.Println("Inside listonlineclients -- ")
+//	for existingClient := range server.clients {
+//		message := &Message{
+//			Action: UserJoinedAction,
+//			Sender: existingClient,
+//		}
+//		fmt.Println(message)
+//		client.send <- message.encode()
+//	}
+//}
 
-	server.broadcastToClients(message.encode())
-}
-
-func (server *WsServer) notifyClientLeft(client *Client) {
-	message := &Message{
-		Action: UserLeftAction,
-		Sender: client,
-	}
-
-	server.broadcastToClients(message.encode())
-}
-
-func (server *WsServer) listOnlineClients(client *Client) {
-	fmt.Println("Inside listonlineclients -- ")
-	for existingClient := range server.clients {
-		message := &Message{
-			Action: UserJoinedAction,
-			Sender: existingClient,
-		}
-		fmt.Println(message)
-		client.send <- message.encode()
-	}
-}
-
-func (server *WsServer) findRoomByName(name string) *Room {
-	var foundRoom *Room
-	for room := range server.rooms {
-		if room.GetName() == name {
-			foundRoom = room
-			break
-		}
-	}
-	return foundRoom
-}
-
-func (server *WsServer) createRoom(name string, private bool) *Room {
-	room := NewRoom(name, "", private)
-	go room.RunRoom()
-	server.rooms[room] = true
-
-	return room
-}
-
-func (server *WsServer) findRoomByID(ID string) *Room {
-	var foundRoom *Room
-	for room := range server.rooms {
-		if room.GetId() == ID {
-			foundRoom = room
-			break
-		}
-	}
-	return foundRoom
-}
+//func (server *WsServer) findRoomByName(name string) *Room {
+//	var foundRoom *Room
+//	for room := range server.rooms {
+//		if room.GetName() == name {
+//			foundRoom = room
+//			break
+//		}
+//	}
+//	return foundRoom
+//}
+//
+//func (server *WsServer) createRoom(name string, private bool) *Room {
+//	room := NewRoom(name, "", private)
+//	go room.RunRoom()
+//	server.rooms[room] = true
+//
+//	return room
+//}
+//
+//func (server *WsServer) findRoomByID(ID string) *Room {
+//	var foundRoom *Room
+//	for room := range server.rooms {
+//		if room.GetId() == ID {
+//			foundRoom = room
+//			break
+//		}
+//	}
+//	return foundRoom
+//}
 
 func (server *WsServer) findClientByID(ID string) *Client {
 	var foundClient *Client

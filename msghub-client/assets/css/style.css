@@ -314,6 +314,10 @@ div.user-dashboard-left-col{
 }
 
 div.dashboard-content-wrapper div.recent-chat-bg{
+	overflow-y: auto;
+	-ms-overflow-style: none;  /* IE and Edge */
+	scrollbar-width: none;  /* Firefox */
+	overflow: -moz-scrollbars-none;
 	background-color: #E2F3F5;
 }
 

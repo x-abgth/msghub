@@ -14,8 +14,9 @@ import (
 )
 
 type AdminHandlerStruct struct {
-	logics logic.AdminDb
-	err    error
+	logics    logic.AdminDb
+	msgLogics logic.MessageDb
+	err       error
 }
 
 func (admin *AdminHandlerStruct) AdminLoginPageHandler(w http.ResponseWriter, r *http.Request) {
@@ -219,6 +220,25 @@ func (admin *AdminHandlerStruct) AdminBlocksGroupHandler(w http.ResponseWriter, 
 	if err != nil {
 		panic(err)
 	}
+
+	http.Redirect(w, r, "/admin/dashboard", http.StatusFound)
+}
+
+func (admin *AdminHandlerStruct) AdminBroadcastHandler(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+
+	msg := r.PostFormValue("message")
+
+	data := models.MessageModel{
+		Content:     msg,
+		From:        "admin",
+		To:          "all",
+		Time:        time.Now().Format("2 Jan 2006 3:04:05 PM"),
+		Status:      "SENT",
+		ContentType: logic.TEXT,
+	}
+
+	admin.msgLogics.StorePersonalMessagesLogic(data)
 
 	http.Redirect(w, r, "/admin/dashboard", http.StatusFound)
 }

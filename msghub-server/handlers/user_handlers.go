@@ -536,13 +536,14 @@ func (info *InformationHelper) UserNewChatStartedHandler(w http.ResponseWriter, 
 
 	claim := jwtPkg.GetValueFromJwt(c)
 
-	message := "You started a chat with +91 " + target + "."
+	message := "+91 " + claim.User.UserPhone + " started a chat with +91 " + target + "."
 	data := models.MessageModel{
-		Content: message,
-		From:    claim.User.UserPhone,
-		To:      target,
-		Time:    time.Now().Format("2 Jan 2006 3:04:05 PM"),
-		Status:  "ADMIN",
+		Content:     message,
+		From:        claim.User.UserPhone,
+		To:          target,
+		Time:        time.Now().Format("2 Jan 2006 3:04:05 PM"),
+		ContentType: logic.TEXT,
+		Status:      "ADMIN",
 	}
 
 	info.messagesRepo.StorePersonalMessagesLogic(data)
@@ -728,14 +729,37 @@ func (info *InformationHelper) UserNewChatSelectedHandler(w http.ResponseWriter,
 
 	userClaim := jwtPkg.GetValueFromJwt(uc)
 
-	data, err1 := info.messagesRepo.GetMessageDataLogic(target.Data, userClaim.User.UserPhone)
-	if err1 != nil {
-		panic(err1.Error())
-	}
+	var (
+		uName, uAvtr, uAbout string
+		uVal                 []models.MessageModel
+	)
 
-	val, err2 := info.userRepo.GetUserDataLogic(target.Data)
-	if err2 != nil {
-		panic(err2.Error())
+	if target.Data != "admin" {
+		data, err1 := info.messagesRepo.GetMessageDataLogic(target.Data, userClaim.User.UserPhone)
+		if err1 != nil {
+			panic(err1.Error())
+		}
+
+		uVal = data
+
+		val, err2 := info.userRepo.GetUserDataLogic(target.Data)
+		if err2 != nil {
+			panic(err2.Error())
+		}
+
+		uName = val.UserName
+		uAvtr = val.UserAvatarUrl
+		uAbout = val.UserAbout
+	} else {
+		data, err1 := info.messagesRepo.GetMessageDataLogic(target.Data, "all")
+		if err1 != nil {
+			panic(err1.Error())
+		}
+
+		uName = "🔴 ADMIN 🔴"
+		uAvtr = ""
+		uAbout = "The Administrator"
+		uVal = data
 	}
 
 	xData := struct {
@@ -744,10 +768,10 @@ func (info *InformationHelper) UserNewChatSelectedHandler(w http.ResponseWriter,
 		About  string                `json:"about"`
 		Val    []models.MessageModel `json:"data"`
 	}{
-		Name:   val.UserName,
-		Avatar: val.UserAvatarUrl,
-		About:  val.UserAbout,
-		Val:    data,
+		Name:   uName,
+		Avatar: uAvtr,
+		About:  uAbout,
+		Val:    uVal,
 	}
 
 	// If everything goes well...
