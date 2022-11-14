@@ -220,7 +220,7 @@ a#signin-otp-bt:hover{
 .form label.error {
 	width: 100%;
 	text-align: left;
-    color: red;
+  color: red;
  }
 
 .input {

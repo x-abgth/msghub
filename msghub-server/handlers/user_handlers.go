@@ -285,6 +285,12 @@ func (info *InformationHelper) UserDashboardHandler(w http.ResponseWriter, r *ht
 
 	claim := jwtPkg.GetValueFromJwt(c)
 
+	// Update every sent status of the user to delivered, when the user gets online
+	err := info.messagesRepo.UpdatePmToDelivered(claim.User.UserPhone)
+	if err != nil {
+		panic(err)
+	}
+
 	data, err := info.userRepo.GetDataForDashboardLogic(claim.User.UserPhone)
 	if err != nil {
 		log.Println("Error getting dashboard logic")
@@ -728,6 +734,12 @@ func (info *InformationHelper) UserNewChatSelectedHandler(w http.ResponseWriter,
 	}
 
 	userClaim := jwtPkg.GetValueFromJwt(uc)
+
+	// the message status of the message which the target has sent to this user should be marked as read
+	err = info.messagesRepo.UpdatePmToRead(target.Data, userClaim.User.UserPhone)
+	if err != nil {
+		panic(err)
+	}
 
 	var (
 		uName, uAvtr, uAbout string

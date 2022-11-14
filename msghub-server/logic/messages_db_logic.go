@@ -56,6 +56,14 @@ func (m MessageDb) StorePersonalMessagesLogic(message models.MessageModel) {
 	}
 }
 
+func (m MessageDb) UpdatePmToDelivered(to string) error {
+	return m.UserData.UpdateAllPersonalMessagesToDelivered(to)
+}
+
+func (m MessageDb) UpdatePmToRead(from, to string) error {
+	return m.UserData.UpdateAllPersonalMessagesToRead(from, to)
+}
+
 func (m MessageDb) GetMessageDataLogic(target, from string) ([]models.MessageModel, error) {
 	var this []models.MessageModel
 

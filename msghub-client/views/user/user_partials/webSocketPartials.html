@@ -242,7 +242,8 @@
 									itemTime.classList.add("chat-time","mt-1", "mx-2");
 									itemTime.innerText = response.data[i].time;
 
-									recipient.classList.add("fas", "fa-check-double");
+									recipient.classList.add("fas", "fa-check");
+									recipient.setAttribute("style", "color: #ccc;");
 
 									msgDetails.appendChild(itemTime);
 									msgDetails.appendChild(recipient);
@@ -561,7 +562,8 @@ if(chatPartBody.classList.contains('d-none')) {
 						itemTime.classList.add("chat-time","mt-1", "mx-2");
 						itemTime.innerText = msgobj.time;
 
-						recipient.classList.add("fas", "fa-check-double");
+						recipient.classList.add("fas", "fa-check");
+						recipient.setAttribute("style", "color: #ccc;");
 
 						msgDetails.appendChild(itemTime);
 						msgDetails.appendChild(recipient);
@@ -687,7 +689,19 @@ if(chatPartBody.classList.contains('d-none')) {
 										itemTime.classList.add("chat-time","mt-1", "mx-2");
 										itemTime.innerText = response.data[i].time
 
-										recipient.classList.add("fas", "fa-check-double");
+										if (response.data[i].status == "SENT") {
+											recipient.classList.add("fas", "fa-check");
+											recipient.setAttribute("style", "color: #ccc;");
+										} else if(response.data[i].status == "DELIVERED") {
+											recipient.classList.add("fas", "fa-check-double");
+											recipient.setAttribute("style", "color: #ccc;");
+										} else if(response.data[i].status == "READ") {
+											recipient.classList.add("fas", "fa-check-double");
+											recipient.setAttribute("style", "color: #00E0FF;");
+										} else {
+											recipient.classList.add("fa", "fa-exclamation-triangle");
+											recipient.setAttribute("style", "color: #F32013;");
+										}
 
 										msgDetails.appendChild(itemTime);
 										msgDetails.appendChild(recipient);
@@ -931,6 +945,7 @@ ws.onmessage = function(msg) {
 
 				const msgObj = {
 					type: "text",
+					status: message.status,
 					from : message.by,
 					message : message.body,
 					time : dateTime,
@@ -948,11 +963,12 @@ ws.onmessage = function(msg) {
 
 				const msgObj = {
 					type: "image",
+					status: message.status,
 					from : message.by,
 					message : message.body,
 					time : dateTime,
 				}
-				console.log(message.body);
+				console.log(message);
 				insertMessage(msgObj);
 			}
 
@@ -1015,7 +1031,21 @@ ws.onmessage = function(msg) {
 						itemTime.classList.add("chat-time","mt-1", "mx-2");
 						itemTime.innerText = msgobj.time;
 
-						recipient.classList.add("fas", "fa-check-double");
+						console.log("STATUS = " + msgobj.status)
+
+						if (msgobj.status == "SENT") {
+							recipient.classList.add("fas", "fa-check");
+							recipient.setAttribute("style", "color: #ccc;");
+						} else if(msgobj.status == "DELIVERED") {
+							recipient.classList.add("fas", "fa-check-double");
+							recipient.setAttribute("style", "color: #ccc;");
+						} else if(msgobj.status == "READ") {
+							recipient.classList.add("fas", "fa-check-double");
+							recipient.setAttribute("style", "color: #00E0FF;");
+						} else {
+							recipient.classList.add("fa", "fa-exclamation-triangle");
+							recipient.setAttribute("style", "color: #F32013;");
+						}
 
 						msgDetails.appendChild(itemTime);
 						msgDetails.appendChild(recipient);

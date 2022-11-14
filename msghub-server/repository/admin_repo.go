@@ -14,6 +14,17 @@ type Admin struct {
 	AdminPass string `gorm:"not null" json:"admin_pass"`
 }
 
+func (admin Admin) InsertAdminToDb(name, pass string) error {
+	_, err2 := models.SqlDb.Exec(`INSERT INTO admins(admin_name, admin_pass) 
+VALUES($1, $2);`, name, pass)
+	if err2 != nil {
+		log.Println(err2)
+		return errors.New("sorry, An unknown error occurred. Please try again")
+	}
+
+	return nil
+}
+
 func (admin Admin) LoginAdmin(uname, pass string) (Admin, error) {
 	var name, password string
 	rows, err := models.SqlDb.Query(

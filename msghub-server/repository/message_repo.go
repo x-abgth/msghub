@@ -66,6 +66,26 @@ VALUES($1, $2, $3, $4, $5, $6, $7);`,
 	return nil
 }
 
+func (m Message) UpdateAllPersonalMessagesToDelivered(to string) error {
+	_, err2 := models.SqlDb.Exec(`UPDATE messages SET status = 'DELIVERED' WHERE to_user_id = $1 AND status = 'SENT';`, to)
+	if err2 != nil {
+		log.Println(err2)
+		return errors.New("sorry, An unknown error occurred. Please try again")
+	}
+
+	return nil
+}
+
+func (m Message) UpdateAllPersonalMessagesToRead(from, to string) error {
+	_, err2 := models.SqlDb.Exec(`UPDATE messages SET status = 'READ' WHERE (from_user_id = $1 AND to_user_id = $2) AND status = 'DELIVERED';`, from, to)
+	if err2 != nil {
+		log.Println(err2)
+		return errors.New("sorry, An unknown error occurred. Please try again")
+	}
+
+	return nil
+}
+
 func (m Message) GetAllPersonalMessages(from, to string) ([]models.MessageModel, error) {
 
 	var (

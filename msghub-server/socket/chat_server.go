@@ -74,99 +74,136 @@ func (server *WsServer) broadcastToClients(m *WSMessage) {
 	user := server.findClientByID(models.ClientID)
 	target := server.findClientByID(models.TargetID)
 
-	if user != nil {
-		if m.Type == "message" {
-			data := models.MessageModel{
-				To:          m.Payload.Room,
-				From:        m.Payload.By,
-				Content:     m.Payload.Body,
-				ContentType: logic.TEXT,
-				Status:      logic.IS_SENT,
-				Time:        m.Payload.Time,
+	if target != nil {
+		if user != nil {
+			if server.findRoomByID(models.TargetID) == models.ClientID {
+				if m.Type == "message" {
+					data := models.MessageModel{
+						To:          m.Payload.Room,
+						From:        m.Payload.By,
+						Content:     m.Payload.Body,
+						ContentType: logic.TEXT,
+						Status:      logic.IS_READ,
+						Time:        m.Payload.Time,
+					}
+					msgModel.StorePersonalMessagesLogic(data)
+				} else if m.Type == "image" {
+					data := models.MessageModel{
+						To:          m.Payload.Room,
+						From:        m.Payload.By,
+						Content:     m.Payload.Body,
+						ContentType: logic.IMAGE,
+						Status:      logic.IS_READ,
+						Time:        m.Payload.Time,
+					}
+					msgModel.StorePersonalMessagesLogic(data)
+				}
+				m.Payload.Status = logic.IS_READ
+			} else {
+				if m.Type == "message" {
+					data := models.MessageModel{
+						To:          m.Payload.Room,
+						From:        m.Payload.By,
+						Content:     m.Payload.Body,
+						ContentType: logic.TEXT,
+						Status:      logic.IS_DELIVERED,
+						Time:        m.Payload.Time,
+					}
+					msgModel.StorePersonalMessagesLogic(data)
+				} else if m.Type == "image" {
+					data := models.MessageModel{
+						To:          m.Payload.Room,
+						From:        m.Payload.By,
+						Content:     m.Payload.Body,
+						ContentType: logic.IMAGE,
+						Status:      logic.IS_DELIVERED,
+						Time:        m.Payload.Time,
+					}
+					msgModel.StorePersonalMessagesLogic(data)
+				}
+				m.Payload.Status = logic.IS_DELIVERED
 			}
-			msgModel.StorePersonalMessagesLogic(data)
-		} else if m.Type == "image" {
-			data := models.MessageModel{
-				To:          m.Payload.Room,
-				From:        m.Payload.By,
-				Content:     m.Payload.Body,
-				ContentType: logic.IMAGE,
-				Status:      logic.IS_SENT,
-				Time:        m.Payload.Time,
-			}
-			msgModel.StorePersonalMessagesLogic(data)
-		}
-
-		user.send <- m
-		if target != nil {
+			user.send <- m
 			target.send <- m
+		} else {
+			if m.Type == "message" {
+				data := models.MessageModel{
+					To:          m.Payload.Room,
+					From:        m.Payload.By,
+					Content:     m.Payload.Body,
+					ContentType: logic.TEXT,
+					Status:      logic.IS_NOT_SENT,
+					Time:        m.Payload.Time,
+				}
+				msgModel.StorePersonalMessagesLogic(data)
+			} else if m.Type == "image" {
+				data := models.MessageModel{
+					To:          m.Payload.Room,
+					From:        m.Payload.By,
+					Content:     m.Payload.Body,
+					ContentType: logic.IMAGE,
+					Status:      logic.IS_NOT_SENT,
+					Time:        m.Payload.Time,
+				}
+				msgModel.StorePersonalMessagesLogic(data)
+			}
+			user.send <- m
+		}
+	} else {
+		if user != nil {
+			if m.Type == "message" {
+				data := models.MessageModel{
+					To:          m.Payload.Room,
+					From:        m.Payload.By,
+					Content:     m.Payload.Body,
+					ContentType: logic.TEXT,
+					Status:      logic.IS_SENT,
+					Time:        m.Payload.Time,
+				}
+				msgModel.StorePersonalMessagesLogic(data)
+			} else if m.Type == "image" {
+				data := models.MessageModel{
+					To:          m.Payload.Room,
+					From:        m.Payload.By,
+					Content:     m.Payload.Body,
+					ContentType: logic.IMAGE,
+					Status:      logic.IS_SENT,
+					Time:        m.Payload.Time,
+				}
+				msgModel.StorePersonalMessagesLogic(data)
+			}
+			m.Payload.Status = logic.IS_SENT
+			user.send <- m
+		} else {
+			if m.Type == "message" {
+				data := models.MessageModel{
+					To:          m.Payload.Room,
+					From:        m.Payload.By,
+					Content:     m.Payload.Body,
+					ContentType: logic.TEXT,
+					Status:      logic.IS_NOT_SENT,
+					Time:        m.Payload.Time,
+				}
+				msgModel.StorePersonalMessagesLogic(data)
+			} else if m.Type == "image" {
+				data := models.MessageModel{
+					To:          m.Payload.Room,
+					From:        m.Payload.By,
+					Content:     m.Payload.Body,
+					ContentType: logic.IMAGE,
+					Status:      logic.IS_NOT_SENT,
+					Time:        m.Payload.Time,
+				}
+				msgModel.StorePersonalMessagesLogic(data)
+			}
+			user.send <- m
 		}
 	}
+
 }
 
-//
-//func (server *WsServer) notifyClientJoined(client *Client) {
-//	message := &Message{
-//		Action: UserJoinedAction,
-//		Sender: client,
-//	}
-//
-//	server.broadcastToClients(message.encode())
-//}
-//
-//func (server *WsServer) notifyClientLeft(client *Client) {
-//	message := &Message{
-//		Action: UserLeftAction,
-//		Sender: client,
-//	}
-//
-//	server.broadcastToClients(message.encode())
-//}
-//
-//func (server *WsServer) listOnlineClients(client *Client) {
-//	fmt.Println("Inside listonlineclients -- ")
-//	for existingClient := range server.clients {
-//		message := &Message{
-//			Action: UserJoinedAction,
-//			Sender: existingClient,
-//		}
-//		fmt.Println(message)
-//		client.send <- message.encode()
-//	}
-//}
-
-//func (server *WsServer) findRoomByName(name string) *Room {
-//	var foundRoom *Room
-//	for room := range server.rooms {
-//		if room.GetName() == name {
-//			foundRoom = room
-//			break
-//		}
-//	}
-//	return foundRoom
-//}
-//
-//func (server *WsServer) createRoom(name string, private bool) *Room {
-//	room := NewRoom(name, "", private)
-//	go room.RunRoom()
-//	server.rooms[room] = true
-//
-//	return room
-//}
-//
-//func (server *WsServer) findRoomByID(ID string) *Room {
-//	var foundRoom *Room
-//	for room := range server.rooms {
-//		if room.GetId() == ID {
-//			foundRoom = room
-//			break
-//		}
-//	}
-//	return foundRoom
-//}
-
 func (server *WsServer) findClientByID(ID string) *Client {
-	var foundClient *Client
+	var foundClient *Client = nil
 	for client := range server.clients {
 		if client.ID == ID {
 			foundClient = client
@@ -174,4 +211,13 @@ func (server *WsServer) findClientByID(ID string) *Client {
 		}
 	}
 	return foundClient
+}
+
+func (server *WsServer) findRoomByID(target string) string {
+	client := server.findClientByID(target)
+	if client == nil {
+		log.Println("Client is NIL")
+		return ""
+	}
+	return client.Room
 }

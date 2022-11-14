@@ -4,6 +4,7 @@ import (
 	"errors"
 	"msghub-server/models"
 	"msghub-server/repository"
+	"msghub-server/utils"
 
 	"gorm.io/gorm"
 )
@@ -19,6 +20,11 @@ func MigrateAdminDb(db *gorm.DB) error {
 	return err
 }
 
+func (admin AdminDb) InsertAdminLogic(username, password string) error {
+	err := admin.repo.InsertAdminToDb(username, password)
+	return err
+}
+
 func (admin AdminDb) AdminLoginLogic(username, password string) error {
 	data, err := admin.repo.LoginAdmin(username, password)
 	if err != nil {
@@ -26,7 +32,7 @@ func (admin AdminDb) AdminLoginLogic(username, password string) error {
 	}
 
 	if data.AdminName == username {
-		if data.AdminPass == password {
+		if utils.CheckPasswordMatch(password, data.AdminPass) {
 			return nil
 		}
 		return errors.New("you have entered wrong password, please try again")

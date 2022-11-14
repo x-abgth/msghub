@@ -71,8 +71,6 @@ func userRoutes(theMux *mux.Router, s *socket.WsServer) {
 		vars := mux.Vars(r)
 		target := vars["target"]
 
-		fmt.Println(target)
-
 		c, err1 := r.Cookie("userToken")
 		if err1 != nil {
 			if err1 == http.ErrNoCookie {

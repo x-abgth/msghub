@@ -7,6 +7,7 @@ import (
 	"msghub-server/logic"
 	"msghub-server/models"
 	"msghub-server/template"
+	"msghub-server/utils"
 	jwtPkg "msghub-server/utils/jwt"
 	"net/http"
 	"os"
@@ -239,6 +240,49 @@ func (admin *AdminHandlerStruct) AdminBroadcastHandler(w http.ResponseWriter, r 
 	}
 
 	admin.msgLogics.StorePersonalMessagesLogic(data)
+
+	http.Redirect(w, r, "/admin/dashboard", http.StatusFound)
+}
+
+func (admin *AdminHandlerStruct) NewAdminPageHandler(w http.ResponseWriter, r *http.Request) {
+	defer func() {
+		if e := recover(); e != nil {
+			log.Println(e)
+			http.Redirect(w, r, "/admin/dashboard", http.StatusSeeOther)
+		}
+	}()
+
+	if err := template.Tpl.ExecuteTemplate(w, "add_new_admin.html", nil); err != nil {
+		panic(err)
+	}
+}
+
+func (admin *AdminHandlerStruct) NewAdminHandler(w http.ResponseWriter, r *http.Request) {
+	defer func() {
+		if e := recover(); e != nil {
+			log.Println(e)
+			http.Redirect(w, r, "/admin/dashboard", http.StatusSeeOther)
+		}
+	}()
+
+	// Get admin name and password
+
+	r.ParseForm()
+
+	name := r.PostFormValue("adminName")
+	pass := r.PostFormValue("adminPass1")
+
+	// hash password
+	encryptedFormPassword, err := utils.HashEncrypt(pass)
+	if err != nil {
+		panic(err)
+	}
+
+	// store password
+	err = admin.logics.InsertAdminLogic(name, encryptedFormPassword)
+	if err != nil {
+		panic(err)
+	}
 
 	http.Redirect(w, r, "/admin/dashboard", http.StatusFound)
 }

@@ -185,7 +185,7 @@ func (user User) GetRecentChatList(ph string) ([]models.MessageModel, error) {
     	sent_time,
     	status
 	FROM messages
-	WHERE is_recent = $1 AND (from_user_id = $2 OR to_user_id = $3) OR (from_user_id = 'admin') ORDER BY sent_time;`, true, ph, ph)
+	WHERE is_recent = $1 AND ((from_user_id = $2 OR to_user_id = $3) OR (from_user_id = 'admin')) ORDER BY sent_time;`, true, ph, ph)
 	if err != nil {
 		return res, err
 	}

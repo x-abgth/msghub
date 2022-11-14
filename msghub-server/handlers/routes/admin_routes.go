@@ -18,6 +18,7 @@ func adminRoutes(theMux *mux.Router) {
 	admin.HandleFunc("/user-block/{id}/{condition}", adminHandlerInfo.AdminBlocksUserHandler).Methods("GET")
 	admin.HandleFunc("/group-block/{id}/{condition}", adminHandlerInfo.AdminBlocksGroupHandler).Methods("GET")
 	admin.HandleFunc("/broadcast-message", adminHandlerInfo.AdminBroadcastHandler).Methods("POST")
+	admin.HandleFunc("/new-admin", adminHandlerInfo.NewAdminPageHandler).Methods("GET")
+	admin.HandleFunc("/new-admin", adminHandlerInfo.NewAdminHandler).Methods("POST")
 	admin.HandleFunc("/logout", adminHandlerInfo.AdminLogoutHandler).Methods("GET")
-
 }

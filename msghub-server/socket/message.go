@@ -16,10 +16,11 @@ type Message struct {
 }
 
 type GMessage struct {
-	Body string `json:"body"`
-	Time string `json:"time"`
-	By   string `json:"by"`
-	Room string `json:"room"`
+	Body   string `json:"body"`
+	Time   string `json:"time"`
+	By     string `json:"by"`
+	Room   string `json:"room"`
+	Status string `json:"status"`
 }
 
 func (message *Message) encode() []byte {

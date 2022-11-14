@@ -29,10 +29,7 @@
 
 	.user-chat-msg-field div i{
 		font-size: 0.7rem;
-		color: #00E0FF;
 	}
-
-	/*  */
 
 	div.create-group-image{
 		height: 30vh !important;
@@ -274,6 +271,14 @@
 		width: 100%;
 		z-index: 7;
 	}
+
+	#newMessageIndicator{
+		background: #00E0FF;
+		height: 8px;
+		width: 10px;
+		border-radius: 50%;
+		border: none;
+	}
 </style>
 
 <section class="overflow-hidden">
@@ -380,7 +385,7 @@
 						<a href="javascript:startPersonalSocketConnection('{{ .Content.Id }}');">
 							{{ end }}
 							{{ end }}
-							<div class="d-flex align-items-end mb-2 p-3 bg-white recent-chat-card">
+							<div class="d-flex align-items-center mb-2 p-3 bg-white recent-chat-card">
 								<div class="recent-chat-dp-wrapper">
 									{{ if .IsGroup }}
 									{{ if .Content.Avatar }}
@@ -413,6 +418,9 @@
 									</label>
 								</div>
 								<label class="recent-chat-time-text">{{ .Content.LastMsgTime }}</label>
+								{{ if .Content.IsRead }}
+								<div id="newMessageIndicator"></div>
+								{{ end }}
 								{{ end }}
 							</div>
 						</a>

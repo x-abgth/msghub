@@ -7,6 +7,7 @@ type RecentMessages struct {
 	LastMsg     string
 	LastMsgTime string
 	IsImage     bool
+	IsRead      bool
 }
 
 type RecentChatModel struct {

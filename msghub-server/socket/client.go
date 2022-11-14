@@ -7,6 +7,7 @@ import (
 	"image"
 	"image/png"
 	"log"
+	"msghub-server/logic"
 	"msghub-server/models"
 	"msghub-server/utils"
 	"net/http"
@@ -63,8 +64,8 @@ type Client struct {
 	wsServer *WsServer
 	send     chan *WSMessage
 	Hub      *Hub
-	// To keep track of the rooms this client joins
-	Name string `json:"name"`
+
+	Room string
 }
 
 type GClient struct {
@@ -84,17 +85,14 @@ type GClient struct {
 	Room string
 }
 
-func newClient(conn *websocket.Conn, wsServer *WsServer, phone string) *Client {
+func newClient(conn *websocket.Conn, wsServer *WsServer, phone, target string) *Client {
 	return &Client{
 		ID:       phone,
 		conn:     conn,
 		wsServer: wsServer,
 		send:     make(chan *WSMessage, 256),
+		Room:     target,
 	}
-}
-
-func (client *Client) GetName() string {
-	return client.Name
 }
 
 // ServeWs handles websocket requests from clients requests.
@@ -107,7 +105,7 @@ func ServeWs(phone, target string, wsServer *WsServer, w http.ResponseWriter, r 
 	}
 
 	// whenever the function ServeWs is called a new client is created.
-	client := newClient(conn, wsServer, phone)
+	client := newClient(conn, wsServer, phone, target)
 
 	models.ClientID = client.ID
 	models.TargetID = target
@@ -139,7 +137,6 @@ func (client *Client) readPump() {
 
 	// start endless read loop, waiting for messages from client.
 	for {
-
 		var message WSMessage
 
 		err := client.conn.ReadJSON(&message)
@@ -183,10 +180,11 @@ func (client *Client) readPump() {
 			var m *WSMessage = &WSMessage{
 				Type: "message",
 				Payload: GMessage{
-					Body: message.Payload.Body,
-					Time: message.Payload.Time,
-					By:   message.Payload.By,
-					Room: message.Payload.Room,
+					Body:   message.Payload.Body,
+					Time:   message.Payload.Time,
+					By:     message.Payload.By,
+					Room:   message.Payload.Room,
+					Status: logic.IS_NOT_SENT,
 				},
 			}
 			fmt.Println("Read Message ---------------------- ", m.Payload.Room)
@@ -239,10 +237,11 @@ func (client *Client) readPump() {
 			var m *WSMessage = &WSMessage{
 				Type: "image",
 				Payload: GMessage{
-					Body: fileUrl,
-					Time: message.Payload.Time,
-					By:   message.Payload.By,
-					Room: message.Payload.Room,
+					Body:   fileUrl,
+					Time:   message.Payload.Time,
+					By:     message.Payload.By,
+					Room:   message.Payload.Room,
+					Status: logic.IS_NOT_SENT,
 				},
 			}
 			client.wsServer.broadcast <- m

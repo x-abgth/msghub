@@ -247,8 +247,6 @@ func (u *UserDb) GetDataForDashboardLogic(phone string) (models.UserDashboardMod
 				pIsImage = false
 			}
 
-			fmt.Println(personalMessages[i].From)
-
 			if personalMessages[i].From == phone {
 
 				// Get user datas like dp, name
@@ -274,6 +272,7 @@ func (u *UserDb) GetDataForDashboardLogic(phone string) (models.UserDashboardMod
 						LastMsg:     pMsg,
 						LastMsgTime: personalMessages[i].Time,
 						IsImage:     pIsImage,
+						IsRead:      false,
 					},
 					Sender:    personalMessages[i].From,
 					IsGroup:   false,
@@ -311,6 +310,11 @@ func (u *UserDb) GetDataForDashboardLogic(phone string) (models.UserDashboardMod
 					}
 				}
 
+				var isRead bool
+				if personalMessages[i].Status == IS_DELIVERED {
+					isRead = true
+				}
+
 				recentData = models.RecentChatModel{
 					Content: models.RecentMessages{
 						Id:          personalMessages[i].From,
@@ -319,6 +323,7 @@ func (u *UserDb) GetDataForDashboardLogic(phone string) (models.UserDashboardMod
 						LastMsg:     pMsg,
 						LastMsgTime: personalMessages[i].Time,
 						IsImage:     pIsImage,
+						IsRead:      isRead,
 					},
 					Sender:    personalMessages[i].From,
 					IsGroup:   false,
