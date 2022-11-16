@@ -6,8 +6,9 @@ type AdminModel struct {
 }
 
 type AdminDashboardModel struct {
-	AdminName      string
-	UsersTbContent []UserModel
-	AdminTbContent []AdminModel
-	GroupTbContent []GroupModel
+	AdminName             string
+	UsersTbContent        []UserModel
+	DeletedUsersTbContent []UserModel
+	AdminTbContent        []AdminModel
+	GroupTbContent        []GroupModel
 }

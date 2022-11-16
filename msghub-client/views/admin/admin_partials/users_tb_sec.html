@@ -3,7 +3,7 @@
 	<div class="row my-5 complete-table-wrap" id="users-table-sec">
 	  <h3 class="fs-4 mb-3">Users Table</h3>
 	  <div class="col">
-	    <table class="table bg-white rounded shadow-sm  table-hover"  id="admins-table">
+	    <table class="table bg-white rounded shadow-sm  table-hover"  id="users-table">
 	      <thead>
 	      <tr>
 	        <th scope="col" width="50">user_phone_no</th>
@@ -26,8 +26,8 @@
 	           <div class="dropdown">
 
 	           	{{ if .UserBlocked }}
-				  <button disabled class="btn btn-secondary btn-danger dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-				    Block
+				  <button class="btn btn-secondary btn-success" onclick="location.href='/admin/user-unblock/{{ .UserPhone }}'" type="button">
+				    Unblock
 				  </button>
 				{{ else }}
 				 <button class="btn btn-secondary btn-danger dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">

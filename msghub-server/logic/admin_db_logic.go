@@ -11,6 +11,7 @@ import (
 
 type AdminDb struct {
 	repo repository.Admin
+	user repository.User
 	err  error
 }
 
@@ -52,6 +53,12 @@ func (admin AdminDb) GetUsersData() ([]models.UserModel, error) {
 	return data, err
 }
 
+func (admin AdminDb) GetDelUsersData() ([]models.UserModel, error) {
+	data, err := admin.repo.GetDeletedUserData()
+
+	return data, err
+}
+
 func (admin AdminDb) GetGroupsData() ([]models.GroupModel, error) {
 	data, err := admin.repo.GetGroupsData()
 
@@ -64,8 +71,20 @@ func (admin AdminDb) BlockThisUserLogic(id, condition string) error {
 	return err
 }
 
+func (admin AdminDb) UnblockUserLogic(id string) error {
+	err := admin.user.UndoAdminBlockRepo(id)
+
+	return err
+}
+
 func (admin AdminDb) BlockThisGroupLogic(id, condition string) error {
 	err := admin.repo.AdminBlockThisGroupRepo(id, condition)
+
+	return err
+}
+
+func (admin AdminDb) AdminUnBlockGroupHandler(id string) error {
+	err := admin.user.UnblockGroupRepo(id)
 
 	return err
 }

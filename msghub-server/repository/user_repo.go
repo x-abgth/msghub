@@ -14,8 +14,18 @@ type User struct {
 	UserAbout       string  `gorm:"not null" json:"user_about"`
 	UserPassword    string  `gorm:"not null" json:"user_password"`
 	IsBlocked       bool    `gorm:"not null" json:"is_blocked"`
-	BlockedDuration *string `json:"block_duration"`
+	BlockedDuration *string `json:"blocked_duration"`
 	BlockList       *string `json:"block_list"`
+}
+
+type DeletedUser struct {
+	UserPhNo        string  `gorm:"not null;primaryKey;autoIncrement:false" json:"user_ph_no"`
+	UserAvatar      *string `json:"user_avatar"`
+	UserAbout       string  `gorm:"not null" json:"user_about"`
+	IsBlocked       bool    `gorm:"not null" json:"is_blocked"`
+	BlockedDuration *string `json:"blocked_duration"`
+	BlockList       *string `json:"block_list"`
+	DeleteTime      string  `json:"delete_time"`
 }
 
 type Storie struct {
@@ -40,7 +50,7 @@ func (user User) GetUserDataUsingPhone(formPhone string) (int, models.UserModel,
     	user_ph_no,
     	user_password, 
     	is_blocked, 
-    	block_duration
+    	blocked_duration
 	FROM users
 	WHERE user_ph_no = $1;`, formPhone)
 	if err != nil {
@@ -101,6 +111,71 @@ VALUES($1, $2, $3, $4, $5);`,
 	return true, nil
 }
 
+func (user User) ReRegisterDeletedUser(phone, name, pass string) error {
+	var (
+		avatar, blockDur *string
+		about, blockList string
+		isBlocked        bool
+	)
+
+	_, err1 := models.SqlDb.Exec(`BEGIN TRANSACTION;`)
+	if err1 != nil {
+		log.Println(err1)
+		return errors.New("sorry, An unknown error occurred. Please try again")
+	}
+
+	rows, err := models.SqlDb.Query(
+		`SELECT 
+    	user_avatar, user_about, is_blocked, blocked_duration, block_list
+	FROM deleted_users
+	WHERE user_ph_no = $1;`, phone)
+	if err != nil {
+		return err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		if err1 = rows.Scan(
+			&avatar,
+			&about,
+			&isBlocked,
+			&blockDur,
+			&blockList); err1 != nil {
+			return err1
+		}
+	}
+
+	null := ""
+	if avatar == nil {
+		avatar = &null
+	}
+
+	if blockDur == nil {
+		blockDur = &null
+	}
+
+	_, err1 = models.SqlDb.Exec(`INSERT INTO users(user_ph_no, user_name, user_avatar, user_about, user_password, is_blocked, blocked_duration, block_list) 
+	VALUES($1, $2, $3, $4, $5, $6, $7, $8);`, phone, name, *avatar, about, pass, isBlocked, *blockDur, blockList)
+	if err1 != nil {
+		log.Println(err1)
+		return errors.New("sorry, An unknown error occurred. Please try again")
+	}
+
+	_, err1 = models.SqlDb.Exec(`DELETE FROM deleted_users WHERE user_ph_no = $1`, phone)
+	if err1 != nil {
+		log.Println(err1)
+		return errors.New("sorry, An unknown error occurred. Please try again")
+	}
+
+	_, err1 = models.SqlDb.Exec(`COMMIT;`)
+	if err1 != nil {
+		log.Println(err1)
+		return errors.New("sorry, An unknown error occurred. Please try again")
+	}
+	return nil
+}
+
 func (user User) UserDuplicationStatus(phone string) int {
 	var total = 0
 
@@ -117,6 +192,23 @@ func (user User) UserDuplicationStatus(phone string) int {
 		total++
 	}
 
+	return total
+}
+
+func (user User) CheckDeletedUser(phone string) int {
+	var total int
+	rows, err := models.SqlDb.Query(
+		`SELECT *
+	FROM deleted_users
+	WHERE user_ph_no = $1;`, phone)
+	if err != nil {
+		log.Fatal("Error - ", err)
+	}
+
+	defer rows.Close()
+	for rows.Next() {
+		total++
+	}
 	return total
 }
 
@@ -372,8 +464,9 @@ func (user User) CheckUserStory(userId string) (bool, int) {
 }
 
 func (user User) UpdateStoryStatusRepo(url, time, uid string) error {
-	_, err1 := models.SqlDb.Exec(`UPDATE stories SET story_url = $1, story_update_time = $2, viewers = "", is_active = $3 WHERE user_id = $4;`, url, time, true, uid)
+	_, err1 := models.SqlDb.Exec(`UPDATE stories SET story_url = $1, story_update_time = $2, viewers = '', is_active = $3 WHERE user_id = $4;`, url, time, true, uid)
 	if err1 != nil {
+		log.Println(err1)
 		return errors.New("couldn't execute the sql query")
 	}
 
@@ -426,7 +519,7 @@ func (user User) UpdateUserData(model models.UserModel) error {
 }
 
 func (user User) UndoAdminBlockRepo(id string) error {
-	_, err1 := models.SqlDb.Exec(`UPDATE users SET is_blocked = false, block_duration = '' WHERE user_ph_no = $1;`, id)
+	_, err1 := models.SqlDb.Exec(`UPDATE users SET is_blocked = false, blocked_duration = '' WHERE user_ph_no = $1;`, id)
 	if err1 != nil {
 		log.Println(err1)
 		return errors.New("sorry, An unknown error occurred. Please try again")
@@ -471,6 +564,70 @@ func (user User) GetUserBlockList(id string) (string, error) {
 	}
 
 	return *blockList, nil
+}
+
+func (user User) DeleteUserAccountRepo(id, t string) error {
+	var (
+		name, about, blockList string
+		avatar, blockDur       *string
+		isBlocked              bool
+	)
+	_, err1 := models.SqlDb.Exec(`BEGIN TRANSACTION;`)
+	if err1 != nil {
+		log.Println(err1)
+		return errors.New("sorry, An unknown error occurred. Please try again")
+	}
+
+	rows, err := models.SqlDb.Query(
+		`SELECT 
+    	user_name, user_avatar, user_about, is_blocked, blocked_duration, block_list
+	FROM users
+	WHERE user_ph_no = $1;`, id)
+	if err != nil {
+		return err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		if err1 = rows.Scan(
+			&name,
+			&avatar,
+			&about,
+			&isBlocked,
+			&blockDur,
+			&blockList); err1 != nil {
+			return err1
+		}
+	}
+
+	null := ""
+	if avatar == nil {
+		avatar = &null
+	}
+	if blockDur == nil {
+		blockDur = &null
+	}
+
+	_, err1 = models.SqlDb.Exec(`INSERT INTO deleted_users(user_ph_no, user_name, user_avatar, user_about, is_blocked, blocked_duration, block_list, delete_time) 
+	VALUES($1, $2, $3, $4, $5, $6, $7, $8);`, id, name, *avatar, about, isBlocked, *blockDur, blockList, t)
+	if err1 != nil {
+		log.Println(err1)
+		return errors.New("sorry, An unknown error occurred. Please try again")
+	}
+
+	_, err1 = models.SqlDb.Exec(`DELETE FROM users WHERE user_ph_no = $1`, id)
+	if err1 != nil {
+		log.Println(err1)
+		return errors.New("sorry, An unknown error occurred. Please try again")
+	}
+
+	_, err1 = models.SqlDb.Exec(`COMMIT;`)
+	if err1 != nil {
+		log.Println(err1)
+		return errors.New("sorry, An unknown error occurred. Please try again")
+	}
+	return nil
 }
 
 func (user User) UpdateUserBlockList(id, val string) error {

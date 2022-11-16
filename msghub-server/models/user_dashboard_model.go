@@ -16,16 +16,18 @@ type RecentChatModel struct {
 	IsGroup   bool
 	Order     float64
 	IsBlocked bool
+	IsOnline  bool
 }
 
 type StoryModel struct {
-	UserName   string
-	UserPhone  string
-	UserAvatar string
-	StoryImg   string
-	Viewers    []string
-	Expiration string
-	IsViewed   bool
+	UserName    string
+	UserPhone   string
+	UserAvatar  string
+	StoryImg    string
+	ViewerCount int
+	Viewers     []UserModel
+	Expiration  string
+	IsViewed    bool
 }
 
 type UserDashboardModel struct {

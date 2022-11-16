@@ -78,7 +78,7 @@
 	}
 
 	div.complete-table-wrap.active{
-	    display: block;
+	    display: flex;
 	}
 
 	#page-content-wrapper {
@@ -147,9 +147,10 @@
       <div class="list-group list-group-flush my-3">
         <a href="javascript:adminBroadcastSec()" id="sidebar-element-1" class="list-group-item list-group-item-action bg-transparent second-text fw-bold active"><i class='fas fa-box-open me-2'></i>Broadcast</a>
         <a href="javascript:usersSec()" id="sidebar-element-2" class="list-group-item list-group-item-action bg-transparent second-text fw-bold"><i class='fas fa-user-friends me-2'></i>Users Table</a>
-         <a href="javascript:groupsSec()" id="sidebar-element-3" class="list-group-item list-group-item-action bg-transparent second-text fw-bold"><i class='fas fa-user-friends me-2'></i>Groups Table</a>
-        <a href="javascript:adminsSec()" id="sidebar-element-4" class="list-group-item list-group-item-action bg-transparent second-text fw-bold"><i class='fas fa-user-shield me-2'></i>Admins Table</a>
-        <a href="/admin/logout" id="sidebar-element-4" class="list-group-item list-group-item-action bg-transparent text-danger fw-bold"><i
+        <a href="javascript:delUsersSec()" id="sidebar-element-3" class="list-group-item list-group-item-action bg-transparent second-text fw-bold"><i class='fas fa-user-friends me-2'></i>Deleted Users Table</a>
+         <a href="javascript:groupsSec()" id="sidebar-element-4" class="list-group-item list-group-item-action bg-transparent second-text fw-bold"><i class='fas fa-user-friends me-2'></i>Groups Table</a>
+        <a href="javascript:adminsSec()" id="sidebar-element-5" class="list-group-item list-group-item-action bg-transparent second-text fw-bold"><i class='fas fa-user-shield me-2'></i>Admins Table</a>
+        <a href="/admin/logout" id="sidebar-element-6" class="list-group-item list-group-item-action bg-transparent text-danger fw-bold"><i
                 class="fas fa-power-off me-2"></i>Logout</a>
       </div>
     </div>
@@ -177,6 +178,7 @@
       <div class="container-fluid px-4">
       	{{ template "broadcast_message" . }}
       	{{ template "users_tb_sec" . }}
+      	{{ template "deleted_users_tb_sec" . }}
       	{{ template "groups_tb_sec" . }}
       	{{ template "admin_tb_sec" . }}
       </div>
@@ -208,8 +210,11 @@
      const second = document.getElementById('sidebar-element-2');
      const third = document.getElementById('sidebar-element-3');
      const forth = document.getElementById('sidebar-element-4');
+     const fifth = document.getElementById('sidebar-element-5');
+
      const adminTb = document.getElementById('admins-table-sec');
      const usersTb = document.getElementById('users-table-sec');
+     const delUsersTb = document.getElementById('del-users-table-sec');
      const groupsTb = document.getElementById('groups-table-sec');
      const broadcastSec = document.getElementById('broadcast-sec');
 
@@ -218,9 +223,12 @@
        second.classList.remove('active');
        third.classList.remove('active');
        forth.classList.remove('active');
+       fifth.classList.remove('active');
        // tables
+       broadcastSec.classList.remove('d-none');
        broadcastSec.classList.add('active');
        usersTb.classList.remove('active');
+       delUsersTb.classList.remove('active');
        groupsTb.classList.remove('active');
        adminTb.classList.remove('active');
      }
@@ -230,9 +238,27 @@
        second.classList.add('active');
        third.classList.remove('active');
        forth.classList.remove('active');
+       fifth.classList.remove('active');
        // tables
-       broadcastSec.classList.remove('active');
+       broadcastSec.classList.remove('d-flex');
+       broadcastSec.classList.add('d-none');
        usersTb.classList.add('active');
+       delUsersTb.classList.remove('active');
+       groupsTb.classList.remove('active');
+       adminTb.classList.remove('active');
+     }
+
+     function delUsersSec() {
+     		first.classList.remove('active');
+       second.classList.remove('active');
+       third.classList.add('active');
+       forth.classList.remove('active');
+       fifth.classList.remove('active');
+       // tables
+       broadcastSec.classList.remove('d-flex');
+       broadcastSec.classList.add('d-none');
+       usersTb.classList.remove('active');
+       delUsersTb.classList.add('active');
        groupsTb.classList.remove('active');
        adminTb.classList.remove('active');
      }
@@ -240,11 +266,14 @@
      function groupsSec() {
        first.classList.remove('active');
        second.classList.remove('active');
-       third.classList.add('active');
-       forth.classList.remove('active');
+       third.classList.remove('active');
+       forth.classList.add('active');
+       fifth.classList.remove('active');
        // tables
-       broadcastSec.classList.remove('active');
+       broadcastSec.classList.remove('d-flex');
+       broadcastSec.classList.add('d-none');
        usersTb.classList.remove('active');
+       delUsersTb.classList.remove('active');
        groupsTb.classList.add('active');
        adminTb.classList.remove('active');
      }
@@ -253,10 +282,13 @@
        first.classList.remove('active');
        second.classList.remove('active');
        third.classList.remove('active');
-       forth.classList.add('active');
+       forth.classList.remove('active');
+       fifth.classList.add('active');
        // tables
-       broadcastSec.classList.remove('active');
+       broadcastSec.classList.remove('d-flex');
+       broadcastSec.classList.add('d-none');
        usersTb.classList.remove('active');
+       delUsersTb.classList.remove('active');
        groupsTb.classList.remove('active');
        adminTb.classList.add('active');
      }
@@ -267,6 +299,7 @@
 			$('#groups-table').DataTable();
 			$('#admins-table').DataTable();
 			$('#users-table').DataTable();
+			$('#del-users-table').DataTable();
 		});
     </script>
   </body>

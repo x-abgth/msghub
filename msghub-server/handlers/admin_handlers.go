@@ -121,18 +121,25 @@ func (admin *AdminHandlerStruct) AdminDashboardHandler(w http.ResponseWriter, r 
 		panic(err)
 	}
 
+	// Get Deleted Users table content
+	c, err := admin.logics.GetDelUsersData()
+	if err != nil {
+		panic(err)
+	}
+
 	// Get Groups table content
-	c, err := admin.logics.GetGroupsData()
+	d, err := admin.logics.GetGroupsData()
 	if err != nil {
 		panic(err)
 	}
 
 	// Set data
 	data := models.AdminDashboardModel{
-		AdminName:      claim.AdminName,
-		AdminTbContent: a,
-		UsersTbContent: b,
-		GroupTbContent: c,
+		AdminName:             claim.AdminName,
+		AdminTbContent:        a,
+		UsersTbContent:        b,
+		DeletedUsersTbContent: c,
+		GroupTbContent:        d,
 	}
 
 	err = template.Tpl.ExecuteTemplate(w, "admin_dashboard.html", data)
@@ -185,6 +192,25 @@ func (admin *AdminHandlerStruct) AdminBlocksUserHandler(w http.ResponseWriter, r
 	http.Redirect(w, r, "/admin/dashboard", http.StatusFound)
 }
 
+func (admin *AdminHandlerStruct) AdminUnBlocksUserHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	uid := vars["id"]
+
+	defer func() {
+		if e := recover(); e != nil {
+			log.Println(e)
+			http.Redirect(w, r, "/admin/dashboard", http.StatusSeeOther)
+		}
+	}()
+
+	err := admin.logics.UnblockUserLogic(uid)
+	if err != nil {
+		panic(err)
+	}
+
+	http.Redirect(w, r, "/admin/dashboard", http.StatusFound)
+}
+
 func (admin *AdminHandlerStruct) AdminBlocksGroupHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	gid := vars["id"]
@@ -215,9 +241,26 @@ func (admin *AdminHandlerStruct) AdminBlocksGroupHandler(w http.ResponseWriter, 
 		panic("wrong choice")
 	}
 
-	fmt.Println(gid)
-
 	err := admin.logics.BlockThisGroupLogic(gid, t)
+	if err != nil {
+		panic(err)
+	}
+
+	http.Redirect(w, r, "/admin/dashboard", http.StatusFound)
+}
+
+func (admin *AdminHandlerStruct) AdminUnBlockGroupHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	defer func() {
+		if e := recover(); e != nil {
+			log.Println(e)
+			http.Redirect(w, r, "/admin/dashboard", http.StatusSeeOther)
+		}
+	}()
+
+	err := admin.logics.AdminUnBlockGroupHandler(id)
 	if err != nil {
 		panic(err)
 	}

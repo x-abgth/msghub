@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"image"
+	"image/jpeg"
 	"image/png"
 	"log"
 	"msghub-server/logic"
@@ -196,6 +197,8 @@ func (client *Client) readPump() {
 				panic("Error1")
 			}
 
+			ImageType := message.Payload.Body[11:idx]
+
 			b64data := message.Payload.Body[strings.IndexByte(message.Payload.Body, ',')+1:]
 
 			// This is not working as expected.
@@ -214,24 +217,70 @@ func (client *Client) readPump() {
 			}
 			uid := uuid.New()
 
-			pngI, _, errPng := image.Decode(res)
 			var fileUrl string
-			if errPng == nil {
-				f, _ := os.OpenFile(newPath+"/"+uid.String()+".png", os.O_WRONLY|os.O_CREATE, 0777)
-				png.Encode(f, pngI)
 
-				file, err := os.Open(newPath + "/" + uid.String() + ".png")
-				if err != nil {
-					panic(err)
+			switch ImageType {
+			case "png":
+				pngI, _, errPng := image.Decode(res)
+				if errPng == nil {
+					f, _ := os.OpenFile(newPath+"/"+uid.String()+".png", os.O_WRONLY|os.O_CREATE, 0777)
+					png.Encode(f, pngI)
+
+					file, err := os.Open(newPath + "/" + uid.String() + ".png")
+					if err != nil {
+						panic(err)
+					}
+
+					fileUrl = utils.StoreThisFileInBucket("pm_chat_file/", uid.String(), file)
+
+					file.Close()
+					os.Remove(newPath + "/" + uid.String() + ".png")
+				} else {
+					fmt.Println("Error png is having error")
+					fmt.Println(errPng.Error())
+				}
+			case "jpeg":
+				jpegI, _, errJpeg := image.Decode(res)
+				if errJpeg == nil {
+					f, _ := os.OpenFile(newPath+"/"+uid.String()+".jpeg", os.O_WRONLY|os.O_CREATE, 0777)
+					jpeg.Encode(f, jpegI, nil)
+
+					file, err := os.Open(newPath + "/" + uid.String() + ".jpeg")
+					if err != nil {
+						panic(err)
+					}
+
+					fileUrl = utils.StoreThisFileInBucket("pm_chat_file/", uid.String(), file)
+
+					file.Close()
+					os.Remove(newPath + "/" + uid.String() + ".jpeg")
+				} else {
+					fmt.Println("Error jpeg is having error")
+					fmt.Println(errJpeg.Error())
 				}
 
-				fileUrl = utils.StoreThisFileInBucket("pm_chat_file/", uid.String(), file)
+			case "gif":
+				gifI, _, errGif := image.Decode(res)
+				if errGif == nil {
+					f, _ := os.OpenFile(newPath+"/"+uid.String()+".gif", os.O_WRONLY|os.O_CREATE, 0777)
+					jpeg.Encode(f, gifI, nil)
 
-				file.Close()
-				os.Remove(newPath + "/" + uid.String() + ".png")
-			} else {
-				fmt.Println("Error png is having error")
-				fmt.Println(errPng.Error())
+					file, err := os.Open(newPath + "/" + uid.String() + ".gif")
+					if err != nil {
+						panic(err)
+					}
+
+					fileUrl = utils.StoreThisFileInBucket("pm_chat_file/", uid.String(), file)
+
+					file.Close()
+					os.Remove(newPath + "/" + uid.String() + ".gif")
+				} else {
+					fmt.Println("Error gif is having error")
+					fmt.Println(errGif.Error())
+				}
+			default:
+				fmt.Println("Only images allowed to sent - .jpeg, .png, .gif")
+				continue
 			}
 
 			var m *WSMessage = &WSMessage{
@@ -395,6 +444,8 @@ func (c *GClient) GroupReadPump() {
 				panic("Error1")
 			}
 
+			ImageType := message.Payload.Body[11:idx]
+
 			b64data := message.Payload.Body[strings.IndexByte(message.Payload.Body, ',')+1:]
 
 			// This is not working as expected.
@@ -413,24 +464,70 @@ func (c *GClient) GroupReadPump() {
 			}
 			uid := uuid.New()
 
-			pngI, _, errPng := image.Decode(res)
 			var fileUrl string
-			if errPng == nil {
-				f, _ := os.OpenFile(newPath+"/"+uid.String()+".png", os.O_WRONLY|os.O_CREATE, 0777)
-				png.Encode(f, pngI)
 
-				file, err := os.Open(newPath + "/" + uid.String() + ".png")
-				if err != nil {
-					panic(err)
+			switch ImageType {
+			case "png":
+				pngI, _, errPng := image.Decode(res)
+				if errPng == nil {
+					f, _ := os.OpenFile(newPath+"/"+uid.String()+".png", os.O_WRONLY|os.O_CREATE, 0777)
+					png.Encode(f, pngI)
+
+					file, err := os.Open(newPath + "/" + uid.String() + ".png")
+					if err != nil {
+						panic(err)
+					}
+
+					fileUrl = utils.StoreThisFileInBucket("group_chat_file/", uid.String(), file)
+
+					file.Close()
+					os.Remove(newPath + "/" + uid.String() + ".png")
+				} else {
+					fmt.Println("Error png is having error")
+					fmt.Println(errPng.Error())
+				}
+			case "jpeg":
+				jpegI, _, errJpeg := image.Decode(res)
+				if errJpeg == nil {
+					f, _ := os.OpenFile(newPath+"/"+uid.String()+".jpeg", os.O_WRONLY|os.O_CREATE, 0777)
+					jpeg.Encode(f, jpegI, nil)
+
+					file, err := os.Open(newPath + "/" + uid.String() + ".jpeg")
+					if err != nil {
+						panic(err)
+					}
+
+					fileUrl = utils.StoreThisFileInBucket("group_chat_file/", uid.String(), file)
+
+					file.Close()
+					os.Remove(newPath + "/" + uid.String() + ".jpeg")
+				} else {
+					fmt.Println("Error jpeg is having error")
+					fmt.Println(errJpeg.Error())
 				}
 
-				fileUrl = utils.StoreThisFileInBucket("group_chat_file/", uid.String(), file)
+			case "gif":
+				gifI, _, errGif := image.Decode(res)
+				if errGif == nil {
+					f, _ := os.OpenFile(newPath+"/"+uid.String()+".gif", os.O_WRONLY|os.O_CREATE, 0777)
+					jpeg.Encode(f, gifI, nil)
 
-				file.Close()
-				os.Remove(newPath + "/" + uid.String() + ".png")
-			} else {
-				fmt.Println("Error png is having error")
-				fmt.Println(errPng.Error())
+					file, err := os.Open(newPath + "/" + uid.String() + ".gif")
+					if err != nil {
+						panic(err)
+					}
+
+					fileUrl = utils.StoreThisFileInBucket("group_chat_file/", uid.String(), file)
+
+					file.Close()
+					os.Remove(newPath + "/" + uid.String() + ".gif")
+				} else {
+					fmt.Println("Error gif is having error")
+					fmt.Println(errGif.Error())
+				}
+			default:
+				fmt.Println("Only images allowed to sent - .jpeg, .png, .gif")
+				continue
 			}
 
 			var m *WSMessage = &WSMessage{

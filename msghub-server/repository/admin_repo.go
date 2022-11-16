@@ -240,8 +240,54 @@ func (admin Admin) GetGroupsData() ([]models.GroupModel, error) {
 	return res, nil
 }
 
+func (admin Admin) GetDeletedUserData() ([]models.UserModel, error) {
+	var (
+		id, name, about, deleteTime string
+		isBlocked                   bool
+		avatar                      *string
+
+		res []models.UserModel
+	)
+	rows, err := models.SqlDb.Query(
+		`SELECT user_ph_no, user_name, user_avatar, user_about, is_blocked, delete_time FROM deleted_users;`)
+	if err != nil {
+		return nil, errors.New("an unknown error occurred, please try again")
+	}
+
+	for rows.Next() {
+		if err := rows.Scan(
+			&id,
+			&name,
+			&avatar,
+			&about,
+			&isBlocked,
+			&deleteTime,
+		); err != nil {
+			return nil, err
+		}
+
+		null := ""
+		if avatar == nil {
+			avatar = &null
+		}
+
+		data := models.UserModel{
+			UserPhone:     id,
+			UserAvatarUrl: *avatar,
+			UserName:      name,
+			UserAbout:     about,
+			IsBlocked:     isBlocked,
+			DeletedTime:   deleteTime,
+		}
+
+		res = append(res, data)
+	}
+
+	return res, nil
+}
+
 func (admin Admin) AdminBlockThisUserRepo(id, condition string) error {
-	_, err1 := models.SqlDb.Exec(`UPDATE users SET is_blocked = true, block_duration = $1 WHERE user_ph_no = $2 AND is_blocked = false;`, condition, id)
+	_, err1 := models.SqlDb.Exec(`UPDATE users SET is_blocked = true, blocked_duration = $1 WHERE user_ph_no = $2 AND is_blocked = false;`, condition, id)
 	if err1 != nil {
 		log.Println(err1)
 		return errors.New("sorry, An unknown error occurred. Please try again")

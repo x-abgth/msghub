@@ -9,6 +9,7 @@ type UserModel struct {
 	UserBlocked   bool
 	BlockDur      string
 	IsBlocked     bool
+	DeletedTime   string
 }
 
 var userVal *UserModel

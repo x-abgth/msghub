@@ -26,6 +26,11 @@ func (u *UserDb) MigrateUserDb(db *gorm.DB) error {
 	return err
 }
 
+func (u *UserDb) MigrateDeletedUserDb(db *gorm.DB) error {
+	err := db.AutoMigrate(&repository.DeletedUser{})
+	return err
+}
+
 func (u *UserDb) MigrateStoriesDb(db *gorm.DB) error {
 	err := db.AutoMigrate(&repository.Storie{})
 	return err
@@ -145,6 +150,7 @@ func (u *UserDb) UserRegisterLogic(name, phone, pass string) bool {
 			models.InitAuthErrorModel(alm)
 			return false
 		} else {
+			fmt.Println("Sending otp to", phone)
 			status := utils.SendOtp(phone)
 			if status {
 				data := models.IncorrectOtpModel{
@@ -173,15 +179,31 @@ func (u *UserDb) UserRegisterLogic(name, phone, pass string) bool {
 func (u *UserDb) CheckUserRegisterOtpLogic(otp, name, phone, pass string) (bool, string) {
 	status := utils.CheckOtp(phone, otp)
 	if status {
-		done, alert := u.userData.RegisterUser(name, phone, pass)
-		if done {
+		// Check user is in deleted table
+		delU := u.userData.CheckDeletedUser(phone)
+		if delU == 1 {
+			// if yes, get user data
+			err := u.userData.ReRegisterDeletedUser(phone, name, pass)
+			if err != nil {
+				log.Println(err)
+				alm := models.AuthErrorModel{
+					ErrorStr: err.Error(),
+				}
+				models.InitAuthErrorModel(alm)
+				return false, "login"
+			}
 			return true, ""
+		} else {
+			done, alert := u.userData.RegisterUser(name, phone, pass)
+			if done {
+				return true, ""
+			}
+			alm := models.AuthErrorModel{
+				ErrorStr: alert.Error(),
+			}
+			models.InitAuthErrorModel(alm)
+			return false, "login"
 		}
-		alm := models.AuthErrorModel{
-			ErrorStr: alert.Error(),
-		}
-		models.InitAuthErrorModel(alm)
-		return false, "login"
 	} else {
 		data := models.IncorrectOtpModel{
 			ErrorStr:    "The OTP is incorrect. Try again",
@@ -293,6 +315,7 @@ func (u *UserDb) GetDataForDashboardLogic(phone string) (models.UserDashboardMod
 					IsGroup:   false,
 					Order:     float64(diff),
 					IsBlocked: false,
+					IsOnline:  false,
 				}
 			} else {
 				// Get user datas like dp, name
@@ -423,19 +446,31 @@ func (u *UserDb) GetDataForDashboardLogic(phone string) (models.UserDashboardMod
 
 				viewerArr := strings.Split(viwerStr, " ")
 
+				var viewerModel []models.UserModel
 				for i := range viewerArr {
-					if len(viewerArr[i]) != 10 {
-						viewerArr = append(viewerArr[:i], viewerArr[i+1:]...)
+					if len(viewerArr[i]) == 10 {
+						z, err := u.GetUserDataLogic(viewerArr[i])
+						if err != nil {
+							log.Println(err)
+							return models.UserDashboardModel{}, err
+						}
+
+						viewerModel = append(viewerModel, z)
 					}
 				}
 
+				if len(viewerModel) < 1 {
+					viewerModel = nil
+				}
+
 				y := models.StoryModel{
-					UserName:   dataX.UserName,
-					UserPhone:  dataX.UserPhone,
-					UserAvatar: dataX.UserAvatarUrl,
-					StoryImg:   data[i].StoryUrl,
-					Expiration: data[i].StoryUpdateTime,
-					Viewers:    viewerArr,
+					UserName:    dataX.UserName,
+					UserPhone:   dataX.UserPhone,
+					UserAvatar:  dataX.UserAvatarUrl,
+					StoryImg:    data[i].StoryUrl,
+					Expiration:  data[i].StoryUpdateTime,
+					ViewerCount: len(viewerModel),
+					Viewers:     viewerModel,
 				}
 				userStory = y
 			} else {
@@ -537,7 +572,9 @@ func (u *UserDb) StorySeenLogic(viewer, storyId string) error {
 		list := strings.Split(sList, " ")
 		for i := range list {
 			if len(list[i]) == 10 {
-				viewerList = viewerList + list[i] + " "
+				if viewer != list[i] {
+					viewerList = viewerList + list[i] + " "
+				}
 			}
 		}
 		viewerList = viewerList + viewer + " "
@@ -723,4 +760,12 @@ func (u *UserDb) UserUnblockUserLogic(uid, buid string) error {
 	}
 
 	return nil
+}
+
+func (u *UserDb) DeleteUserAccountLogic(id string) error {
+
+	// Get the current time
+	t := time.Now().Format("2 Jan 2006 3:04:05 PM")
+
+	return u.userData.DeleteUserAccountRepo(id, t)
 }

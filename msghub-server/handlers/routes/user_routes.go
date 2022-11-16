@@ -54,6 +54,8 @@ func userRoutes(theMux *mux.Router, s *socket.WsServer) {
 	theMux.HandleFunc("/user/dashboard/group-kicked-out/{group}/{user}", handlerInfo.UserKickedOutHandler).Methods("GET")
 	theMux.HandleFunc("/user/dashboard/user-block-user/{target}", handlerInfo.UserBlocksHandler).Methods("GET")
 	theMux.HandleFunc("/user/dashboard/user-unblock-user/{target}", handlerInfo.UserUnblocksHandler).Methods("GET")
+	theMux.HandleFunc("/user/dashboard/about-page", handlerInfo.AboutPageHandler).Methods("GET")
+	theMux.HandleFunc("/user/dashboard/delete-account/{target}", handlerInfo.UserDeleteAccountHandler).Methods("GET")
 
 	theMux.HandleFunc("/user/logout", handlerInfo.UserLogoutHandler).Methods("GET")
 

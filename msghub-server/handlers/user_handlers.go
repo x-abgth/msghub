@@ -32,6 +32,11 @@ func (info *InformationHelper) UserLoginHandler(w http.ResponseWriter, r *http.R
 		log.Fatal("Error creating user table : ", err.Error())
 	}
 
+	err = info.userRepo.MigrateDeletedUserDb(models.GormDb)
+	if err != nil {
+		log.Fatal("Error creating deleted user table : ", err.Error())
+	}
+
 	claims := &jwtPkg.UserJwtClaim{
 		IsAuthenticated: false,
 	}
@@ -160,6 +165,7 @@ func (info *InformationHelper) UserVerifyLoginOtpHandler(w http.ResponseWriter, 
 		expire := time.Now().AddDate(0, 0, 1)
 		cookie := &http.Cookie{Name: "userToken", Value: token, Expires: expire, HttpOnly: true, Path: "/"}
 		http.SetCookie(w, cookie)
+
 		http.Redirect(w, r, "/user/dashboard", http.StatusFound)
 	} else {
 		userData := models.UserModel{UserPhone: ph}
@@ -184,7 +190,9 @@ func (info *InformationHelper) UserRegisterHandler(w http.ResponseWriter, r *htt
 	ph := r.PostFormValue("signupPh")
 	pass := r.PostFormValue("signupPass")
 
+	// This only sends the otp for registration, won't update anything on db
 	status := info.userRepo.UserRegisterLogic(name, ph, pass)
+
 	if status {
 		userData := models.UserModel{UserPhone: ph}
 		claims := &jwtPkg.UserJwtClaim{
@@ -206,6 +214,7 @@ func (info *InformationHelper) UserRegisterHandler(w http.ResponseWriter, r *htt
 
 func (info *InformationHelper) UserVerifyRegisterOtpHandler(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
+
 	otp := r.PostFormValue("loginOtp")
 
 	user := models.ReturnUserModel()
@@ -225,6 +234,7 @@ func (info *InformationHelper) UserVerifyRegisterOtpHandler(w http.ResponseWrite
 		expire := time.Now().AddDate(0, 0, 1)
 		cookie := &http.Cookie{Name: "userToken", Value: token, Expires: expire, HttpOnly: true, Path: "/"}
 		http.SetCookie(w, cookie)
+
 		http.Redirect(w, r, "/user/dashboard", http.StatusFound)
 	} else {
 		if flag == "login" {
@@ -1097,9 +1107,78 @@ func (info *InformationHelper) UserUnblocksHandler(w http.ResponseWriter, r *htt
 	http.Redirect(w, r, "/user/dashboard", http.StatusFound)
 }
 
+func (info *InformationHelper) AboutPageHandler(w http.ResponseWriter, r *http.Request) {
+	defer func() {
+		if e := recover(); e != nil {
+			log.Println(e)
+			http.Redirect(w, r, "/user/dashboard", http.StatusSeeOther)
+		}
+	}()
+
+	err := template.Tpl.ExecuteTemplate(w, "about_page.html", http.StatusFound)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (info *InformationHelper) UserDeleteAccountHandler(w http.ResponseWriter, r *http.Request) {
+	defer func() {
+		if e := recover(); e != nil {
+			log.Println(e)
+			http.Redirect(w, r, "/user/dashboard", http.StatusSeeOther)
+		}
+	}()
+
+	vars := mux.Vars(r)
+	target := vars["target"]
+
+	// Use transaction to insert row into table B
+	// and then delete a row from table A
+	err := info.userRepo.DeleteUserAccountLogic(target)
+	if err != nil {
+		panic(err)
+	}
+
+	//for i := range models.IsOnline {
+	//	_, found := models.IsOnline[i][target]
+	//	if found {
+	//		delete(models.IsOnline[i], target)
+	//	}
+	//}
+
+	claims := &jwtPkg.UserJwtClaim{
+		IsAuthenticated: false,
+	}
+
+	token := jwtPkg.SignJwtToken(claims)
+
+	cookie := &http.Cookie{Name: "userToken", Value: token, MaxAge: -1, HttpOnly: true, Path: "/"}
+	http.SetCookie(w, cookie)
+
+	http.Redirect(w, r, "/", http.StatusFound)
+}
+
 func (info *InformationHelper) UserLogoutHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Logout pressed!")
 	// assigning JWT tokens
+
+	//c, err1 := r.Cookie("userToken")
+	//if err1 != nil {
+	//	if err1 == http.ErrNoCookie {
+	//		panic("Cookie not found!")
+	//	}
+	//	panic("Unknown error occurred!")
+	//}
+	//
+	//claim := jwtPkg.GetValueFromJwt(c)
+	//
+	//for i := range models.IsOnline {
+	//	_, found := models.IsOnline[i][claim.User.UserPhone]
+	//	if found {
+	//		delete(models.IsOnline[i], claim.User.UserPhone)
+	//	}
+	//}
+
 	claims := &jwtPkg.UserJwtClaim{
 		IsAuthenticated: false,
 	}

@@ -279,6 +279,16 @@
 		border-radius: 50%;
 		border: none;
 	}
+
+	.story-viewer-list{
+		position: absolute;
+		top: 100%;
+		width: 100%;
+		min-height: 30vh;
+		background: white;
+		z-index: 200;
+	}
+
 </style>
 
 <section class="overflow-hidden">
@@ -302,6 +312,27 @@
 			</div>
 		</nav>
 		<img id="story-img" class="img-fluid" style="pointer-events: none; z-index: 5; max-height: 100vh; max-width: 100%; object-fit: cover; object-position: center;" alt="The image format might not be supporting on your browser!">
+		{{ if .UserStory.Viewers }}
+		<div class="story-viewer-list p-5 d-flex flex-column justify-content-start">
+			<h4>Viewers&nbsp;&nbsp;<span style="color: #ccc; font-weight: normal; font-size: 0.7em" ><i class='fas fa-eye'></i>&nbsp;{{ .UserStory.ViewerCount }}</span></h4>
+			<div style="height: 2px; background: #00E0FF; border: none; border-radius: 2px;" class="col-12 col-sm-8 col-md-3 mb-3"></div>
+			{{ range .UserStory.Viewers }}
+				<div class="d-flex justify-content-center align-items-end mb-2 p-3 bg-white recent-chat-card">
+					<div class="recent-chat-dp-wrapper">
+						{{ if .UserAvatarUrl }}
+							<img class="img-fluid" src="{{ .UserAvatarUrl }}" alt="user profile picture">
+						{{ else }}
+							<img src="../../assets/images/user.png" alt="user profile picture">
+						{{ end }}
+					</div>
+					<div class="w-100 d-flex flex-column px-3 mx-3">
+						<label>{{ .UserName }}</label>
+						<label class="members-page-about">+91&nbsp;{{ .UserPhone }}</label>
+					</div>
+				</div>
+			{{ end }}
+		</div>
+		{{ end }}
 	</div>
 	<nav class="msghub-nav navbar navbar-dark justify-content-between py-3 px-2 px-md-5">
 		<a class="navbar-brand" href="/user/dashboard"><strong>MSGHUB</strong></a>
@@ -327,8 +358,8 @@
 				</button>
 				<ul class="dropdown-menu dropdown-menu-white" style="min-width: 150px !important; transform: translate(-50%, 0) scale(1);">
 					<li><a class="py-2 px-4 dropdown-item" onclick="openCreateGroup()">Create Group</a></li>
-					<li><a class="py-2 px-4 dropdown-item" href="#">Settings</a></li>
-					<li><a class="py-2 px-4 dropdown-item" href="#">About</a></li>
+					<li><a class="py-2 px-4 dropdown-item" href="/user/dashboard/about-page">About</a></li>
+					<li><a class="py-2 px-4 dropdown-item text-danger" onclick="deleteUserAccount()">Delete Account</a></li>
 					<li><a href="/user/logout" class="py-2 px-4 dropdown-item text-danger">Logout</a></li>
 				</ul>
 			</div>
@@ -442,6 +473,27 @@
 		<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 		<script type="text/javascript" src="../../assets/js/user_dashboard_functions.js"></script>
 		<script type="text/javascript">
+
+			function deleteUserAccount() {
+				Swal.fire({
+				  title: 'Are you sure?',
+				  text: "You won't be able to revert this!",
+				  icon: 'warning',
+				  showCancelButton: true,
+				  confirmButtonColor: '#3085d6',
+				  cancelButtonColor: '#d33',
+				  confirmButtonText: 'Yes, delete it!'
+				}).then((result) => {
+				  if (result.isConfirmed) {
+				  	window.location.href = "/user/dashboard/delete-account/{{ .UserPhone }}"
+				    Swal.fire(
+				      'Deleted!',
+				      'Your file has been deleted.',
+				      'success'
+				    )
+				  }
+				})
+			}
 	//
 	function openUserDetailsSec() {
 		userDetailsHeader = document.getElementById("dashboard-user-details-header");
