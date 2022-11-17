@@ -2,6 +2,7 @@ package repository
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"msghub-server/models"
 	"strconv"
@@ -466,7 +467,7 @@ func (user User) CheckUserStory(userId string) (bool, int) {
 func (user User) UpdateStoryStatusRepo(url, time, uid string) error {
 	_, err1 := models.SqlDb.Exec(`UPDATE stories SET story_url = $1, story_update_time = $2, viewers = '', is_active = $3 WHERE user_id = $4;`, url, time, true, uid)
 	if err1 != nil {
-		log.Println(err1)
+		fmt.Errorf("update story error - %w", err1)
 		return errors.New("couldn't execute the sql query")
 	}
 

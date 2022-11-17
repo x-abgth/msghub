@@ -105,7 +105,6 @@ func (h *Hub) Run() {
 		case client := <-h.Unregister:
 			h.delete(client)
 		case m := <-h.Broadcast:
-			log.Println("Reached broadcast channel", m.Payload)
 			h.broadcast(m)
 		}
 	}

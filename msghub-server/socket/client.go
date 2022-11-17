@@ -126,7 +126,6 @@ func ServeWs(phone, target string, wsServer *WsServer, w http.ResponseWriter, r 
 // ------------------------------------------------------------------------------
 
 func (client *Client) readPump() {
-	fmt.Println("At read pump")
 	defer func() {
 		client.wsServer.unregister <- client
 		client.conn.Close()
@@ -151,6 +150,8 @@ func (client *Client) readPump() {
 		if message.Payload.Room == "admin" {
 			break
 		}
+
+		fmt.Println(message.Payload.Body)
 
 		switch message.Type {
 		case "join":
@@ -188,7 +189,6 @@ func (client *Client) readPump() {
 					Status: logic.IS_NOT_SENT,
 				},
 			}
-			fmt.Println("Read Message ---------------------- ", m.Payload.Room)
 			client.wsServer.broadcast <- m
 
 		case "image":
@@ -303,7 +303,6 @@ func (client *Client) readPump() {
 					Room: message.Payload.Room,
 				},
 			}
-			log.Println("Typing:", m)
 			client.wsServer.broadcast <- m
 
 		case "stoptyping":
@@ -314,7 +313,6 @@ func (client *Client) readPump() {
 					Room: message.Payload.Room,
 				},
 			}
-			log.Println("StopTyping:", m)
 			client.wsServer.broadcast <- m
 		}
 	}
@@ -327,8 +325,6 @@ func (client *Client) readPump() {
 */
 
 func (client *Client) writePump() {
-	fmt.Println("At write Pump")
-
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
 		ticker.Stop()
@@ -400,6 +396,9 @@ func (c *GClient) GroupReadPump() {
 			fmt.Println("Error while reading websocket message: ", err)
 			return
 		}
+
+		fmt.Println(message.Payload.Body)
+
 		switch message.Type {
 		case "join":
 			c.IsJoined = true
@@ -435,7 +434,6 @@ func (c *GClient) GroupReadPump() {
 					Room: message.Payload.Room,
 				},
 			}
-			fmt.Println("Read Message ---------------------- ", m.Payload.Room)
 			c.Hub.Broadcast <- m
 
 		case "image":
@@ -549,7 +547,6 @@ func (c *GClient) GroupReadPump() {
 					Room: message.Payload.Room,
 				},
 			}
-			log.Println("Typing:", m)
 			c.Hub.Broadcast <- m
 
 		case "stoptyping":
@@ -560,7 +557,6 @@ func (c *GClient) GroupReadPump() {
 					Room: message.Payload.Room,
 				},
 			}
-			log.Println("StopTyping:", m)
 			c.Hub.Broadcast <- m
 		}
 	}

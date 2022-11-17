@@ -1,7 +1,6 @@
 package logic
 
 import (
-	"fmt"
 	"log"
 	"msghub-server/models"
 	"msghub-server/repository"
@@ -137,8 +136,6 @@ func (group GroupDataLogicModel) InsertMessagesToGroup(message models.GroupMessa
 	var (
 		err error
 	)
-
-	fmt.Println("You might add the members")
 
 	group.messageGroupTb.GroupId, err = strconv.Atoi(message.GroupId)
 	if err != nil {

@@ -6,20 +6,15 @@
 </div>
 A messaging application built using <strong>golang</strong> and<strong> bootstrap</strong>, one can group message and personal message.<br>
 The front-end section of the application consist of HTML, CSS, JS & Bootstrap and the backend is completely built on Golang (GO).<br> 
-The application is in development stage. 
-
-### 🎯 TODOS:
-- [x] Add private messaging feature
-- [x] Create room for group messaging
-- [x] Add group messaging feature
-- [ ] Add story feature
-- [ ] Add online user status
-- [ ] Add typing status
-- [ ] Add read receipts
-- [ ] User can delete the account
-- [ ] User can leave the group
-- [ ] User could clear the chats
-- [ ] Add smileys and image sharing
+The application is in development stage.
 
 > Any UI based contributions are highly encouraged.
 
+## Features 
+- Personal Messaging
+- Group Messaging
+- Story / Status viewing and adding
+- Group Creation
+
+> The app do have limitations because the front-end is just html, css and js.
+> Therefore Live reload may not be possible like react or other front-end frameworks.

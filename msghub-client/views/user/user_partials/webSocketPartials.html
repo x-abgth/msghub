@@ -2,6 +2,18 @@
 <script>
 	const monthAsWord = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
+		function openImageChat(val) {
+			document.getElementById("chatImgViewer").classList.remove("d-none");
+			document.getElementById("chatImgViewer").classList.add("d-flex");
+
+			document.getElementById("imageChatViewed").setAttribute("src", val);
+		}
+
+		function closeImageChat() {
+			document.getElementById("chatImgViewer").classList.remove("d-flex");
+			document.getElementById("chatImgViewer").classList.add("d-none")
+		}
+
 		// This function only works for group messaging
 		function startGroupSocketConnection(val) {
 			const colorCodes = ["#E21717","#B9345A","#207398","#2827CC","#E07C24","#120E43","#02B290","#F4BE2C","#00D84A", "#E03B8B", "#242B2E"];
@@ -252,7 +264,12 @@
 										let imageChatTag = document.createElement('img');
 										imageChatTag.setAttribute("id", "imageChatTag");
 										imageChatTag.setAttribute("src", response.data[i].message);
-										innerItem.appendChild(imageChatTag);
+
+										let imageChatTagWrapper = document.createElement('a');
+										imageChatTagWrapper.setAttribute("href", `javascript:openImageChat('${response.data[i].message}')`)
+										imageChatTagWrapper.appendChild(imageChatTag);
+										innerItem.appendChild(imageChatTagWrapper);
+
 									} else {
 										innerItem.innerText = response.data[i].message;
 									}
@@ -275,7 +292,11 @@
 										let imageChatTag = document.createElement('img');
 										imageChatTag.setAttribute("id", "imageChatTag");
 										imageChatTag.setAttribute("src", response.data[i].message);
-										innerItem.appendChild(imageChatTag);
+
+										let imageChatTagWrapper = document.createElement('a');
+										imageChatTagWrapper.setAttribute("href", `javascript:openImageChat('${response.data[i].message}')`)
+										imageChatTagWrapper.appendChild(imageChatTag);
+										innerItem.appendChild(imageChatTagWrapper);
 									} else {
 										innerItem.innerText = response.data[i].message;
 									}
@@ -572,7 +593,11 @@ if(chatPartBody.classList.contains('d-none')) {
 							let imageChatTag = document.createElement('img');
 							imageChatTag.setAttribute("id", "imageChatTag");
 							imageChatTag.setAttribute("src", msgobj.message);
-							innerItem.appendChild(imageChatTag);
+
+							let imageChatTagWrapper = document.createElement('a');
+							imageChatTagWrapper.setAttribute("href", `javascript:openImageChat('${response.data[i].message}')`)
+							imageChatTagWrapper.appendChild(imageChatTag);
+							innerItem.appendChild(imageChatTagWrapper);
 						} else {
 							innerItem.innerHTML = msgobj.message;
 						}
@@ -594,7 +619,11 @@ if(chatPartBody.classList.contains('d-none')) {
 							let imageChatTag = document.createElement('img');
 							imageChatTag.setAttribute("id", "imageChatTag");
 							imageChatTag.setAttribute("src", msgobj.message);
-							innerItem.appendChild(imageChatTag);
+							
+							let imageChatTagWrapper = document.createElement('a');
+							imageChatTagWrapper.setAttribute("href", `javascript:openImageChat('${response.data[i].message}')`)
+							imageChatTagWrapper.appendChild(imageChatTag);
+							innerItem.appendChild(imageChatTagWrapper);
 						} else {
 							innerItem.innerHTML = msgobj.message;
 						}
@@ -707,10 +736,15 @@ if(chatPartBody.classList.contains('d-none')) {
 										msgDetails.appendChild(recipient);
 
 										if (response.data[i].type == "image") {
+
 											let imageChatTag = document.createElement('img');
 											imageChatTag.setAttribute("id", "imageChatTag");
 											imageChatTag.setAttribute("src", response.data[i].message);
-											innerItem.appendChild(imageChatTag);
+
+											let imageChatTagWrapper = document.createElement('a');
+											imageChatTagWrapper.setAttribute("href", `javascript:openImageChat('${response.data[i].message}')`)
+											imageChatTagWrapper.appendChild(imageChatTag);
+											innerItem.appendChild(imageChatTagWrapper);
 										} else {
 											innerItem.innerHTML = response.data[i].message;
 										}
@@ -728,7 +762,10 @@ if(chatPartBody.classList.contains('d-none')) {
 											let imageChatTag = document.createElement('img');
 											imageChatTag.setAttribute("id", "imageChatTag");
 											imageChatTag.setAttribute("src", response.data[i].message);
-											innerItem.appendChild(imageChatTag);
+											let imageChatTagWrapper = document.createElement('a');
+											imageChatTagWrapper.setAttribute("href", `javascript:openImageChat('${response.data[i].message}')`)
+											imageChatTagWrapper.appendChild(imageChatTag);
+											innerItem.appendChild(imageChatTagWrapper);										
 										} else {
 											innerItem.innerHTML = response.data[i].message;
 										}

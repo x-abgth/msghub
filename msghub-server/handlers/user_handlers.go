@@ -63,6 +63,14 @@ func (info *InformationHelper) UserLoginHandler(w http.ResponseWriter, r *http.R
 }
 
 func (info *InformationHelper) UserLoginCredentialsHandler(w http.ResponseWriter, r *http.Request) {
+
+	defer func() {
+		if e := recover(); e != nil {
+			fmt.Errorf("error in login credentials %w", e)
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+		}
+	}()
+
 	r.ParseForm()
 
 	ph := r.PostFormValue("signinPh")
@@ -1139,13 +1147,6 @@ func (info *InformationHelper) UserDeleteAccountHandler(w http.ResponseWriter, r
 		panic(err)
 	}
 
-	//for i := range models.IsOnline {
-	//	_, found := models.IsOnline[i][target]
-	//	if found {
-	//		delete(models.IsOnline[i], target)
-	//	}
-	//}
-
 	claims := &jwtPkg.UserJwtClaim{
 		IsAuthenticated: false,
 	}
@@ -1159,26 +1160,6 @@ func (info *InformationHelper) UserDeleteAccountHandler(w http.ResponseWriter, r
 }
 
 func (info *InformationHelper) UserLogoutHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Logout pressed!")
-	// assigning JWT tokens
-
-	//c, err1 := r.Cookie("userToken")
-	//if err1 != nil {
-	//	if err1 == http.ErrNoCookie {
-	//		panic("Cookie not found!")
-	//	}
-	//	panic("Unknown error occurred!")
-	//}
-	//
-	//claim := jwtPkg.GetValueFromJwt(c)
-	//
-	//for i := range models.IsOnline {
-	//	_, found := models.IsOnline[i][claim.User.UserPhone]
-	//	if found {
-	//		delete(models.IsOnline[i], claim.User.UserPhone)
-	//	}
-	//}
-
 	claims := &jwtPkg.UserJwtClaim{
 		IsAuthenticated: false,
 	}
