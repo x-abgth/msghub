@@ -2,14 +2,17 @@ package routes
 
 import (
 	"fmt"
-	"github.com/gorilla/mux"
 	"log"
-	"msghub-server/handlers"
-	"msghub-server/handlers/middlewares"
-	"msghub-server/logic"
-	"msghub-server/socket"
-	jwtPkg "msghub-server/utils/jwt"
 	"net/http"
+
+	"github.com/x-abgth/msghub/msghub-server/handlers"
+	"github.com/x-abgth/msghub/msghub-server/handlers/middlewares"
+	"github.com/x-abgth/msghub/msghub-server/socket"
+
+	jwtPkg "github.com/x-abgth/msghub/msghub-server/utils/jwt"
+
+	"github.com/gorilla/mux"
+	"github.com/x-abgth/msghub/msghub-server/logic"
 )
 
 func userRoutes(theMux *mux.Router, s *socket.WsServer) {

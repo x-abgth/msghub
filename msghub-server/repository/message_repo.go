@@ -3,8 +3,9 @@ package repository
 import (
 	"errors"
 	"log"
-	"msghub-server/models"
 	"strings"
+
+	"github.com/x-abgth/msghub/msghub-server/models"
 )
 
 type Message struct {

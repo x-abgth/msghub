@@ -3,10 +3,11 @@ package socket
 import (
 	"fmt"
 	"log"
-	"msghub-server/logic"
-	"msghub-server/models"
 	"strconv"
 	"sync"
+
+	"github.com/x-abgth/msghub/msghub-server/logic"
+	"github.com/x-abgth/msghub/msghub-server/models"
 )
 
 // Hub.

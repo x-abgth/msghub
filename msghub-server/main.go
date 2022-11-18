@@ -5,19 +5,19 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"msghub-server/handlers/routes"
-	"msghub-server/models"
-	"msghub-server/repository"
-	"msghub-server/socket"
-	"msghub-server/template"
-	"msghub-server/utils"
-	utilJwt "msghub-server/utils/jwt"
 	"net/http"
 	"os"
 	"os/signal"
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/x-abgth/msghub/msghub-server/handlers/routes"
+	"github.com/x-abgth/msghub/msghub-server/models"
+	"github.com/x-abgth/msghub/msghub-server/repository"
+	"github.com/x-abgth/msghub/msghub-server/socket"
+	"github.com/x-abgth/msghub/msghub-server/template"
+	"github.com/x-abgth/msghub/msghub-server/utils"
+	utilJwt "github.com/x-abgth/msghub/msghub-server/utils/jwt"
 )
 
 func init() {

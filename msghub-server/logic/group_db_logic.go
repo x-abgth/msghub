@@ -2,11 +2,12 @@ package logic
 
 import (
 	"log"
-	"msghub-server/models"
-	"msghub-server/repository"
 	"sort"
 	"strconv"
 	"time"
+
+	"github.com/x-abgth/msghub/msghub-server/models"
+	"github.com/x-abgth/msghub/msghub-server/repository"
 
 	"gorm.io/gorm"
 )

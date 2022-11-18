@@ -2,8 +2,9 @@ package middlewares
 
 import (
 	"log"
-	jwtPkg "msghub-server/utils/jwt"
 	"net/http"
+
+	jwtPkg "github.com/x-abgth/msghub/msghub-server/utils/jwt"
 )
 
 func UserAuthorizationBeforeLogin(handler http.HandlerFunc) http.HandlerFunc {

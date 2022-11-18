@@ -2,9 +2,10 @@ package logic
 
 import (
 	"errors"
-	"msghub-server/models"
-	"msghub-server/repository"
-	"msghub-server/utils"
+
+	"github.com/x-abgth/msghub/msghub-server/models"
+	"github.com/x-abgth/msghub/msghub-server/repository"
+	"github.com/x-abgth/msghub/msghub-server/utils"
 
 	"gorm.io/gorm"
 )

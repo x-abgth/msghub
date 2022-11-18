@@ -3,9 +3,10 @@ package repository
 import (
 	"errors"
 	"log"
-	"msghub-server/models"
 	"strconv"
 	"strings"
+
+	"github.com/x-abgth/msghub/msghub-server/models"
 )
 
 type Group struct {

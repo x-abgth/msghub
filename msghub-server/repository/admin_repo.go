@@ -4,8 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"msghub-server/models"
 	"strconv"
+
+	"github.com/x-abgth/msghub/msghub-server/models"
 )
 
 type Admin struct {

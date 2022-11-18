@@ -2,9 +2,10 @@ package jwt
 
 import (
 	"log"
-	"msghub-server/models"
 	"net/http"
 	"os"
+
+	"github.com/x-abgth/msghub/msghub-server/models"
 
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/joho/godotenv"

@@ -2,11 +2,11 @@ package routes
 
 import (
 	"log"
-	"msghub-server/socket"
-	"msghub-server/template"
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/x-abgth/msghub/msghub-server/socket"
+	"github.com/x-abgth/msghub/msghub-server/template"
 )
 
 func InitializeRoutes(theMux *mux.Router, server *socket.WsServer) {

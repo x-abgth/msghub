@@ -4,8 +4,9 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"msghub-server/models"
 	"os"
+
+	"github.com/x-abgth/msghub/msghub-server/models"
 
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"

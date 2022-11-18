@@ -3,9 +3,10 @@ package socket
 import (
 	"fmt"
 	"log"
-	"msghub-server/logic"
-	"msghub-server/models"
 	"os"
+
+	"github.com/x-abgth/msghub/msghub-server/logic"
+	"github.com/x-abgth/msghub/msghub-server/models"
 )
 
 //	Because our ChatServer acts like a hub for connecting the parts of our chat application,

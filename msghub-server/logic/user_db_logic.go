@@ -4,12 +4,13 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"msghub-server/models"
-	"msghub-server/repository"
-	"msghub-server/utils"
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/x-abgth/msghub/msghub-server/models"
+	"github.com/x-abgth/msghub/msghub-server/repository"
+	"github.com/x-abgth/msghub/msghub-server/utils"
 
 	"gorm.io/gorm"
 )

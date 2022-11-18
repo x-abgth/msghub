@@ -8,9 +8,6 @@ import (
 	"image/jpeg"
 	"image/png"
 	"log"
-	"msghub-server/logic"
-	"msghub-server/models"
-	"msghub-server/utils"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -18,8 +15,10 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-
 	"github.com/gorilla/websocket"
+	"github.com/x-abgth/msghub/msghub-server/logic"
+	"github.com/x-abgth/msghub/msghub-server/models"
+	"github.com/x-abgth/msghub/msghub-server/utils"
 )
 
 /*

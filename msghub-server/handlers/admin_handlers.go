@@ -2,16 +2,18 @@ package handlers
 
 import (
 	"fmt"
-	"github.com/gorilla/mux"
 	"log"
-	"msghub-server/logic"
-	"msghub-server/models"
-	"msghub-server/template"
-	"msghub-server/utils"
-	jwtPkg "msghub-server/utils/jwt"
 	"net/http"
 	"os"
 	"time"
+
+	jwtPkg "github.com/x-abgth/msghub/msghub-server/utils/jwt"
+
+	"github.com/gorilla/mux"
+	"github.com/x-abgth/msghub/msghub-server/logic"
+	"github.com/x-abgth/msghub/msghub-server/models"
+	"github.com/x-abgth/msghub/msghub-server/template"
+	"github.com/x-abgth/msghub/msghub-server/utils"
 )
 
 type AdminHandlerStruct struct {

@@ -1,8 +1,9 @@
 package middlewares
 
 import (
-	jwtPkg "msghub-server/utils/jwt"
 	"net/http"
+
+	jwtPkg "github.com/x-abgth/msghub/msghub-server/utils/jwt"
 )
 
 func AdminAuthenticationMiddleware(handler http.HandlerFunc) http.HandlerFunc {

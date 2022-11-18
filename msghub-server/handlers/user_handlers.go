@@ -6,12 +6,14 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"msghub-server/logic"
-	"msghub-server/models"
-	"msghub-server/template"
-	"msghub-server/utils"
-	jwtPkg "msghub-server/utils/jwt"
 	"time"
+
+	"github.com/x-abgth/msghub/msghub-server/models"
+	"github.com/x-abgth/msghub/msghub-server/template"
+	"github.com/x-abgth/msghub/msghub-server/utils"
+	jwtPkg "github.com/x-abgth/msghub/msghub-server/utils/jwt"
+
+	"github.com/x-abgth/msghub/msghub-server/logic"
 
 	"github.com/gorilla/mux"
 
@@ -66,7 +68,7 @@ func (info *InformationHelper) UserLoginCredentialsHandler(w http.ResponseWriter
 
 	defer func() {
 		if e := recover(); e != nil {
-			fmt.Errorf("error in login credentials %w", e)
+			log.Println(e)
 			http.Redirect(w, r, "/", http.StatusSeeOther)
 		}
 	}()
