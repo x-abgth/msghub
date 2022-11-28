@@ -28,8 +28,3 @@ func InitUserModel(model UserModel) *UserModel {
 func ReturnUserModel() *UserModel {
 	return userVal
 }
-
-var (
-	ClientID string
-	TargetID string
-)

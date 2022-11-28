@@ -72,12 +72,12 @@ func (server *WsServer) broadcastToClients(m *WSMessage) {
 
 	var msgModel logic.MessageDb
 
-	user := server.findClientByID(models.ClientID)
-	target := server.findClientByID(models.TargetID)
+	user := server.findClientByID(m.ClientID)
+	target := server.findClientByID(m.TargetID)
 
 	if target != nil {
 		if user != nil {
-			if server.findRoomByID(models.TargetID) == models.ClientID {
+			if server.findRoomByID(m.TargetID) == m.ClientID {
 				if m.Type == "message" {
 					data := models.MessageModel{
 						To:          m.Payload.Room,

@@ -67,8 +67,8 @@ func run() error {
 
 	routes.InitializeRoutes(newMux, wsServer)
 
-	server := &http.Server{Addr: ":8080", Handler: newMux}
-	fmt.Println("Starting server on port http://localhost:8080")
+	server := &http.Server{Addr: ":9000", Handler: newMux}
+	fmt.Println("Starting server on port http://localhost:9000")
 	go func() {
 		server.ListenAndServe()
 	}()

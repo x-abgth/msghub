@@ -17,7 +17,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/x-abgth/msghub/msghub-server/logic"
-	"github.com/x-abgth/msghub/msghub-server/models"
 	"github.com/x-abgth/msghub/msghub-server/utils"
 )
 
@@ -107,11 +106,11 @@ func ServeWs(phone, target string, wsServer *WsServer, w http.ResponseWriter, r 
 	// whenever the function ServeWs is called a new client is created.
 	client := newClient(conn, wsServer, phone, target)
 
-	models.ClientID = client.ID
-	models.TargetID = target
+	// models.ClientID = client.ID
+	// models.TargetID = target
 
 	go client.writePump()
-	go client.readPump()
+	go client.readPump(client.ID, target)
 
 	// value of client is updated to the channel register.
 	wsServer.register <- client
@@ -124,7 +123,7 @@ func ServeWs(phone, target string, wsServer *WsServer, w http.ResponseWriter, r 
 // -------------------- PRIVATE CHAT READ AND WRITE PUMP ------------------------
 // ------------------------------------------------------------------------------
 
-func (client *Client) readPump() {
+func (client *Client) readPump(clientID, targetID string) {
 	defer func() {
 		client.wsServer.unregister <- client
 		client.conn.Close()
@@ -161,6 +160,8 @@ func (client *Client) readPump() {
 					By:   message.Payload.By,
 					Room: message.Payload.Room,
 				},
+				ClientID: clientID,
+				TargetID: targetID,
 			}
 			log.Println("The client has joined")
 			client.wsServer.broadcast <- m
@@ -173,6 +174,8 @@ func (client *Client) readPump() {
 					By:   message.Payload.By,
 					Room: message.Payload.Room,
 				},
+				ClientID: clientID,
+				TargetID: targetID,
 			}
 			log.Println("The client has left")
 			client.wsServer.broadcast <- m
@@ -187,6 +190,8 @@ func (client *Client) readPump() {
 					Room:   message.Payload.Room,
 					Status: logic.IS_NOT_SENT,
 				},
+				ClientID: clientID,
+				TargetID: targetID,
 			}
 			client.wsServer.broadcast <- m
 
@@ -291,6 +296,8 @@ func (client *Client) readPump() {
 					Room:   message.Payload.Room,
 					Status: logic.IS_NOT_SENT,
 				},
+				ClientID: clientID,
+				TargetID: targetID,
 			}
 			client.wsServer.broadcast <- m
 
@@ -301,6 +308,8 @@ func (client *Client) readPump() {
 					By:   message.Payload.By,
 					Room: message.Payload.Room,
 				},
+				ClientID: clientID,
+				TargetID: targetID,
 			}
 			client.wsServer.broadcast <- m
 
@@ -311,6 +320,8 @@ func (client *Client) readPump() {
 					By:   message.Payload.By,
 					Room: message.Payload.Room,
 				},
+				ClientID: clientID,
+				TargetID: targetID,
 			}
 			client.wsServer.broadcast <- m
 		}
