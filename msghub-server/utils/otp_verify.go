@@ -2,10 +2,8 @@ package utils
 
 import (
 	"fmt"
-	"log"
 	"os"
 
-	"github.com/joho/godotenv"
 	"github.com/twilio/twilio-go"
 	openapi "github.com/twilio/twilio-go/rest/verify/v2"
 )
@@ -16,12 +14,6 @@ var VERIFY_SERVICE_SID string
 var client *twilio.RestClient
 
 func getCredentials() {
-	err := godotenv.Load(".env")
-	if err != nil {
-		log.Println(err.Error())
-		os.Exit(0)
-	}
-
 	TWILIO_ACCOUNT_SID = os.Getenv("TWILIO_SID")
 	TWILIO_AUTH_TOKEN = os.Getenv("TWILIO_TOKEN")
 	VERIFY_SERVICE_SID = os.Getenv("TWILIO_SERVICE")

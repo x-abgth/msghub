@@ -1,14 +1,12 @@
 package jwt
 
 import (
-	"log"
 	"net/http"
 	"os"
 
 	"github.com/x-abgth/msghub/msghub-server/models"
 
 	"github.com/golang-jwt/jwt/v4"
-	"github.com/joho/godotenv"
 )
 
 type UserJwtClaim struct {
@@ -27,12 +25,6 @@ type AdminJwtClaim struct {
 var JwtKey []byte
 
 func InitJwtKey() {
-	err := godotenv.Load(".env")
-	if err != nil {
-		log.Println(".env file loading error -- ", err)
-		os.Exit(0)
-	}
-
 	key := os.Getenv("JWT_KEY")
 
 	JwtKey = []byte(key)

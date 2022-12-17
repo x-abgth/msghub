@@ -2,13 +2,13 @@ package utils
 
 import (
 	"fmt"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3/s3manager"
-	"github.com/joho/godotenv"
 	"io"
 	"log"
 	"os"
+
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 )
 
 var (
@@ -17,12 +17,6 @@ var (
 )
 
 func StoreThisFileInBucket(folderName, filename string, file io.Reader) string {
-	err := godotenv.Load(".env")
-	if err != nil {
-		log.Println(err.Error())
-		os.Exit(0)
-	}
-
 	AWS_S3_REGION = os.Getenv("AWS_S3_REGION")
 	AWS_S3_BUCKET = os.Getenv("AWS_S3_BUCKET")
 

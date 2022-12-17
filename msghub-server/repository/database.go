@@ -8,7 +8,6 @@ import (
 
 	"github.com/x-abgth/msghub/msghub-server/models"
 
-	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -25,12 +24,6 @@ type config struct {
 
 func ConnectDb() {
 	// loads env file
-	err := godotenv.Load(".env")
-	if err != nil {
-		log.Fatal(".env file loading error -- ", err)
-		os.Exit(0)
-	}
-
 	configure := &config{
 		host:    os.Getenv("DB_HOST"),
 		port:    os.Getenv("DB_PORT"),
@@ -48,7 +41,7 @@ func ConnectDb() {
 		configure.dbName,
 		configure.sslMode)
 
-	var err1 error
+	var err1, err error
 	models.GormDb, err = gorm.Open(postgres.Open(psql), &gorm.Config{})
 	models.SqlDb, err1 = sql.Open("postgres", psql)
 	if err != nil {

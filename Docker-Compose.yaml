@@ -1,0 +1,40 @@
+version: "3.8"
+services:
+
+  api:
+    build:
+      context: .
+    volumes: 
+      - .:/msghub
+    container_name: msghub_server_container
+    env_file:
+      - ./.env
+    command: ["./msghub-server/main"]
+    ports: 
+      - 9000:9000
+    depends_on:
+      - db
+    links:
+      - db
+
+  db:
+    image: postgres:14.6-alpine
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=msghubdb
+      - POSTGRES_PASSWORD=abgthgo
+  # api:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     - "8080:8080"
+  #   environment:
+  #     - DB_SOURCE=postgresql://root:password@postgres:5432/msghubdb?sslmode=disable
+  #   depends_on:
+  #     - postgres
+  #   entrypoint: ["/app/wait-for.sh","postgres:5432", "--", "/app/start.sh"]
+  #   command: ["/app/main"]
