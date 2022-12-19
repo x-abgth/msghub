@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"os"
 
 	"github.com/x-abgth/msghub/msghub-server/models"
 
@@ -23,15 +22,18 @@ type config struct {
 }
 
 func ConnectDb() {
+
 	// loads env file
 	configure := &config{
-		host:    os.Getenv("DB_HOST"),
-		port:    os.Getenv("DB_PORT"),
-		user:    os.Getenv("DB_USER"),
-		pass:    os.Getenv("DB_PASS"),
-		dbName:  os.Getenv("DB_NAME"),
-		sslMode: os.Getenv("DB_SSLMODE"),
+		host:    "msghubdb.c7yvtgmymbdj.ap-south-1.rds.amazonaws.com",
+		port:    "5432",
+		user:    "postgres",
+		pass:    "abgthgo123",
+		dbName:  "msghubdb",
+		sslMode: "disable",
 	}
+
+	// dbSorucrce := os.Getenv("DB_SOURCE")
 
 	psql := fmt.Sprintf("host= %s port= %s user= %s password= %s dbname= %s sslmode= %s",
 		configure.host,

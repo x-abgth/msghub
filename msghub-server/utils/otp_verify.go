@@ -14,6 +14,7 @@ var VERIFY_SERVICE_SID string
 var client *twilio.RestClient
 
 func getCredentials() {
+
 	TWILIO_ACCOUNT_SID = os.Getenv("TWILIO_SID")
 	TWILIO_AUTH_TOKEN = os.Getenv("TWILIO_TOKEN")
 	VERIFY_SERVICE_SID = os.Getenv("TWILIO_SERVICE")

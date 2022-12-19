@@ -25,6 +25,7 @@ type AdminJwtClaim struct {
 var JwtKey []byte
 
 func InitJwtKey() {
+
 	key := os.Getenv("JWT_KEY")
 
 	JwtKey = []byte(key)
