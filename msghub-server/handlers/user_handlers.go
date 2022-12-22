@@ -29,12 +29,12 @@ type InformationHelper struct {
 }
 
 func (info *InformationHelper) UserLoginHandler(w http.ResponseWriter, r *http.Request) {
-	err := info.userRepo.MigrateUserDb(models.GormDb)
+	err := info.userRepo.MigrateUserDb()
 	if err != nil {
 		log.Fatal("Error creating user table : ", err.Error())
 	}
 
-	err = info.userRepo.MigrateDeletedUserDb(models.GormDb)
+	err = info.userRepo.MigrateDeletedUserDb()
 	if err != nil {
 		log.Fatal("Error creating deleted user table : ", err.Error())
 	}
@@ -267,29 +267,29 @@ func (info *InformationHelper) UserDashboardHandler(w http.ResponseWriter, r *ht
 	}()
 
 	// Creates table for user stories
-	storyErr := info.userRepo.MigrateStoriesDb(models.GormDb)
+	storyErr := info.userRepo.MigrateStoriesDb()
 	if storyErr != nil {
 		panic(storyErr.Error())
 	}
 
 	// Creates table for user's personal messages
-	migrateErr := info.messagesRepo.MigrateMessagesDb(models.GormDb)
+	migrateErr := info.messagesRepo.MigrateMessagesDb()
 	if migrateErr != nil {
 		panic(migrateErr.Error())
 	}
 
 	// Group migration statements
-	groupMigrationError := info.groupRepo.MigrateGroupDb(models.GormDb)
+	groupMigrationError := info.groupRepo.MigrateGroupDb()
 	if groupMigrationError != nil {
 		log.Fatal("Can't migrate group - ", groupMigrationError.Error())
 	}
 
-	groupUserMigrationError := info.groupRepo.MigrateUserGroupDb(models.GormDb)
+	groupUserMigrationError := info.groupRepo.MigrateUserGroupDb()
 	if groupUserMigrationError != nil {
 		log.Fatal("Can't migrate group - ", groupUserMigrationError.Error())
 	}
 
-	groupMessageMigrationError := info.groupRepo.MigrateGroupMessagesDb(models.GormDb)
+	groupMessageMigrationError := info.groupRepo.MigrateGroupMessagesDb()
 	if groupMessageMigrationError != nil {
 		log.Fatal("Can't migrate group - ", groupMessageMigrationError.Error())
 	}

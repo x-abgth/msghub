@@ -10,9 +10,14 @@ import (
 )
 
 type Admin struct {
-	AdminId   int    `gorm:"not null;primaryKey;autoIncrement" json:"admin_id"`
-	AdminName string `gorm:"not null" json:"admin_name"`
-	AdminPass string `gorm:"not null" json:"admin_pass"`
+	AdminId   int    `son:"admin_id"`
+	AdminName string `json:"admin_name"`
+	AdminPass string `json:"admin_pass"`
+}
+
+func (admin Admin) CreateAdminTable() error {
+	_, err := models.SqlDb.Exec(`CREATE TABLE IF NOT EXISTS admins(admin_id BIGSERIAL PRIMARY KEY NOT NULL, admin_name TEXT NOT NULL, admin_pass TEXT NOT NULL)`)
+	return err
 }
 
 func (admin Admin) InsertAdminToDb(name, pass string) error {

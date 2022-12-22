@@ -8,8 +8,6 @@ import (
 
 	"github.com/x-abgth/msghub/msghub-server/models"
 	"github.com/x-abgth/msghub/msghub-server/repository"
-
-	"gorm.io/gorm"
 )
 
 type GroupDataLogicModel struct {
@@ -20,18 +18,18 @@ type GroupDataLogicModel struct {
 }
 
 // MigrateUserDb :  Creates table for user according the struct User
-func (group GroupDataLogicModel) MigrateGroupDb(db *gorm.DB) error {
-	err := db.AutoMigrate(&repository.Group{})
+func (group GroupDataLogicModel) MigrateGroupDb() error {
+	err := group.groupTb.CreateGroupTable()
 	return err
 }
 
-func (group GroupDataLogicModel) MigrateUserGroupDb(db *gorm.DB) error {
-	err := db.AutoMigrate(&repository.UserGroupRelation{})
+func (group GroupDataLogicModel) MigrateUserGroupDb() error {
+	err := group.userGroupRelation.CreateUserGroupRelationTable()
 	return err
 }
 
-func (group GroupDataLogicModel) MigrateGroupMessagesDb(db *gorm.DB) error {
-	err := db.AutoMigrate(&repository.GroupMessage{})
+func (group GroupDataLogicModel) MigrateGroupMessagesDb() error {
+	err := group.messageGroupTb.CreateGroupMessageTable()
 	return err
 }
 

@@ -9,14 +9,19 @@ import (
 )
 
 type Message struct {
-	MsgId       int    `gorm:"not null;primaryKey;autoIncrement:true" json:"msg_id"`
-	FromUserId  string `gorm:"not null" json:"from_user_id"`
-	ToUserId    string `gorm:"not null" json:"to_user_id"`
-	Content     string `gorm:"not null" json:"content"`
-	ContentType string `gorm:"not null" json:"content_type"`
-	SentTime    string `gorm:"not null" json:"sent_time"`
-	Status      string `gorm:"not null" json:"status"`
-	IsRecent    bool   `gorm:"not null" json:"is_recent"`
+	MsgId       int    `json:"msg_id"`
+	FromUserId  string `json:"from_user_id"`
+	ToUserId    string `json:"to_user_id"`
+	Content     string `json:"content"`
+	ContentType string `json:"content_type"`
+	SentTime    string `json:"sent_time"`
+	Status      string `json:"status"`
+	IsRecent    bool   `json:"is_recent"`
+}
+
+func (m Message) CreateMessageTable() error {
+	_, err := models.SqlDb.Exec(`CREATE TABLE IF NOT EXISTS messages(msg_id BIGSERIAL PRIMARY KEY NOT NULL, from_user_id TEXT NOT NULL, to_user_id TEXT NOT NULL, content TEXT NOT NULL, content_type TEXT NOT NULL, sent_time TEXT NOT NULL, status TEXT NOT NULL, is_recent BOOLEAN NOT NULL);`)
+	return err
 }
 
 func (m Message) InsertMessageDataRepository(data Message) error {

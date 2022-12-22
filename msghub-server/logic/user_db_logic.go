@@ -11,8 +11,6 @@ import (
 	"github.com/x-abgth/msghub/msghub-server/models"
 	"github.com/x-abgth/msghub/msghub-server/repository"
 	"github.com/x-abgth/msghub/msghub-server/utils"
-
-	"gorm.io/gorm"
 )
 
 type UserDb struct {
@@ -22,18 +20,18 @@ type UserDb struct {
 }
 
 // MigrateUserDb :  Creates table for user according the struct User
-func (u *UserDb) MigrateUserDb(db *gorm.DB) error {
-	err := db.AutoMigrate(&repository.User{})
+func (u *UserDb) MigrateUserDb() error {
+	err := u.userData.CreateUserTable()
 	return err
 }
 
-func (u *UserDb) MigrateDeletedUserDb(db *gorm.DB) error {
-	err := db.AutoMigrate(&repository.DeletedUser{})
+func (u *UserDb) MigrateDeletedUserDb() error {
+	err := u.userData.CreateDeletedUserTable()
 	return err
 }
 
-func (u *UserDb) MigrateStoriesDb(db *gorm.DB) error {
-	err := db.AutoMigrate(&repository.Storie{})
+func (u *UserDb) MigrateStoriesDb() error {
+	err := u.userData.CreateStoiesTable()
 	return err
 }
 

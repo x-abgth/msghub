@@ -10,33 +10,48 @@ import (
 )
 
 type Group struct {
-	GroupId           int    `gorm:"not null;primaryKey;autoIncrement:true" json:"group_id"`
-	GroupName         string `gorm:"not null" json:"group_name"`
-	GroupAvatar       string `gorm:"not null" json:"group_avatar"`
-	GroupAbout        string `gorm:"not null" json:"group_about"`
-	GroupCreator      string `gorm:"not null" json:"group_creator"`
-	GroupCreatedDate  string `gorm:"not null" json:"group_created_date"`
-	GroupTotalMembers int    `gorm:"not null" json:"group_total_members"`
-	IsBanned          bool   `gorm:"not null" json:"is_banned"`
+	GroupId           int    `json:"group_id"`
+	GroupName         string `json:"group_name"`
+	GroupAvatar       string `json:"group_avatar"`
+	GroupAbout        string `json:"group_about"`
+	GroupCreator      string `json:"group_creator"`
+	GroupCreatedDate  string `json:"group_created_date"`
+	GroupTotalMembers int    `json:"group_total_members"`
+	IsBanned          bool   `json:"is_banned"`
 	BannedTime        string `json:"banned_time"`
 }
 
 type UserGroupRelation struct {
-	Id       int    `gorm:"not null;primaryKey;autoIncrement:true" json:"id"`
-	GroupId  int    `gorm:"not null" json:"group_id"`
-	UserId   string `gorm:"not null" json:"user_id"`
-	UserRole string `gorm:"not null" json:"user_role"`
+	Id       int    `json:"id"`
+	GroupId  int    `json:"group_id"`
+	UserId   string `json:"user_id"`
+	UserRole string `json:"user_role"`
 }
 
 type GroupMessage struct {
-	MsgId          int    `gorm:"not null;primary key;autoIncrement:true" json:"msg_id"`
-	GroupId        int    `gorm:"not null" json:"group_id"`
-	SenderId       string `gorm:"not null" json:"sender_id"`
-	MessageContent string `gorm:"not null" json:"message_content"`
+	MsgId          int    `json:"msg_id"`
+	GroupId        int    `json:"group_id"`
+	SenderId       string `json:"sender_id"`
+	MessageContent string `json:"message_content"`
 	ContentType    string `json:"content_type"`
-	Status         string `gorm:"not null" json:"status"`
-	SentTime       string `gorm:"not null" json:"sent_time"`
-	IsRecent       bool   `gorm:"not null" json:"is_recent"`
+	Status         string `json:"status"`
+	SentTime       string `json:"sent_time"`
+	IsRecent       bool   `json:"is_recent"`
+}
+
+func (group Group) CreateGroupTable() error {
+	_, err := models.SqlDb.Exec(`CREATE TABLE IF NOT EXISTS groups(group_id BIGSERIAL PRIMARY KEY NOT NULL, group_name TEXT NOT NULL, group_avatar TEXT NOT NULL, group_about TEXT NOT NULL, group_creator TEXT NOT NULL, group_created_date TEXT NOT NULL, group_total_members BIGINT NOT NULL, is_banned BOOLEAN NOT NULL, banned_time TEXT);`)
+	return err
+}
+
+func (relation UserGroupRelation) CreateUserGroupRelationTable() error {
+	_, err := models.SqlDb.Exec(`CREATE TABLE IF NOT EXISTS user_group_relations(id BIGSERIAL PRIMARY KEY NOT NULL, group_id BIGINT NOT NULL, user_id TEXT NOT NULL, user_role TEXT NOT NULL);`)
+	return err
+}
+
+func (gm GroupMessage) CreateGroupMessageTable() error {
+	_, err := models.SqlDb.Exec(`CREATE TABLE IF NOT EXISTS group_messages(msg_id BIGSERIAL PRIMARY KEY NOT NULL, group_id BIGINT NOT NULL, sender_id TEXT NOT NULL, message_content TEXT NOT NULL, sent_time TEXT NOT NULL, is_recent BOOLEAN NOT NULL, status TEXT NOT NULL, content_type TEXT);`)
+	return err
 }
 
 func CreateGroup(data Group) (int, error) {

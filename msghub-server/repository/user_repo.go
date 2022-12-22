@@ -9,32 +9,47 @@ import (
 )
 
 type User struct {
-	UserPhNo        string  `gorm:"not null;primaryKey;autoIncrement:false" json:"user_ph_no"`
-	UserName        string  `gorm:"not null" json:"user_name"`
+	UserPhNo        string  `json:"user_ph_no"`
+	UserName        string  `json:"user_name"`
 	UserAvatar      *string `json:"user_avatar"`
-	UserAbout       string  `gorm:"not null" json:"user_about"`
-	UserPassword    string  `gorm:"not null" json:"user_password"`
-	IsBlocked       bool    `gorm:"not null" json:"is_blocked"`
+	UserAbout       string  `json:"user_about"`
+	UserPassword    string  `json:"user_password"`
+	IsBlocked       bool    `json:"is_blocked"`
 	BlockedDuration *string `json:"blocked_duration"`
 	BlockList       *string `json:"block_list"`
 }
 
 type DeletedUser struct {
-	UserPhNo        string  `gorm:"not null;primaryKey;autoIncrement:false" json:"user_ph_no"`
+	UserPhNo        string  `json:"user_ph_no"`
 	UserAvatar      *string `json:"user_avatar"`
-	UserAbout       string  `gorm:"not null" json:"user_about"`
-	IsBlocked       bool    `gorm:"not null" json:"is_blocked"`
+	UserAbout       string  `json:"user_about"`
+	IsBlocked       bool    `json:"is_blocked"`
 	BlockedDuration *string `json:"blocked_duration"`
 	BlockList       *string `json:"block_list"`
 	DeleteTime      string  `json:"delete_time"`
 }
 
 type Storie struct {
-	UserId          string `gorm:"primary key;not null;autoIncrement:false" json:"user_id"`
-	StoryUrl        string `gorm:"not null" json:"story_url"`
-	StoryUpdateTime string `gorm:"not null" json:"story_update_time"`
-	Viewers         string `gorm:"not null" json:"viewers"`
-	IsActive        bool   `gorm:"not null" json:"is_active"`
+	UserId          string `json:"user_id"`
+	StoryUrl        string `json:"story_url"`
+	StoryUpdateTime string `json:"story_update_time"`
+	Viewers         string `json:"viewers"`
+	IsActive        bool   `json:"is_active"`
+}
+
+func (user User) CreateUserTable() error {
+	_, err := models.SqlDb.Exec(`CREATE TABLE IF NOT EXISTS users(user_ph_no TEXT PRIMARY KEY NOT NULL, user_name TEXT NOT NULL, user_avatar TEXT, user_about TEXT NOT NULL, user_password TEXT NOT NULL, is_blocked BOOLEAN NOT NULL, blocked_duration TEXT, block_list TEXT);`)
+	return err
+}
+
+func (user User) CreateDeletedUserTable() error {
+	_, err := models.SqlDb.Exec(`CREATE TABLE IF NOT EXISTS deleted_users(user_ph_no TEXT PRIMARY KEY NOT NULL, user_avatar TEXT, user_about TEXT NOT NULL, is_blocked BOOLEAN NOT NULL, blocked_duration TEXT, block_list TEXT, delete_time TEXT);`)
+	return err
+}
+
+func (user User) CreateStoiesTable() error {
+	_, err := models.SqlDb.Exec(`CREATE TABLE IF NOT EXISTS stories(user_id TEXT NOT NULL, story_url TEXT NOT NULL, story_update_time TEXT NOT NULL, viewers TEXT NOT NULL, is_active TEXT NOT NULL);`)
+	return err
 }
 
 func (user User) GetUserDataUsingPhone(formPhone string) (int, models.UserModel, error) {

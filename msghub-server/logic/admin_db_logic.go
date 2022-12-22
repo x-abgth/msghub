@@ -6,8 +6,6 @@ import (
 	"github.com/x-abgth/msghub/msghub-server/models"
 	"github.com/x-abgth/msghub/msghub-server/repository"
 	"github.com/x-abgth/msghub/msghub-server/utils"
-
-	"gorm.io/gorm"
 )
 
 type AdminDb struct {
@@ -17,8 +15,8 @@ type AdminDb struct {
 }
 
 // MigrateAdminDb :  Creates table for admin according the struct Admin
-func MigrateAdminDb(db *gorm.DB) error {
-	err := db.AutoMigrate(&repository.Admin{})
+func (admin AdminDb) MigrateAdminDb() error {
+	err := admin.repo.CreateAdminTable()
 	return err
 }
 

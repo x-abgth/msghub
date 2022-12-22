@@ -24,7 +24,7 @@ type AdminHandlerStruct struct {
 
 func (admin *AdminHandlerStruct) AdminLoginPageHandler(w http.ResponseWriter, r *http.Request) {
 
-	err1 := logic.MigrateAdminDb(models.GormDb)
+	err1 := admin.logics.MigrateAdminDb()
 	if err1 != nil {
 		log.Println("Error creating user table : ", err1.Error())
 		os.Exit(1)

@@ -4,12 +4,11 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/x-abgth/msghub/msghub-server/models"
 
 	_ "github.com/lib/pq"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
 )
 
 type config struct {
@@ -25,15 +24,13 @@ func ConnectDb() {
 
 	// loads env file
 	configure := &config{
-		host:    "msghubdb.c7yvtgmymbdj.ap-south-1.rds.amazonaws.com",
-		port:    "5432",
-		user:    "postgres",
-		pass:    "abgthgo123",
-		dbName:  "msghubdb",
-		sslMode: "disable",
+		host:    os.Getenv("DB_HOST"),
+		port:    os.Getenv("DB_PORT"),
+		user:    os.Getenv("DB_USER"),
+		pass:    os.Getenv("DB_PASS"),
+		dbName:  os.Getenv("DB_NAME"),
+		sslMode: os.Getenv("DB_SSLMODE"),
 	}
-
-	// dbSorucrce := os.Getenv("DB_SOURCE")
 
 	psql := fmt.Sprintf("host= %s port= %s user= %s password= %s dbname= %s sslmode= %s",
 		configure.host,
@@ -43,13 +40,11 @@ func ConnectDb() {
 		configure.dbName,
 		configure.sslMode)
 
-	var err1, err error
-	models.GormDb, err = gorm.Open(postgres.Open(psql), &gorm.Config{})
-	models.SqlDb, err1 = sql.Open("postgres", psql)
+	fmt.Println("--- DATABASE INITIALIZED ON HOST = " + configure.host + " ---")
+
+	var err error
+	models.SqlDb, err = sql.Open("postgres", psql)
 	if err != nil {
 		log.Fatal("Error connecting to repository - ", err.Error())
-	}
-	if err1 != nil {
-		log.Fatal("Error connecting to repository without gorm - ", err1.Error())
 	}
 }

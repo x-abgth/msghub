@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/joho/godotenv"
 	"github.com/x-abgth/msghub/msghub-server/handlers/routes"
 	"github.com/x-abgth/msghub/msghub-server/models"
 	"github.com/x-abgth/msghub/msghub-server/repository"
@@ -24,12 +25,12 @@ func init() {
 	var err error
 
 	utilJwt.InitJwtKey()
-	template.Tpl, err = template.Tpl.ParseGlob("../msghub-client/views/*.html")
-	template.Tpl.New("partials").ParseGlob("../msghub-client/views/base_partials/*.html")
-	template.Tpl.New("user").ParseGlob("../msghub-client/views/user/*.html")
-	template.Tpl.New("user_partials").ParseGlob("../msghub-client/views/user/user_partials/*.html")
-	template.Tpl.New("admin").ParseGlob("../msghub-client/views/admin/*.html")
-	template.Tpl.New("admin_partials").ParseGlob("../msghub-client/views/admin/admin_partials/*.html")
+	template.Tpl, err = template.Tpl.ParseGlob("msghub-client/views/*.html")
+	template.Tpl.New("partials").ParseGlob("msghub-client/views/base_partials/*.html")
+	template.Tpl.New("user").ParseGlob("msghub-client/views/user/*.html")
+	template.Tpl.New("user_partials").ParseGlob("msghub-client/views/user/user_partials/*.html")
+	template.Tpl.New("admin").ParseGlob("msghub-client/views/admin/*.html")
+	template.Tpl.New("admin_partials").ParseGlob("msghub-client/views/admin/admin_partials/*.html")
 
 	if err != nil {
 		log.Fatal(err.Error())
@@ -40,18 +41,16 @@ func init() {
 func main() {
 	flag.Parse()
 
-	// err := godotenv.Load(".env")
-	// if err != nil {
-	// 	log.Fatal(".env file loading error -- ", err)
-	// 	os.Exit(0)
-	// }
-
-	// fmt.FPrintln(os.Getenv("TEST"))
+	err := godotenv.Load(".env")
+	if err != nil {
+		log.Fatal(".env file loading error -- ", err)
+		os.Exit(0)
+	}
 
 	repository.ConnectDb()
 	defer models.SqlDb.Close()
 
-	err := run()
+	err = run()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err)
 		os.Exit(1)
@@ -64,7 +63,7 @@ func main() {
 func run() error {
 	newMux := mux.NewRouter()
 	// serving other files like css, and assets using only http package
-	fileServe := http.FileServer(http.Dir("../msghub-client/assets/"))
+	fileServe := http.FileServer(http.Dir("msghub-client/assets/"))
 	newMux.PathPrefix("/assets/").Handler(http.StripPrefix("/assets/", fileServe))
 
 	utils.InitBlobBucket()

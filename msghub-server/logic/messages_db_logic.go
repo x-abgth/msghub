@@ -8,8 +8,6 @@ import (
 
 	"github.com/x-abgth/msghub/msghub-server/models"
 	"github.com/x-abgth/msghub/msghub-server/repository"
-
-	"gorm.io/gorm"
 )
 
 type MessageDb struct {
@@ -30,8 +28,8 @@ const (
 )
 
 // MigrateMessagesDb : Creates message table
-func (m MessageDb) MigrateMessagesDb(db *gorm.DB) error {
-	err := db.AutoMigrate(&repository.Message{})
+func (m MessageDb) MigrateMessagesDb() error {
+	err := m.UserData.CreateMessageTable()
 	return err
 }
 
